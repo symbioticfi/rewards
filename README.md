@@ -17,6 +17,8 @@ ETH_RPC_URL=
 ETHERSCAN_API_KEY=
 ```
 
+\* ETH_RPC_URL is optional.
+
 \* ETHERSCAN_API_KEY is optional.
 
 ### Build
