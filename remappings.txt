@@ -1,3 +1,6 @@
 forge-std/=lib/forge-std/src/
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+@symbiotic/contracts/=lib/core-private/src/contracts/
+@symbiotic/interfaces/=lib/core-private/src/interfaces/
+@symbiotic/mocks/=lib/core-private/test/mocks/

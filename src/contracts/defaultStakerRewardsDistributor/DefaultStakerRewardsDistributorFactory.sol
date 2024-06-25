@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {DefaultStakerRewardsDistributor} from "./DefaultStakerRewardsDistributor.sol";
-import {Registry} from "src/contracts/common/Registry.sol";
+import {Registry} from "@symbiotic/contracts/base/Registry.sol";
 
 import {IDefaultStakerRewardsDistributorFactory} from
     "src/interfaces/defaultStakerRewardsDistributor/IDefaultStakerRewardsDistributorFactory.sol";
@@ -22,7 +22,8 @@ contract DefaultStakerRewardsDistributorFactory is Registry, IDefaultStakerRewar
      * @inheritdoc IDefaultStakerRewardsDistributorFactory
      */
     function create(address vault) external returns (address) {
-        address stakerRewardsDistributor = STAKER_REWARDS_DISTRIBUTOR_IMPLEMENTATION.clone();
+        address stakerRewardsDistributor =
+            STAKER_REWARDS_DISTRIBUTOR_IMPLEMENTATION.cloneDeterministic(keccak256(abi.encode(totalEntities(), vault)));
         DefaultStakerRewardsDistributor(stakerRewardsDistributor).initialize(vault);
 
         _addEntity(stakerRewardsDistributor);

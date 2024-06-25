@@ -9,13 +9,12 @@ interface IDefaultStakerRewardsDistributor is IStakerRewardsDistributor {
     error InsufficientReward();
     error InvalidAdminFee();
     error InvalidHintsLength();
+    error InvalidRecipient();
     error InvalidRewardTimestamp();
-    error NoDeposits();
     error NoRewardsToClaim();
     error NotNetwork();
     error NotNetworkMiddleware();
     error NotVault();
-    error NotVaultOwner();
     error NotWhitelistedNetwork();
 
     /**

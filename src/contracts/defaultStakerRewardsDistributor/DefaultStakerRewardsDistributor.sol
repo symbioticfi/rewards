@@ -3,10 +3,10 @@ pragma solidity 0.8.25;
 
 import {IDefaultStakerRewardsDistributor} from
     "src/interfaces/defaultStakerRewardsDistributor/IDefaultStakerRewardsDistributor.sol";
-import {INetworkMiddlewareService} from "src/interfaces/service/INetworkMiddlewareService.sol";
-import {IRegistry} from "src/interfaces/common/IRegistry.sol";
+import {INetworkMiddlewareService} from "@symbiotic/interfaces/INetworkMiddlewareService.sol";
+import {IRegistry} from "@symbiotic/interfaces/base/IRegistry.sol";
 import {IStakerRewardsDistributor} from "src/interfaces/stakerRewardsDistributor/IStakerRewardsDistributor.sol";
-import {IVault} from "src/interfaces/vault/IVault.sol";
+import {IVault} from "@symbiotic/interfaces/vault/v1/IVault.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -96,13 +96,6 @@ contract DefaultStakerRewardsDistributor is
 
     mapping(uint48 timestamp => uint256 amount) private _activeSharesCache;
 
-    modifier onlyVaultOwner() {
-        if (Ownable(VAULT).owner() != msg.sender) {
-            revert NotVaultOwner();
-        }
-        _;
-    }
-
     constructor(address networkRegistry, address vaultFactory, address networkMiddlewareService) {
         _disableInitializers();
 
@@ -170,16 +163,20 @@ contract DefaultStakerRewardsDistributor is
         }
 
         uint256 adminFeeAmount = amount.mulDiv(adminFee, ADMIN_FEE_BASE);
+        uint256 distributeAmount = amount - adminFeeAmount;
+
         claimableAdminFee[token] += adminFeeAmount;
 
-        rewards[token].push(
-            RewardDistribution({
-                network: network,
-                amount: amount - adminFeeAmount,
-                timestamp: timestamp,
-                creation: Time.timestamp()
-            })
-        );
+        if (distributeAmount != 0) {
+            rewards[token].push(
+                RewardDistribution({
+                    network: network,
+                    amount: distributeAmount,
+                    timestamp: timestamp,
+                    creation: Time.timestamp()
+                })
+            );
+        }
 
         emit DistributeReward(network, token, amount, timestamp);
     }
@@ -193,6 +190,10 @@ contract DefaultStakerRewardsDistributor is
         uint256 maxRewards,
         uint32[] calldata activeSharesOfHints
     ) external {
+        if (recipient == address(0)) {
+            revert InvalidRecipient();
+        }
+
         RewardDistribution[] storage rewardsByToken = rewards[token];
         uint256 rewardIndex = lastUnclaimedReward[msg.sender][token];
 
