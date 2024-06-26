@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-interface IDefaultStakerRewardsDistributorFactory {
+interface IDefaultStakerRewardsFactory {
     /**
      * @notice Create a default staker rewards distributor for a given vault.
      * @param vault address of the vault

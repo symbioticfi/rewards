@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-interface IDefaultOperatorRewardsDistributorFactory {
+interface IDefaultOperatorRewardsFactory {
     /**
      * @notice Create a default operator rewards distributor for a given vault.
      * @param vault address of the vault

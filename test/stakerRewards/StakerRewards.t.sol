@@ -5,9 +5,9 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {NetworkRegistry} from "@symbiotic/contracts/NetworkRegistry.sol";
 
-import {SimpleRewardsDistributor} from "test/mocks/SimpleRewardsDistributor.sol";
+import {SimpleStakerRewards} from "test/mocks/SimpleStakerRewards.sol";
 
-contract RewardsDistributorTest is Test {
+contract StakerRewardsTest is Test {
     address owner;
     address alice;
     uint256 alicePrivateKey;
@@ -15,7 +15,7 @@ contract RewardsDistributorTest is Test {
     uint256 bobPrivateKey;
 
     NetworkRegistry networkRegistry;
-    SimpleRewardsDistributor stakerRewardsDistributor;
+    SimpleStakerRewards stakerRewards;
 
     function setUp() public {
         owner = address(this);
@@ -23,18 +23,18 @@ contract RewardsDistributorTest is Test {
         (bob, bobPrivateKey) = makeAddrAndKey("bob");
 
         networkRegistry = new NetworkRegistry();
-        stakerRewardsDistributor = new SimpleRewardsDistributor();
+        stakerRewards = new SimpleStakerRewards();
     }
 
     function test_Create() public {
-        assertEq(stakerRewardsDistributor.version(), 1);
+        assertEq(stakerRewards.version(), 1);
 
         vm.startPrank(bob);
         networkRegistry.registerNetwork();
         vm.stopPrank();
 
         vm.startPrank(alice);
-        stakerRewardsDistributor.distributeReward(bob, address(0), 0, 0);
+        stakerRewards.distributeReward(bob, address(0), 0, 0);
         vm.stopPrank();
     }
 }

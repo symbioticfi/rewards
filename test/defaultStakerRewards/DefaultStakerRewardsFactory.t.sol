@@ -11,25 +11,22 @@ import {NetworkMiddlewareService} from "@symbiotic/contracts/NetworkMiddlewareSe
 import {NetworkOptInService} from "@symbiotic/contracts/NetworkOptInService.sol";
 import {OperatorOptInService} from "@symbiotic/contracts/OperatorOptInService.sol";
 
-import {DefaultStakerRewardsDistributorFactory} from
-    "src/contracts/defaultStakerRewardsDistributor/DefaultStakerRewardsDistributorFactory.sol";
-import {DefaultStakerRewardsDistributor} from
-    "src/contracts/defaultStakerRewardsDistributor/DefaultStakerRewardsDistributor.sol";
-import {IDefaultStakerRewardsDistributor} from
-    "src/interfaces/defaultStakerRewardsDistributor/IDefaultStakerRewardsDistributor.sol";
+import {DefaultStakerRewardsFactory} from "src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
+import {DefaultStakerRewards} from "src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
+import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 
 import {Vault} from "@symbiotic/contracts/vault/v1/Vault.sol";
 import {IVault} from "@symbiotic/interfaces/vault/v1/IVault.sol";
 
-contract DefaultStakerRewardsDistributorFactoryTest is Test {
+contract DefaultStakerRewardsFactoryTest is Test {
     address owner;
     address alice;
     uint256 alicePrivateKey;
     address bob;
     uint256 bobPrivateKey;
 
-    DefaultStakerRewardsDistributorFactory defaultStakerRewardsDistributorFactory;
-    DefaultStakerRewardsDistributor defaultStakerRewardsDistributor;
+    DefaultStakerRewardsFactory defaultStakerRewardsFactory;
+    DefaultStakerRewards defaultStakerRewards;
 
     VaultFactory vaultFactory;
     NetworkRegistry networkRegistry;
@@ -91,43 +88,37 @@ contract DefaultStakerRewardsDistributorFactoryTest is Test {
     }
 
     function test_Create() public {
-        address defaultStakerRewardsDistributor_ = address(
-            new DefaultStakerRewardsDistributor(
-                address(networkRegistry), address(vaultFactory), address(networkMiddlewareService)
-            )
+        address defaultStakerRewards_ = address(
+            new DefaultStakerRewards(address(networkRegistry), address(vaultFactory), address(networkMiddlewareService))
         );
 
-        defaultStakerRewardsDistributorFactory =
-            new DefaultStakerRewardsDistributorFactory(defaultStakerRewardsDistributor_);
+        defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
-        address defaultStakerRewardsDistributorAddress = defaultStakerRewardsDistributorFactory.create(address(vault));
-        defaultStakerRewardsDistributor = DefaultStakerRewardsDistributor(defaultStakerRewardsDistributorAddress);
-        assertEq(defaultStakerRewardsDistributorFactory.isEntity(defaultStakerRewardsDistributorAddress), true);
+        address defaultStakerRewardsAddress = defaultStakerRewardsFactory.create(address(vault));
+        defaultStakerRewards = DefaultStakerRewards(defaultStakerRewardsAddress);
+        assertEq(defaultStakerRewardsFactory.isEntity(defaultStakerRewardsAddress), true);
 
-        assertEq(defaultStakerRewardsDistributor.NETWORK_REGISTRY(), address(networkRegistry));
-        assertEq(defaultStakerRewardsDistributor.VAULT_FACTORY(), address(vaultFactory));
-        assertEq(defaultStakerRewardsDistributor.NETWORK_MIDDLEWARE_SERVICE(), address(networkMiddlewareService));
-        assertEq(defaultStakerRewardsDistributor.VAULT(), address(vault));
-        assertEq(defaultStakerRewardsDistributor.version(), 1);
-        assertEq(defaultStakerRewardsDistributor.isNetworkWhitelisted(alice), false);
-        assertEq(defaultStakerRewardsDistributor.rewardsLength(alice), 0);
+        assertEq(defaultStakerRewards.NETWORK_REGISTRY(), address(networkRegistry));
+        assertEq(defaultStakerRewards.VAULT_FACTORY(), address(vaultFactory));
+        assertEq(defaultStakerRewards.NETWORK_MIDDLEWARE_SERVICE(), address(networkMiddlewareService));
+        assertEq(defaultStakerRewards.VAULT(), address(vault));
+        assertEq(defaultStakerRewards.version(), 1);
+        assertEq(defaultStakerRewards.isNetworkWhitelisted(alice), false);
+        assertEq(defaultStakerRewards.rewardsLength(alice), 0);
         vm.expectRevert();
-        defaultStakerRewardsDistributor.rewards(alice, 0);
-        assertEq(defaultStakerRewardsDistributor.lastUnclaimedReward(alice, alice), 0);
-        assertEq(defaultStakerRewardsDistributor.claimableAdminFee(alice), 0);
+        defaultStakerRewards.rewards(alice, 0);
+        assertEq(defaultStakerRewards.lastUnclaimedReward(alice, alice), 0);
+        assertEq(defaultStakerRewards.claimableAdminFee(alice), 0);
     }
 
     function test_CreateRevertNotVault() public {
-        address defaultStakerRewardsDistributor_ = address(
-            new DefaultStakerRewardsDistributor(
-                address(networkRegistry), address(vaultFactory), address(networkMiddlewareService)
-            )
+        address defaultStakerRewards_ = address(
+            new DefaultStakerRewards(address(networkRegistry), address(vaultFactory), address(networkMiddlewareService))
         );
 
-        defaultStakerRewardsDistributorFactory =
-            new DefaultStakerRewardsDistributorFactory(defaultStakerRewardsDistributor_);
+        defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
-        vm.expectRevert(IDefaultStakerRewardsDistributor.NotVault.selector);
-        defaultStakerRewardsDistributorFactory.create(address(0));
+        vm.expectRevert(IDefaultStakerRewards.NotVault.selector);
+        defaultStakerRewardsFactory.create(address(0));
     }
 }

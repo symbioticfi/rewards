@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IStakerRewardsDistributor} from "src/interfaces/stakerRewardsDistributor/IStakerRewardsDistributor.sol";
+import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 
-interface IDefaultStakerRewardsDistributor is IStakerRewardsDistributor {
+interface IDefaultStakerRewards is IStakerRewards {
     error AlreadySet();
     error InsufficientAdminFee();
     error InsufficientReward();

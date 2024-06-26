@@ -14,13 +14,10 @@ import {OperatorOptInService} from "@symbiotic/contracts/OperatorOptInService.so
 import {Vault} from "@symbiotic/contracts/vault/v1/Vault.sol";
 import {IVault} from "@symbiotic/interfaces/vault/v1/IVault.sol";
 
-import {DefaultStakerRewardsDistributorFactory} from
-    "src/contracts/defaultStakerRewardsDistributor/DefaultStakerRewardsDistributorFactory.sol";
-import {IDefaultStakerRewardsDistributor} from
-    "src/interfaces/defaultStakerRewardsDistributor/IDefaultStakerRewardsDistributor.sol";
+import {DefaultStakerRewardsFactory} from "src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
+import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 
-import {DefaultStakerRewardsDistributor} from
-    "src/contracts/defaultStakerRewardsDistributor/DefaultStakerRewardsDistributor.sol";
+import {DefaultStakerRewards} from "src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
 
 import {Token} from "@symbiotic/mocks/Token.sol";
 import {FeeOnTransferToken} from "@symbiotic/mocks/FeeOnTransferToken.sol";
@@ -28,7 +25,7 @@ import {SimpleCollateral} from "@symbiotic/mocks/SimpleCollateral.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract RewardsDistributorTest is Test {
+contract RewardsTest is Test {
     using Math for uint256;
 
     address owner;
@@ -49,8 +46,8 @@ contract RewardsDistributorTest is Test {
 
     IVault vault;
 
-    DefaultStakerRewardsDistributorFactory defaultStakerRewardsDistributorFactory;
-    IDefaultStakerRewardsDistributor defaultStakerRewardsDistributor;
+    DefaultStakerRewardsFactory defaultStakerRewardsFactory;
+    IDefaultStakerRewards defaultStakerRewards;
 
     SimpleCollateral collateral;
 
@@ -82,14 +79,11 @@ contract RewardsDistributorTest is Test {
             )
         );
 
-        address defaultStakerRewardsDistributor_ = address(
-            new DefaultStakerRewardsDistributor(
-                address(networkRegistry), address(vaultFactory), address(networkMiddlewareService)
-            )
+        address defaultStakerRewards_ = address(
+            new DefaultStakerRewards(address(networkRegistry), address(vaultFactory), address(networkMiddlewareService))
         );
 
-        defaultStakerRewardsDistributorFactory =
-            new DefaultStakerRewardsDistributorFactory(defaultStakerRewardsDistributor_);
+        defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
         Token token = new Token("Token");
         collateral = new SimpleCollateral(address(token));
@@ -103,9 +97,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
     }
 
     function test_ReinitRevert() public {
@@ -114,10 +108,10 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
+        defaultStakerRewards = _getStakerDefaultRewards();
 
         vm.expectRevert();
-        DefaultStakerRewardsDistributor(address(defaultStakerRewardsDistributor)).initialize(address(vault));
+        DefaultStakerRewards(address(defaultStakerRewards)).initialize(address(vault));
     }
 
     function test_SetNetworkWhitelistStatus() public {
@@ -126,15 +120,15 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
 
         _setNetworkWhitelistStatus(alice, network, true);
-        assertEq(defaultStakerRewardsDistributor.isNetworkWhitelisted(network), true);
+        assertEq(defaultStakerRewards.isNetworkWhitelisted(network), true);
     }
 
     function test_SetNetworkWhitelistStatusRevertAlreadySet() public {
@@ -143,16 +137,16 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
 
         _setNetworkWhitelistStatus(alice, network, true);
 
-        vm.expectRevert(IDefaultStakerRewardsDistributor.AlreadySet.selector);
+        vm.expectRevert(IDefaultStakerRewards.AlreadySet.selector);
         _setNetworkWhitelistStatus(alice, network, true);
     }
 
@@ -166,9 +160,9 @@ contract RewardsDistributorTest is Test {
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
         adminFee = bound(adminFee, 1, vault.ADMIN_FEE_BASE());
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         _grantAdminFeeSetRole(alice, alice);
         _setAdminFee(alice, adminFee);
@@ -188,17 +182,15 @@ contract RewardsDistributorTest is Test {
         IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
         feeOnTransferToken.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        feeOnTransferToken.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
-        uint256 balanceBefore = feeOnTransferToken.balanceOf(address(defaultStakerRewardsDistributor));
+        uint256 balanceBefore = feeOnTransferToken.balanceOf(address(defaultStakerRewards));
         uint256 balanceBeforeBob = feeOnTransferToken.balanceOf(bob);
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 3;
         _distributeReward(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp);
-        assertEq(
-            feeOnTransferToken.balanceOf(address(defaultStakerRewardsDistributor)) - balanceBefore, ditributeAmount - 1
-        );
+        assertEq(feeOnTransferToken.balanceOf(address(defaultStakerRewards)) - balanceBefore, ditributeAmount - 1);
         assertEq(balanceBeforeBob - feeOnTransferToken.balanceOf(bob), ditributeAmount);
 
         uint256 amount__ = ditributeAmount - 1;
@@ -206,18 +198,18 @@ contract RewardsDistributorTest is Test {
         amount__ -= adminFeeAmount;
 
         if (amount__ != 0) {
-            assertEq(defaultStakerRewardsDistributor.rewardsLength(address(feeOnTransferToken)), 1);
+            assertEq(defaultStakerRewards.rewardsLength(address(feeOnTransferToken)), 1);
             (address network_, uint256 amount_, uint48 timestamp_, uint48 creation) =
-                defaultStakerRewardsDistributor.rewards(address(feeOnTransferToken), 0);
+                defaultStakerRewards.rewards(address(feeOnTransferToken), 0);
             assertEq(network_, network);
             assertEq(amount_, amount__);
             assertEq(timestamp_, timestamp);
             assertEq(creation, blockTimestamp);
         } else {
-            assertEq(defaultStakerRewardsDistributor.rewardsLength(address(feeOnTransferToken)), 0);
+            assertEq(defaultStakerRewards.rewardsLength(address(feeOnTransferToken)), 0);
         }
 
-        assertEq(defaultStakerRewardsDistributor.claimableAdminFee(address(feeOnTransferToken)), adminFeeAmount);
+        assertEq(defaultStakerRewards.claimableAdminFee(address(feeOnTransferToken)), adminFeeAmount);
     }
 
     function test_DistributeRewardRevertNotNetworkMiddleware(uint256 amount, uint256 ditributeAmount) public {
@@ -229,9 +221,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -248,12 +240,12 @@ contract RewardsDistributorTest is Test {
         IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
         feeOnTransferToken.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        feeOnTransferToken.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 3;
-        vm.expectRevert(IDefaultStakerRewardsDistributor.NotNetworkMiddleware.selector);
+        vm.expectRevert(IDefaultStakerRewards.NotNetworkMiddleware.selector);
         _distributeReward(alice, network, address(feeOnTransferToken), ditributeAmount, timestamp);
     }
 
@@ -266,9 +258,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -285,11 +277,11 @@ contract RewardsDistributorTest is Test {
         IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
         feeOnTransferToken.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        feeOnTransferToken.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         uint48 timestamp = 3;
-        vm.expectRevert(IDefaultStakerRewardsDistributor.NotWhitelistedNetwork.selector);
+        vm.expectRevert(IDefaultStakerRewards.NotWhitelistedNetwork.selector);
         _distributeReward(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp);
     }
 
@@ -302,9 +294,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -321,11 +313,11 @@ contract RewardsDistributorTest is Test {
         IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
         feeOnTransferToken.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        feeOnTransferToken.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
-        vm.expectRevert(IDefaultStakerRewardsDistributor.InvalidRewardTimestamp.selector);
+        vm.expectRevert(IDefaultStakerRewards.InvalidRewardTimestamp.selector);
         _distributeReward(bob, network, address(feeOnTransferToken), ditributeAmount, uint48(blockTimestamp));
     }
 
@@ -337,9 +329,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -356,12 +348,12 @@ contract RewardsDistributorTest is Test {
         IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
         feeOnTransferToken.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        feeOnTransferToken.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 3;
-        vm.expectRevert(IDefaultStakerRewardsDistributor.InsufficientReward.selector);
+        vm.expectRevert(IDefaultStakerRewards.InsufficientReward.selector);
         _distributeReward(bob, network, address(feeOnTransferToken), 1, timestamp);
     }
 
@@ -375,9 +367,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -394,7 +386,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -409,7 +401,7 @@ contract RewardsDistributorTest is Test {
         _claimRewards(alice, address(token), 2, activeSharesOfHints);
         assertEq(token.balanceOf(alice) - balanceBefore, ditributeAmount1 + ditributeAmount2);
 
-        assertEq(defaultStakerRewardsDistributor.lastUnclaimedReward(alice, address(token)), 2);
+        assertEq(defaultStakerRewards.lastUnclaimedReward(alice, address(token)), 2);
     }
 
     function test_ClaimRewardsBoth(uint256 amount, uint256 ditributeAmount1, uint256 ditributeAmount2) public {
@@ -422,9 +414,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -450,7 +442,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -471,7 +463,7 @@ contract RewardsDistributorTest is Test {
         _claimRewards(bob, address(token), 2, activeSharesOfHints);
         assertEq(token.balanceOf(bob) - balanceBefore, ditributeAmount1.mulDiv(bobN, aliceN + bobN));
 
-        assertEq(defaultStakerRewardsDistributor.lastUnclaimedReward(alice, address(token)), 2);
+        assertEq(defaultStakerRewards.lastUnclaimedReward(alice, address(token)), 2);
     }
 
     function test_ClaimRewardsManyWithoutHints(uint256 amount, uint256 ditributeAmount) public {
@@ -483,9 +475,9 @@ contract RewardsDistributorTest is Test {
         uint48 vetoDuration = 0;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -502,7 +494,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -528,9 +520,9 @@ contract RewardsDistributorTest is Test {
         uint48 vetoDuration = 0;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -547,7 +539,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -576,9 +568,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
 
@@ -593,8 +585,8 @@ contract RewardsDistributorTest is Test {
 
         uint32[] memory activeSharesOfHints = new uint32[](0);
         vm.startPrank(alice);
-        vm.expectRevert(IDefaultStakerRewardsDistributor.InvalidRecipient.selector);
-        defaultStakerRewardsDistributor.claimRewards(address(0), address(token), type(uint256).max, activeSharesOfHints);
+        vm.expectRevert(IDefaultStakerRewards.InvalidRecipient.selector);
+        defaultStakerRewards.claimRewards(address(0), address(token), type(uint256).max, activeSharesOfHints);
         vm.stopPrank();
     }
 
@@ -607,9 +599,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
 
@@ -623,7 +615,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
 
         uint32[] memory activeSharesOfHints = new uint32[](1);
-        vm.expectRevert(IDefaultStakerRewardsDistributor.NoRewardsToClaim.selector);
+        vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
     }
 
@@ -636,9 +628,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
 
@@ -652,7 +644,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
 
         uint32[] memory activeSharesOfHints = new uint32[](1);
-        vm.expectRevert(IDefaultStakerRewardsDistributor.NoRewardsToClaim.selector);
+        vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), 0, activeSharesOfHints);
     }
 
@@ -665,9 +657,9 @@ contract RewardsDistributorTest is Test {
         uint48 executeDuration = 1;
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -684,7 +676,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -692,7 +684,7 @@ contract RewardsDistributorTest is Test {
         _distributeReward(bob, network, address(token), ditributeAmount, timestamp);
 
         uint32[] memory activeSharesOfHints = new uint32[](2);
-        vm.expectRevert(IDefaultStakerRewardsDistributor.InvalidHintsLength.selector);
+        vm.expectRevert(IDefaultStakerRewards.InvalidHintsLength.selector);
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
     }
 
@@ -706,9 +698,9 @@ contract RewardsDistributorTest is Test {
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
         adminFee = bound(adminFee, 1, vault.ADMIN_FEE_BASE());
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         _grantAdminFeeSetRole(alice, alice);
         _setAdminFee(alice, adminFee);
@@ -728,7 +720,7 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
@@ -737,12 +729,12 @@ contract RewardsDistributorTest is Test {
 
         uint256 adminFeeAmount = ditributeAmount.mulDiv(adminFee, vault.ADMIN_FEE_BASE());
         vm.assume(adminFeeAmount != 0);
-        uint256 balanceBefore = token.balanceOf(address(defaultStakerRewardsDistributor));
+        uint256 balanceBefore = token.balanceOf(address(defaultStakerRewards));
         uint256 balanceBeforeAlice = token.balanceOf(alice);
         _claimAdminFee(alice, address(token));
-        assertEq(balanceBefore - token.balanceOf(address(defaultStakerRewardsDistributor)), adminFeeAmount);
+        assertEq(balanceBefore - token.balanceOf(address(defaultStakerRewards)), adminFeeAmount);
         assertEq(token.balanceOf(alice) - balanceBeforeAlice, adminFeeAmount);
-        assertEq(defaultStakerRewardsDistributor.claimableAdminFee(address(token)), 0);
+        assertEq(defaultStakerRewards.claimableAdminFee(address(token)), 0);
     }
 
     function test_ClaimAdminFeeRevertInsufficientAdminFee(
@@ -759,9 +751,9 @@ contract RewardsDistributorTest is Test {
         vault = _getVault(epochDuration, vetoDuration, executeDuration);
         adminFee = bound(adminFee, 1, vault.ADMIN_FEE_BASE());
 
-        defaultStakerRewardsDistributor = _getStakerDefaultRewardsDistributor();
-        _grantRewardsDistributorSetRole(alice, alice);
-        _setRewardsDistributor(alice, address(defaultStakerRewardsDistributor));
+        defaultStakerRewards = _getStakerDefaultRewards();
+        _grantRewardsSetRole(alice, alice);
+        _setRewards(alice, address(defaultStakerRewards));
 
         _grantAdminFeeSetRole(alice, alice);
         _setAdminFee(alice, adminFee);
@@ -781,17 +773,17 @@ contract RewardsDistributorTest is Test {
         IERC20 token = IERC20(new Token("Token"));
         token.transfer(bob, 100_000 * 1e18);
         vm.startPrank(bob);
-        token.approve(address(defaultStakerRewardsDistributor), type(uint256).max);
+        token.approve(address(defaultStakerRewards), type(uint256).max);
         vm.stopPrank();
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 3;
         _distributeReward(bob, network, address(token), ditributeAmount, timestamp);
 
-        vm.assume(defaultStakerRewardsDistributor.claimableAdminFee(address(token)) != 0);
+        vm.assume(defaultStakerRewards.claimableAdminFee(address(token)) != 0);
         _claimAdminFee(alice, address(token));
 
-        vm.expectRevert(IDefaultStakerRewardsDistributor.InsufficientAdminFee.selector);
+        vm.expectRevert(IDefaultStakerRewards.InsufficientAdminFee.selector);
         _claimAdminFee(alice, address(token));
     }
 
@@ -815,8 +807,8 @@ contract RewardsDistributorTest is Test {
         );
     }
 
-    function _getStakerDefaultRewardsDistributor() internal returns (IDefaultStakerRewardsDistributor) {
-        return IDefaultStakerRewardsDistributor(defaultStakerRewardsDistributorFactory.create(address(vault)));
+    function _getStakerDefaultRewards() internal returns (IDefaultStakerRewards) {
+        return IDefaultStakerRewards(defaultStakerRewardsFactory.create(address(vault)));
     }
 
     function _registerNetwork(address user, address middleware) internal {
@@ -826,7 +818,7 @@ contract RewardsDistributorTest is Test {
         vm.stopPrank();
     }
 
-    function _grantRewardsDistributorSetRole(address user, address account) internal {
+    function _grantRewardsSetRole(address user, address account) internal {
         vm.startPrank(user);
         Vault(address(vault)).grantRole(vault.REWARDS_DISTRIBUTOR_SET_ROLE(), account);
         vm.stopPrank();
@@ -848,7 +840,7 @@ contract RewardsDistributorTest is Test {
 
     function _setNetworkWhitelistStatus(address user, address network, bool status) internal {
         vm.startPrank(user);
-        defaultStakerRewardsDistributor.setNetworkWhitelistStatus(network, status);
+        defaultStakerRewards.setNetworkWhitelistStatus(network, status);
         vm.stopPrank();
     }
 
@@ -860,7 +852,7 @@ contract RewardsDistributorTest is Test {
         uint48 timestamp
     ) internal {
         vm.startPrank(user);
-        defaultStakerRewardsDistributor.distributeReward(network, token, amount, timestamp);
+        defaultStakerRewards.distributeReward(network, token, amount, timestamp);
         vm.stopPrank();
     }
 
@@ -871,25 +863,25 @@ contract RewardsDistributorTest is Test {
         uint32[] memory activeSharesOfHints
     ) internal {
         vm.startPrank(user);
-        defaultStakerRewardsDistributor.claimRewards(user, token, maxRewards, activeSharesOfHints);
+        defaultStakerRewards.claimRewards(user, token, maxRewards, activeSharesOfHints);
         vm.stopPrank();
     }
 
-    function _setRewardsDistributor(address user, address rewardsDistributor) internal {
+    function _setRewards(address user, address rewards) internal {
         vm.startPrank(user);
-        vault.setRewardsDistributor(rewardsDistributor);
+        vault.setRewardsDistributor(rewards);
         vm.stopPrank();
     }
 
     function _setAdminFee(address user, uint256 adminFee) internal {
         vm.startPrank(user);
-        defaultStakerRewardsDistributor.setAdminFee(adminFee);
+        defaultStakerRewards.setAdminFee(adminFee);
         vm.stopPrank();
     }
 
     function _claimAdminFee(address user, address token) internal {
         vm.startPrank(user);
-        defaultStakerRewardsDistributor.claimAdminFee(user, token);
+        defaultStakerRewards.claimAdminFee(user, token);
         vm.stopPrank();
     }
 }

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IDefaultOperatorRewardsDistributor} from
-    "src/interfaces/defaultOperatorRewardsDistributor/IDefaultOperatorRewardsDistributor.sol";
+import {IDefaultOperatorRewards} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 import {INetworkMiddlewareService} from "@symbiotic/interfaces/INetworkMiddlewareService.sol";
 import {IRegistry} from "@symbiotic/interfaces/base/IRegistry.sol";
 
@@ -10,36 +9,36 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract DefaultOperatorRewardsDistributor is Initializable, IDefaultOperatorRewardsDistributor {
+contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     using SafeERC20 for IERC20;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     address public immutable VAULT_FACTORY;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     address public immutable NETWORK_REGISTRY;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     address public vault;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     mapping(address network => mapping(address token => bytes32 value)) public root;
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     mapping(address network => mapping(address account => mapping(address token => uint256 amount))) public claimed;
 
@@ -59,7 +58,7 @@ contract DefaultOperatorRewardsDistributor is Initializable, IDefaultOperatorRew
     }
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     function distributeReward(address network, address token, uint256 amount, bytes32 root_) external {
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
@@ -80,7 +79,7 @@ contract DefaultOperatorRewardsDistributor is Initializable, IDefaultOperatorRew
     }
 
     /**
-     * @inheritdoc IDefaultOperatorRewardsDistributor
+     * @inheritdoc IDefaultOperatorRewards
      */
     function claimReward(
         address network,
