@@ -1,6 +1,6 @@
 **[Symbiotic Protocol](https://symbiotic.fi) is an extremely flexible and permissionless shared security system.**
 
-This repository contains a Symbiotic Staker Rewards Distributor interface, its default implementation, and a default Operator Rewards Distributor.
+This repository contains a Symbiotic Staker Rewards interface, its default implementation, and a default Operator Rewards.
 
 ## Technical Documentation
 
