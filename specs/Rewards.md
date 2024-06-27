@@ -10,10 +10,8 @@ Reward processing is not integrated into the vault's functionality. Instead, ext
 
 However, we created the first version of the `IStakerRewards` interface to facilitate more generic reward distribution across networks.
 
-- `IStakerRewards.version()` - provides a version of the interface that a particular rewards distributor uses
+- `IStakerRewards.version()` - provides a version of the interface that a particular rewards contract uses
 - `IStakerRewards.distributeReward(network, token, amount, timestamp)` - call to distribute `amount` of `token` on behalf of `network` using `timestamp` as a time point for calculations
-
-The vault's rewards distributor's address can be obtained via the `stakerRewards()` method, which can be set by the `STAKER_REWARDS_SET_ROLE` holder.
 
 ### Deploy
 

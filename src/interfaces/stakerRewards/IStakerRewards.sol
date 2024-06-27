@@ -12,8 +12,8 @@ interface IStakerRewards {
     event DistributeReward(address indexed network, address indexed token, uint256 amount, uint48 timestamp);
 
     /**
-     * @notice Get a version of the rewards distributor (different versions mean different interfaces).
-     * @return version of the rewards distributor
+     * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
+     * @return version of the staker rewards contract
      * @dev Must return 1 for this one.
      */
     function version() external view returns (uint64);
