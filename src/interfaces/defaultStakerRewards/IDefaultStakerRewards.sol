@@ -161,20 +161,6 @@ interface IDefaultStakerRewards is IStakerRewards {
     function claimableAdminFee(address token) external view returns (uint256);
 
     /**
-     * @notice Claim rewards for a particular token.
-     * @param recipient account that will receive the rewards
-     * @param token address of the token
-     * @param maxRewards maximum amount of rewards to process
-     * @param activeSharesOfHints hint indexes to optimize `activeSharesOf()` processing
-     */
-    function claimRewards(
-        address recipient,
-        address token,
-        uint256 maxRewards,
-        uint32[] calldata activeSharesOfHints
-    ) external;
-
-    /**
      * @notice Claim an admin fee.
      * @param recipient account that will receive the fee
      * @param token address of the token

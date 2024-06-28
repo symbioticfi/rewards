@@ -106,6 +106,35 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         return rewards[token].length;
     }
 
+    /**
+     * @inheritdoc IStakerRewards
+     */
+    function claimable(
+        address token,
+        address account,
+        bytes memory data
+    ) external view override returns (uint256 amount) {
+        uint256 maxRewards = abi.decode(data, (uint256));
+
+        RewardDistribution[] storage rewardsByToken = rewards[token];
+        uint256 rewardIndex = lastUnclaimedReward[account][token];
+
+        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByToken.length - rewardIndex);
+
+        for (uint256 j; j < rewardsToClaim;) {
+            RewardDistribution storage reward = rewardsByToken[rewardIndex];
+
+            amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp).mulDiv(
+                reward.amount, _activeSharesCache[reward.timestamp]
+            );
+
+            unchecked {
+                ++j;
+                ++rewardIndex;
+            }
+        }
+    }
+
     function initialize(address vault) external initializer {
         if (!IRegistry(VAULT_FACTORY).isEntity(vault)) {
             revert NotVault();
@@ -125,7 +154,15 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IStakerRewards
      */
-    function distributeReward(address network, address token, uint256 amount, uint48 timestamp) external nonReentrant {
+    function distributeReward(
+        address network,
+        address token,
+        uint256 amount,
+        bytes memory data
+    ) external override nonReentrant {
+        // timestamp - time point stakes must be taken into account at
+        uint48 timestamp = abi.decode(data, (uint48));
+
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
             revert NotNetworkMiddleware();
         }
@@ -173,18 +210,17 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             );
         }
 
-        emit DistributeReward(network, token, amount, timestamp);
+        emit DistributeReward(network, token, amount, data);
     }
 
     /**
-     * @inheritdoc IDefaultStakerRewards
+     * @inheritdoc IStakerRewards
      */
-    function claimRewards(
-        address recipient,
-        address token,
-        uint256 maxRewards,
-        uint32[] calldata activeSharesOfHints
-    ) external {
+    function claimRewards(address recipient, address token, bytes memory data) external override {
+        // maxRewards - maximum amount of rewards to process
+        // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
+        (uint256 maxRewards, uint32[] memory activeSharesOfHints) = abi.decode(data, (uint256, uint32[]));
+
         if (recipient == address(0)) {
             revert InvalidRecipient();
         }

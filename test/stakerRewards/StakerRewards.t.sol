@@ -34,7 +34,15 @@ contract StakerRewardsTest is Test {
         vm.stopPrank();
 
         vm.startPrank(alice);
-        stakerRewards.distributeReward(bob, address(0), 0, 0);
+        assertEq(stakerRewards.claimable(address(0), bob, ""), 0);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        stakerRewards.distributeReward(bob, address(0), 0, "");
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        stakerRewards.claimRewards(bob, address(0), "");
         vm.stopPrank();
     }
 }

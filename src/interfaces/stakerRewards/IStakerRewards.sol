@@ -7,9 +7,9 @@ interface IStakerRewards {
      * @param network network on behalf of which the reward is distributed
      * @param token address of the token
      * @param amount amount of tokens
-     * @param timestamp time point stakes must be taken into account at
+     * @param data some used data
      */
-    event DistributeReward(address indexed network, address indexed token, uint256 amount, uint48 timestamp);
+    event DistributeReward(address indexed network, address indexed token, uint256 amount, bytes data);
 
     /**
      * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
@@ -19,11 +19,28 @@ interface IStakerRewards {
     function version() external view returns (uint64);
 
     /**
+     * @notice Get an amount of rewards claimable by a particular account of a given token.
+     * @param token address of the token
+     * @param account address of the claimer
+     * @param data some data to use
+     * @return amount of claimable tokens
+     */
+    function claimable(address token, address account, bytes memory data) external view returns (uint256);
+
+    /**
      * @notice Distribute rewards on behalf of a particular network using a given token.
      * @param network network on behalf of which the reward to distribute
      * @param token address of the token
      * @param amount amount of tokens
-     * @param timestamp time point stakes must be taken into account at
+     * @param data some data to use
      */
-    function distributeReward(address network, address token, uint256 amount, uint48 timestamp) external;
+    function distributeReward(address network, address token, uint256 amount, bytes memory data) external;
+
+    /**
+     * @notice Claim rewards using a given token.
+     * @param recipient address of the tokens' recipient
+     * @param token address of the token
+     * @param data some data to use
+     */
+    function claimRewards(address recipient, address token, bytes memory data) external;
 }
