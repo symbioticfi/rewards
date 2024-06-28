@@ -244,7 +244,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             RewardDistribution storage reward = rewardsByToken[rewardIndex];
 
             uint256 activeSharesOf_ = hasHints
-                ? IVault(VAULT).activeSharesOfAtHint(msg.sender, reward.timestamp, activeSharesOfHints[j])
+                ? IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[j])
                 : IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp);
 
             uint256 claimedAmount = activeSharesOf_.mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
