@@ -25,11 +25,6 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    address public VAULT;
-
-    /**
-     * @inheritdoc IDefaultOperatorRewards
-     */
     mapping(address network => mapping(address token => bytes32 value)) public root;
 
     /**
@@ -42,14 +37,6 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
 
         VAULT_FACTORY = vaultFactory;
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
-    }
-
-    function initialize(address vault_) external initializer {
-        if (!IRegistry(VAULT_FACTORY).isEntity(vault_)) {
-            revert NotVault();
-        }
-
-        VAULT = vault_;
     }
 
     /**

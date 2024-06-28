@@ -20,9 +20,8 @@ contract DefaultOperatorRewardsFactory is Registry, IDefaultOperatorRewardsFacto
     /**
      * @inheritdoc IDefaultOperatorRewardsFactory
      */
-    function create(address vault) external returns (address) {
+    function create() external returns (address) {
         address operatorRewards = OPERATOR_REWARDS_IMPLEMENTATION.clone();
-        DefaultOperatorRewards(operatorRewards).initialize(vault);
 
         _addEntity(operatorRewards);
 

@@ -45,12 +45,6 @@ interface IDefaultOperatorRewards {
     function NETWORK_MIDDLEWARE_SERVICE() external view returns (address);
 
     /**
-     * @notice Get the vault's address.
-     * @return address of the vault
-     */
-    function VAULT() external view returns (address);
-
-    /**
      * @notice Get a Merkle root of a reward distribution for a particular network and token.
      * @param network address of the network
      * @param token address of the token
