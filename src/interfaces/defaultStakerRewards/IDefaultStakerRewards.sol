@@ -89,16 +89,16 @@ interface IDefaultStakerRewards is IStakerRewards {
     function ADMIN_FEE_SET_ROLE() external view returns (bytes32);
 
     /**
-     * @notice Get the network registry's address.
-     * @return address of the network registry
-     */
-    function NETWORK_REGISTRY() external view returns (address);
-
-    /**
      * @notice Get the vault factory's address.
      * @return address of the vault factory
      */
     function VAULT_FACTORY() external view returns (address);
+
+    /**
+     * @notice Get the network registry's address.
+     * @return address of the network registry
+     */
+    function NETWORK_REGISTRY() external view returns (address);
 
     /**
      * @notice Get the network middleware service's address.

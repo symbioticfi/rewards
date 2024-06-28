@@ -47,12 +47,12 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    address public immutable NETWORK_REGISTRY;
+    address public immutable VAULT_FACTORY;
 
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    address public immutable VAULT_FACTORY;
+    address public immutable NETWORK_REGISTRY;
 
     /**
      * @inheritdoc IDefaultStakerRewards
@@ -91,11 +91,11 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
 
     mapping(uint48 timestamp => uint256 amount) private _activeSharesCache;
 
-    constructor(address networkRegistry, address vaultFactory, address networkMiddlewareService) {
+    constructor(address vaultFactory, address networkRegistry, address networkMiddlewareService) {
         _disableInitializers();
 
-        NETWORK_REGISTRY = networkRegistry;
         VAULT_FACTORY = vaultFactory;
+        NETWORK_REGISTRY = networkRegistry;
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
     }
 

@@ -20,17 +20,12 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    address public immutable NETWORK_REGISTRY;
-
-    /**
-     * @inheritdoc IDefaultOperatorRewards
-     */
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
 
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    address public vault;
+    address public VAULT;
 
     /**
      * @inheritdoc IDefaultOperatorRewards
@@ -40,7 +35,7 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    mapping(address network => mapping(address account => mapping(address token => uint256 amount))) public claimed;
+    mapping(address network => mapping(address token => mapping(address account => uint256 amount))) public claimed;
 
     constructor(address vaultFactory, address networkMiddlewareService) {
         _disableInitializers();
@@ -54,7 +49,7 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
             revert NotVault();
         }
 
-        vault = vault_;
+        VAULT = vault_;
     }
 
     /**
@@ -82,8 +77,8 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
      * @inheritdoc IDefaultOperatorRewards
      */
     function claimReward(
+        address recipient,
         address network,
-        address account,
         address token,
         uint256 totalClaimable,
         bytes32[] calldata proof
@@ -93,21 +88,21 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
             revert RootNotSet();
         }
 
-        if (!MerkleProof.verifyCalldata(proof, root_, keccak256(abi.encode(account, token, totalClaimable)))) {
+        if (!MerkleProof.verifyCalldata(proof, root_, keccak256(abi.encode(msg.sender, totalClaimable)))) {
             revert InvalidProof();
         }
 
-        uint256 claimed_ = claimed[network][account][token];
+        uint256 claimed_ = claimed[network][token][msg.sender];
         if (totalClaimable <= claimed_) {
             revert InsufficientTotalClaimable();
         }
 
-        claimed[network][account][token] = totalClaimable;
+        claimed[network][token][msg.sender] = totalClaimable;
 
         amount = totalClaimable - claimed_;
 
-        IERC20(token).safeTransfer(account, amount);
+        IERC20(token).safeTransfer(recipient, amount);
 
-        emit ClaimReward(network, account, token, amount);
+        emit ClaimReward(recipient, network, token, msg.sender, amount);
     }
 }
