@@ -38,7 +38,7 @@ contract StakerRewardsTest is Test {
         vm.stopPrank();
 
         vm.startPrank(alice);
-        stakerRewards.distributeReward(bob, address(0), 0, "");
+        stakerRewards.distributeRewards(bob, address(0), 0, "");
         vm.stopPrank();
 
         vm.startPrank(alice);

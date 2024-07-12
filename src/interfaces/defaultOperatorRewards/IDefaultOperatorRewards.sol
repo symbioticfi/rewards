@@ -18,7 +18,7 @@ interface IDefaultOperatorRewards {
      * @param root Merkle root of the rewards distribution
      * @dev The Merkle tree's leaves must represent an account, a token, and a claimable amount (the total amount of the reward tokens for the whole time).
      */
-    event DistributeReward(address indexed network, address indexed token, uint256 amount, bytes32 root);
+    event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes32 root);
 
     /**
      * @notice Emitted when a reward is claimed by a particular account for a particular network using a given token.
@@ -28,15 +28,9 @@ interface IDefaultOperatorRewards {
      * @param claimer address of the reward's claimer
      * @param amount amount of tokens claimed
      */
-    event ClaimReward(
+    event ClaimRewards(
         address recipient, address indexed network, address indexed token, address indexed claimer, uint256 amount
     );
-
-    /**
-     * @notice Get the vault factory's address.
-     * @return address of the vault factory
-     */
-    function VAULT_FACTORY() external view returns (address);
 
     /**
      * @notice Get the network middleware service's address.
@@ -66,10 +60,10 @@ interface IDefaultOperatorRewards {
      * @param amount amount of tokens to send to the contract
      * @param root Merkle root of the reward distribution
      */
-    function distributeReward(address network, address token, uint256 amount, bytes32 root) external;
+    function distributeRewards(address network, address token, uint256 amount, bytes32 root) external;
 
     /**
-     * @notice Claim a reward for a particular network and token by providing a Merkle proof.
+     * @notice Claim rewards for a particular network and token by providing a Merkle proof.
      * @param recipient address of the reward's recipient
      * @param network address of the network
      * @param token address of the token
@@ -77,7 +71,7 @@ interface IDefaultOperatorRewards {
      * @param proof Merkle proof of the reward distribution
      * @return amount amount of tokens claimed
      */
-    function claimReward(
+    function claimRewards(
         address recipient,
         address network,
         address token,

@@ -39,7 +39,7 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param recipient account that received the reward
      * @param claimedAmount amount of tokens claimed
      */
-    event ClaimReward(
+    event ClaimRewards(
         address indexed token,
         uint256 indexed rewardIndex,
         address indexed claimer,

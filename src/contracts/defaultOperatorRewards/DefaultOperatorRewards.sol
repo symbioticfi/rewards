@@ -3,7 +3,6 @@ pragma solidity 0.8.25;
 
 import {IDefaultOperatorRewards} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 import {INetworkMiddlewareService} from "@symbiotic/interfaces/service/INetworkMiddlewareService.sol";
-import {IRegistry} from "@symbiotic/interfaces/common/IRegistry.sol";
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -11,11 +10,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     using SafeERC20 for IERC20;
-
-    /**
-     * @inheritdoc IDefaultOperatorRewards
-     */
-    address public immutable VAULT_FACTORY;
 
     /**
      * @inheritdoc IDefaultOperatorRewards
@@ -35,14 +29,13 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     constructor(address vaultFactory, address networkMiddlewareService) {
         _disableInitializers();
 
-        VAULT_FACTORY = vaultFactory;
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
     }
 
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    function distributeReward(address network, address token, uint256 amount, bytes32 root_) external {
+    function distributeRewards(address network, address token, uint256 amount, bytes32 root_) external {
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
             revert NotNetworkMiddleware();
         }
@@ -57,13 +50,13 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
 
         root[network][token] = root_;
 
-        emit DistributeReward(network, token, amount, root_);
+        emit DistributeRewards(network, token, amount, root_);
     }
 
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    function claimReward(
+    function claimRewards(
         address recipient,
         address network,
         address token,
@@ -90,6 +83,6 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
 
         IERC20(token).safeTransfer(recipient, amount);
 
-        emit ClaimReward(recipient, network, token, msg.sender, amount);
+        emit ClaimRewards(recipient, network, token, msg.sender, amount);
     }
 }

@@ -9,7 +9,7 @@ interface IStakerRewards {
      * @param amount amount of tokens
      * @param data some used data
      */
-    event DistributeReward(address indexed network, address indexed token, uint256 amount, bytes data);
+    event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes data);
 
     /**
      * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
@@ -34,7 +34,7 @@ interface IStakerRewards {
      * @param amount amount of tokens
      * @param data some data to use
      */
-    function distributeReward(address network, address token, uint256 amount, bytes memory data) external;
+    function distributeRewards(address network, address token, uint256 amount, bytes memory data) external;
 
     /**
      * @notice Claim rewards using a given token.

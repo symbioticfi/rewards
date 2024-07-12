@@ -114,6 +114,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         address account,
         bytes memory data
     ) external view override returns (uint256 amount) {
+        // maxRewards - maximum amount of rewards to process
         uint256 maxRewards = abi.decode(data, (uint256));
 
         RewardDistribution[] storage rewardsByToken = rewards[token];
@@ -154,7 +155,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IStakerRewards
      */
-    function distributeReward(
+    function distributeRewards(
         address network,
         address token,
         uint256 amount,
@@ -210,7 +211,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             );
         }
 
-        emit DistributeReward(network, token, amount, data);
+        emit DistributeRewards(network, token, amount, data);
     }
 
     /**
@@ -250,7 +251,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             uint256 claimedAmount = activeSharesOf_.mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
             amount += claimedAmount;
 
-            emit ClaimReward(token, rewardIndex, msg.sender, recipient, claimedAmount);
+            emit ClaimRewards(token, rewardIndex, msg.sender, recipient, claimedAmount);
 
             unchecked {
                 ++j;
