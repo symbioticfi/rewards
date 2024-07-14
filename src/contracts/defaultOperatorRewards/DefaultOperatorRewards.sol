@@ -26,7 +26,7 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
      */
     mapping(address network => mapping(address token => mapping(address account => uint256 amount))) public claimed;
 
-    constructor(address vaultFactory, address networkMiddlewareService) {
+    constructor(address networkMiddlewareService) {
         _disableInitializers();
 
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;

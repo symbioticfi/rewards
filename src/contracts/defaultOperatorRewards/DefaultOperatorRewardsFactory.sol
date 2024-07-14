@@ -21,7 +21,8 @@ contract DefaultOperatorRewardsFactory is Registry, IDefaultOperatorRewardsFacto
      * @inheritdoc IDefaultOperatorRewardsFactory
      */
     function create() external returns (address) {
-        address operatorRewards = OPERATOR_REWARDS_IMPLEMENTATION.clone();
+        address operatorRewards =
+            OPERATOR_REWARDS_IMPLEMENTATION.cloneDeterministic(keccak256(abi.encode(totalEntities(), msg.sender)));
 
         _addEntity(operatorRewards);
 
