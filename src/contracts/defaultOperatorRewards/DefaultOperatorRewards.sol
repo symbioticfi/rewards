@@ -44,7 +44,7 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
             revert AlreadySet();
         }
 
-        if (amount != 0) {
+        if (amount > 0) {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         }
 

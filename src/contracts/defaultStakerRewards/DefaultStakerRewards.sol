@@ -122,15 +122,15 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
 
         uint256 rewardsToClaim = Math.min(maxRewards, rewardsByToken.length - rewardIndex);
 
-        for (uint256 j; j < rewardsToClaim;) {
+        for (uint256 i; i < rewardsToClaim;) {
             RewardDistribution storage reward = rewardsByToken[rewardIndex];
 
-            amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp).mulDiv(
+            amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp, new bytes(0)).mulDiv(
                 reward.amount, _activeSharesCache[reward.timestamp]
             );
 
             unchecked {
-                ++j;
+                ++i;
                 ++rewardIndex;
             }
         }
@@ -177,10 +177,10 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         }
 
         if (_activeSharesCache[timestamp] == 0) {
-            uint256 activeShares_ = IVault(VAULT).activeSharesAt(timestamp);
-            uint256 activeSupply_ = IVault(VAULT).activeSupplyAt(timestamp);
+            uint256 activeShares_ = IVault(VAULT).activeSharesAt(timestamp, new bytes(0));
+            uint256 activeStake_ = IVault(VAULT).activeStakeAt(timestamp, new bytes(0));
 
-            if (activeShares_ == 0 || activeSupply_ == 0) {
+            if (activeShares_ == 0 || activeStake_ == 0) {
                 revert InvalidRewardTimestamp();
             }
 
@@ -200,7 +200,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
 
         claimableAdminFee[token] += adminFeeAmount;
 
-        if (distributeAmount != 0) {
+        if (distributeAmount > 0) {
             rewards[token].push(
                 RewardDistribution({
                     network: network,
@@ -220,7 +220,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     function claimRewards(address recipient, address token, bytes memory data) external override {
         // maxRewards - maximum amount of rewards to process
         // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
-        (uint256 maxRewards, uint32[] memory activeSharesOfHints) = abi.decode(data, (uint256, uint32[]));
+        (uint256 maxRewards, bytes[] memory activeSharesOfHints) = abi.decode(data, (uint256, bytes[]));
 
         if (recipient == address(0)) {
             revert InvalidRecipient();
@@ -235,33 +235,29 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             revert NoRewardsToClaim();
         }
 
-        bool hasHints = activeSharesOfHints.length == rewardsToClaim;
-        if (!hasHints && activeSharesOfHints.length != 0) {
+        if (activeSharesOfHints.length != rewardsToClaim) {
             revert InvalidHintsLength();
         }
 
         uint256 amount;
-        for (uint256 j; j < rewardsToClaim;) {
+        for (uint256 i; i < rewardsToClaim;) {
             RewardDistribution storage reward = rewardsByToken[rewardIndex];
 
-            uint256 activeSharesOf_ = hasHints
-                ? IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[j])
-                : IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp);
-
-            uint256 claimedAmount = activeSharesOf_.mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
+            uint256 claimedAmount = IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[i])
+                .mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
             amount += claimedAmount;
 
             emit ClaimRewards(token, rewardIndex, msg.sender, recipient, claimedAmount);
 
             unchecked {
-                ++j;
+                ++i;
                 ++rewardIndex;
             }
         }
 
         lastUnclaimedReward[msg.sender][token] = rewardIndex;
 
-        if (amount != 0) {
+        if (amount > 0) {
             IERC20(token).safeTransfer(recipient, amount);
         }
     }

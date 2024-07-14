@@ -33,6 +33,7 @@ import {DefaultStakerRewards} from "src/contracts/defaultStakerRewards/DefaultSt
 import {FeeOnTransferToken} from "@symbiotic/mocks/FeeOnTransferToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {VaultHints} from "@symbiotic/contracts/hints/VaultHints.sol";
 
 contract RewardsTest is Test {
     using Math for uint256;
@@ -266,7 +267,7 @@ contract RewardsTest is Test {
         uint256 adminFeeAmount = amount__.mulDiv(adminFee, defaultStakerRewards.ADMIN_FEE_BASE());
         amount__ -= adminFeeAmount;
 
-        if (amount__ != 0) {
+        if (amount__ > 0) {
             assertEq(defaultStakerRewards.rewardsLength(address(feeOnTransferToken)), 1);
             (address network_, uint256 amount_, uint48 timestamp_, uint48 creation) =
                 defaultStakerRewards.rewards(address(feeOnTransferToken), 0);
@@ -447,7 +448,7 @@ contract RewardsTest is Test {
         _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp);
 
         uint256 balanceBefore = token.balanceOf(alice);
-        uint32[] memory activeSharesOfHints = new uint32[](2);
+        bytes[] memory activeSharesOfHints = new bytes[](2);
         _claimRewards(alice, address(token), 2, activeSharesOfHints);
         assertEq(token.balanceOf(alice) - balanceBefore, ditributeAmount1 + ditributeAmount2);
 
@@ -516,7 +517,7 @@ contract RewardsTest is Test {
         );
 
         uint256 balanceBefore = token.balanceOf(alice);
-        uint32[] memory activeSharesOfHints = new uint32[](2);
+        bytes[] memory activeSharesOfHints = new bytes[](2);
         _claimRewards(alice, address(token), 2, activeSharesOfHints);
         assertEq(
             token.balanceOf(alice) - balanceBefore, ditributeAmount1.mulDiv(aliceN, aliceN + bobN) + ditributeAmount2
@@ -561,7 +562,7 @@ contract RewardsTest is Test {
             _distributeRewards(bob, network, address(token), ditributeAmount, 1_720_700_948 + i);
         }
 
-        uint32[] memory activeSharesOfHints = new uint32[](0);
+        bytes[] memory activeSharesOfHints = new bytes[](numRewards);
 
         uint256 gasLeft = gasleft();
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
@@ -578,6 +579,8 @@ contract RewardsTest is Test {
         vm.warp(blockTimestamp);
 
         defaultStakerRewards = _getStakerDefaultRewards();
+
+        VaultHints vaultHints = new VaultHints();
 
         address network = bob;
         _registerNetwork(network, bob);
@@ -598,13 +601,12 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         uint256 numRewards = 50;
         for (uint48 i = 1; i < numRewards + 1; ++i) {
-            _distributeRewards(bob, network, address(token), ditributeAmount, 1_720_700_948 + i);
+            _distributeRewards(bob, network, address(token), ditributeAmount, uint48(1_720_700_948 + i));
         }
 
-        uint32[] memory activeSharesOfHints = new uint32[](numRewards);
-        for (uint32 i; i < numRewards; ++i) {
-            (,,, uint256 pos) = vault.activeSharesOfCheckpointAt(alice, 1_720_700_948 + i + 1);
-            activeSharesOfHints[i] = uint32(pos);
+        bytes[] memory activeSharesOfHints = new bytes[](numRewards);
+        for (uint256 i; i < numRewards; ++i) {
+            activeSharesOfHints[i] = vaultHints.activeSharesOfHint(address(vault), alice, uint48(1_720_700_948 + i + 1));
         }
 
         uint256 gasLeft = gasleft();
@@ -632,7 +634,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        uint32[] memory activeSharesOfHints = new uint32[](0);
+        bytes[] memory activeSharesOfHints = new bytes[](0);
         vm.startPrank(alice);
         vm.expectRevert(IDefaultStakerRewards.InvalidRecipient.selector);
         defaultStakerRewards.claimRewards(
@@ -660,7 +662,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        uint32[] memory activeSharesOfHints = new uint32[](1);
+        bytes[] memory activeSharesOfHints = new bytes[](1);
         vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
     }
@@ -684,7 +686,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        uint32[] memory activeSharesOfHints = new uint32[](1);
+        bytes[] memory activeSharesOfHints = new bytes[](1);
         vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), 0, activeSharesOfHints);
     }
@@ -719,7 +721,7 @@ contract RewardsTest is Test {
         uint48 timestamp = 1_720_700_948 + 3;
         _distributeRewards(bob, network, address(token), ditributeAmount, timestamp);
 
-        uint32[] memory activeSharesOfHints = new uint32[](2);
+        bytes[] memory activeSharesOfHints = new bytes[](2);
         vm.expectRevert(IDefaultStakerRewards.InvalidHintsLength.selector);
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
     }
@@ -760,7 +762,7 @@ contract RewardsTest is Test {
         _distributeRewards(bob, network, address(token), ditributeAmount, timestamp);
 
         uint256 adminFeeAmount = ditributeAmount.mulDiv(adminFee, defaultStakerRewards.ADMIN_FEE_BASE());
-        vm.assume(adminFeeAmount != 0);
+        vm.assume(adminFeeAmount > 0);
         uint256 balanceBefore = token.balanceOf(address(defaultStakerRewards));
         uint256 balanceBeforeAlice = token.balanceOf(alice);
         _claimAdminFee(alice, address(token));
@@ -808,7 +810,7 @@ contract RewardsTest is Test {
         uint48 timestamp = 1_720_700_948 + 3;
         _distributeRewards(bob, network, address(token), ditributeAmount, timestamp);
 
-        vm.assume(defaultStakerRewards.claimableAdminFee(address(token)) != 0);
+        vm.assume(defaultStakerRewards.claimableAdminFee(address(token)) > 0);
         _claimAdminFee(alice, address(token));
 
         vm.expectRevert(IDefaultStakerRewards.InsufficientAdminFee.selector);
@@ -848,7 +850,7 @@ contract RewardsTest is Test {
 
     function _claim(address user, uint256 epoch) internal returns (uint256 amount) {
         vm.startPrank(user);
-        amount = vault.claim(user, epoch);
+        amount = vault.claim(epoch);
         vm.stopPrank();
     }
 
@@ -880,7 +882,7 @@ contract RewardsTest is Test {
         address user,
         address token,
         uint256 maxRewards,
-        uint32[] memory activeSharesOfHints
+        bytes[] memory activeSharesOfHints
     ) internal {
         vm.startPrank(user);
         defaultStakerRewards.claimRewards(user, token, abi.encode(maxRewards, activeSharesOfHints));
