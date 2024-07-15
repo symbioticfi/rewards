@@ -20,10 +20,10 @@ contract DefaultStakerRewardsFactory is Registry, IDefaultStakerRewardsFactory {
     /**
      * @inheritdoc IDefaultStakerRewardsFactory
      */
-    function create(address vault) external returns (address) {
+    function create(DefaultStakerRewards.InitParams calldata params) external returns (address) {
         address stakerRewards =
-            STAKER_REWARDS_IMPLEMENTATION.cloneDeterministic(keccak256(abi.encode(totalEntities(), vault)));
-        DefaultStakerRewards(stakerRewards).initialize(vault);
+            STAKER_REWARDS_IMPLEMENTATION.cloneDeterministic(keccak256(abi.encode(totalEntities(), params)));
+        DefaultStakerRewards(stakerRewards).initialize(params);
 
         _addEntity(stakerRewards);
 

@@ -9,7 +9,6 @@ import {IVault} from "@symbiotic/interfaces/vault/IVault.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -136,20 +135,38 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         }
     }
 
-    function initialize(address vault) external initializer {
-        if (!IRegistry(VAULT_FACTORY).isEntity(vault)) {
+    function initialize(InitParams calldata params) external initializer {
+        if (!IRegistry(VAULT_FACTORY).isEntity(params.vault)) {
             revert NotVault();
         }
 
         __ReentrancyGuard_init();
 
-        VAULT = vault;
+        VAULT = params.vault;
 
-        address vaultOwner = Ownable(vault).owner();
-        _grantRole(DEFAULT_ADMIN_ROLE, vaultOwner);
-        _grantRole(ADMIN_FEE_CLAIM_ROLE, vaultOwner);
-        _grantRole(NETWORK_WHITELIST_ROLE, vaultOwner);
-        _grantRole(ADMIN_FEE_SET_ROLE, vaultOwner);
+        _setAdminFee(params.adminFee);
+
+        if (params.defaultAdminRoleHolder == address(0)) {
+            if (params.networkWhitelistRoleHolder == address(0)) {
+                revert MissingRoleHolders();
+            }
+            if (adminFee != 0 && params.adminFeeClaimRoleHolder == address(0)) {
+                revert MissingRoleHolders();
+            }
+        }
+
+        if (params.defaultAdminRoleHolder != address(0)) {
+            _grantRole(DEFAULT_ADMIN_ROLE, params.defaultAdminRoleHolder);
+        }
+        if (params.adminFeeClaimRoleHolder != address(0)) {
+            _grantRole(ADMIN_FEE_CLAIM_ROLE, params.adminFeeClaimRoleHolder);
+        }
+        if (params.networkWhitelistRoleHolder != address(0)) {
+            _grantRole(NETWORK_WHITELIST_ROLE, params.networkWhitelistRoleHolder);
+        }
+        if (params.adminFeeSetRoleHolder != address(0)) {
+            _grantRole(ADMIN_FEE_SET_ROLE, params.adminFeeSetRoleHolder);
+        }
     }
 
     /**
@@ -303,12 +320,16 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             revert AlreadySet();
         }
 
+        _setAdminFee(adminFee_);
+
+        emit SetAdminFee(adminFee_);
+    }
+
+    function _setAdminFee(uint256 adminFee_) private {
         if (adminFee_ > ADMIN_FEE_BASE) {
             revert InvalidAdminFee();
         }
 
         adminFee = adminFee_;
-
-        emit SetAdminFee(adminFee_);
     }
 }

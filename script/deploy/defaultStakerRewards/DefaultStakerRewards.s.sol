@@ -3,13 +3,31 @@ pragma solidity 0.8.25;
 
 import {Script} from "forge-std/Script.sol";
 
+import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 import {IDefaultStakerRewardsFactory} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
 
 contract DefaultStakerRewardsScript is Script {
-    function run(address defaultStakerRewardsFactory, address vault) external {
+    function run(
+        address defaultStakerRewardsFactory,
+        address vault,
+        uint256 adminFee,
+        address defaultAdminRoleHolder,
+        address adminFeeClaimRoleHolder,
+        address networkWhitelistRoleHolder,
+        address adminFeeSetRoleHolder
+    ) external {
         vm.startBroadcast();
 
-        IDefaultStakerRewardsFactory(defaultStakerRewardsFactory).create(vault);
+        IDefaultStakerRewardsFactory(defaultStakerRewardsFactory).create(
+            IDefaultStakerRewards.InitParams({
+                vault: vault,
+                adminFee: adminFee,
+                defaultAdminRoleHolder: defaultAdminRoleHolder,
+                adminFeeClaimRoleHolder: adminFeeClaimRoleHolder,
+                networkWhitelistRoleHolder: networkWhitelistRoleHolder,
+                adminFeeSetRoleHolder: adminFeeSetRoleHolder
+            })
+        );
 
         vm.stopBroadcast();
     }
