@@ -112,7 +112,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     function claimable(
         address token,
         address account,
-        bytes memory data
+        bytes calldata data
     ) external view override returns (uint256 amount) {
         // maxRewards - maximum amount of rewards to process
         uint256 maxRewards = abi.decode(data, (uint256));
@@ -159,7 +159,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         address network,
         address token,
         uint256 amount,
-        bytes memory data
+        bytes calldata data
     ) external override nonReentrant {
         // timestamp - time point stakes must be taken into account at
         uint48 timestamp = abi.decode(data, (uint48));
@@ -217,7 +217,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IStakerRewards
      */
-    function claimRewards(address recipient, address token, bytes memory data) external override {
+    function claimRewards(address recipient, address token, bytes calldata data) external override {
         // maxRewards - maximum amount of rewards to process
         // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
         (uint256 maxRewards, bytes[] memory activeSharesOfHints) = abi.decode(data, (uint256, bytes[]));

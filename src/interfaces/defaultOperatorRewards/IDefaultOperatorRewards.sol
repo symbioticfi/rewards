@@ -2,13 +2,11 @@
 pragma solidity 0.8.25;
 
 interface IDefaultOperatorRewards {
-    error NotVault();
     error AlreadySet();
-    error RootNotSet();
-    error InvalidProof();
     error InsufficientTotalClaimable();
+    error InvalidProof();
     error NotNetworkMiddleware();
-    error InsufficientReward();
+    error RootNotSet();
 
     /**
      * @notice Emitted when rewards are distributed by a particular network using a given token by providing a Merkle root.
