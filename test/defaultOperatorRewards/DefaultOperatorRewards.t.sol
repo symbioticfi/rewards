@@ -29,6 +29,7 @@ import {DefaultOperatorRewardsFactory} from "src/contracts/defaultOperatorReward
 import {DefaultOperatorRewards} from "src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {IDefaultOperatorRewards} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
+import {FeeOnTransferToken} from "@symbiotic/mocks/FeeOnTransferToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract DefaultOperatorRewardsTest is Test {
@@ -210,6 +211,50 @@ contract DefaultOperatorRewardsTest is Test {
         assertEq(token.balanceOf(address(defaultOperatorRewards)), amount);
     }
 
+    function test_DitributeRewardsFeeOnTransfer(uint256 amount) public {
+        amount = bound(amount, 2, 1000);
+
+        defaultOperatorRewards = _getOperatorDefaultRewards();
+
+        address network = alice;
+        address middleware = alice;
+        _registerNetwork(network, middleware);
+
+        IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
+        feeOnTransferToken.transfer(middleware, 100_000 * 1e18);
+        vm.startPrank(middleware);
+        feeOnTransferToken.approve(address(defaultOperatorRewards), type(uint256).max);
+        vm.stopPrank();
+
+        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 root = leaf;
+        _distributeRewards(middleware, network, address(feeOnTransferToken), amount, root);
+
+        assertEq(defaultOperatorRewards.root(network, address(feeOnTransferToken)), root);
+        assertEq(feeOnTransferToken.balanceOf(address(defaultOperatorRewards)), amount - 1);
+    }
+
+    function test_DitributeRewardsFeeOnTransferRevertInsufficientTransfer() public {
+        uint256 amount = 1;
+
+        defaultOperatorRewards = _getOperatorDefaultRewards();
+
+        address network = alice;
+        address middleware = alice;
+        _registerNetwork(network, middleware);
+
+        IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
+        feeOnTransferToken.transfer(middleware, 100_000 * 1e18);
+        vm.startPrank(middleware);
+        feeOnTransferToken.approve(address(defaultOperatorRewards), type(uint256).max);
+        vm.stopPrank();
+
+        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 root = leaf;
+        vm.expectRevert(IDefaultOperatorRewards.InsufficientTransfer.selector);
+        _distributeRewards(middleware, network, address(feeOnTransferToken), amount, root);
+    }
+
     function test_DitributeRewardsRevertNotNetworkMiddleware(uint256 amount) public {
         amount = bound(amount, 0, 1000);
 
@@ -229,29 +274,6 @@ contract DefaultOperatorRewardsTest is Test {
         bytes32 root = leaf;
         vm.expectRevert(IDefaultOperatorRewards.NotNetworkMiddleware.selector);
         _distributeRewards(bob, network, address(token), amount, root);
-    }
-
-    function test_DitributeRewardsRevertAlreadySet(uint256 amount) public {
-        amount = bound(amount, 0, 1000);
-
-        defaultOperatorRewards = _getOperatorDefaultRewards();
-
-        address network = alice;
-        address middleware = alice;
-        _registerNetwork(network, middleware);
-
-        IERC20 token = IERC20(new Token("Token"));
-        token.transfer(middleware, 100_000 * 1e18);
-        vm.startPrank(middleware);
-        token.approve(address(defaultOperatorRewards), type(uint256).max);
-        vm.stopPrank();
-
-        bytes32 leaf = keccak256(abi.encode(bob, amount));
-        bytes32 root = leaf;
-        _distributeRewards(middleware, network, address(token), amount, root);
-
-        vm.expectRevert(IDefaultOperatorRewards.AlreadySet.selector);
-        _distributeRewards(middleware, network, address(token), amount, root);
     }
 
     function test_ClaimRewards(uint256 amount1, uint256 amount2) public {
@@ -294,9 +316,8 @@ contract DefaultOperatorRewardsTest is Test {
         assertEq(defaultOperatorRewards.claimed(network, address(token), bob), amount1 + amount2);
     }
 
-    function test_ClaimRewardsRevertRootNotSet(uint256 amount1, uint256 amount2) public {
+    function test_ClaimRewardsRevertRootNotSet(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
-        amount2 = bound(amount2, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
 
@@ -315,9 +336,8 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1, proof);
     }
 
-    function test_ClaimRewardsRevertInvalidProof(uint256 amount1, uint256 amount2) public {
+    function test_ClaimRewardsRevertInvalidProof(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
-        amount2 = bound(amount2, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
 
@@ -371,6 +391,30 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1, proof);
 
         vm.expectRevert(IDefaultOperatorRewards.InsufficientTotalClaimable.selector);
+        _claimRewards(bob, network, address(token), amount1, proof);
+    }
+
+    function test_ClaimRewardsRevertInsufficientBalance(uint256 amount1) public {
+        amount1 = bound(amount1, 1, 1000);
+
+        defaultOperatorRewards = _getOperatorDefaultRewards();
+
+        address network = alice;
+        address middleware = alice;
+        _registerNetwork(network, middleware);
+
+        IERC20 token = IERC20(new Token("Token"));
+        token.transfer(middleware, 100_000 * 1e18);
+        vm.startPrank(middleware);
+        token.approve(address(defaultOperatorRewards), type(uint256).max);
+        vm.stopPrank();
+
+        bytes32 leaf = keccak256(abi.encode(bob, amount1));
+        bytes32 root = leaf;
+        _distributeRewards(middleware, network, address(token), amount1 - 1, root);
+
+        bytes32[] memory proof;
+        vm.expectRevert(IDefaultOperatorRewards.InsufficientBalance.selector);
         _claimRewards(bob, network, address(token), amount1, proof);
     }
 

@@ -2,8 +2,9 @@
 pragma solidity 0.8.25;
 
 interface IDefaultOperatorRewards {
-    error AlreadySet();
+    error InsufficientBalance();
     error InsufficientTotalClaimable();
+    error InsufficientTransfer();
     error InvalidProof();
     error NotNetworkMiddleware();
     error RootNotSet();
@@ -42,6 +43,14 @@ interface IDefaultOperatorRewards {
      * @param token address of the token
      */
     function root(address network, address token) external view returns (bytes32);
+
+    /**
+     * @notice Get an amount of tokens that can be claimed for a particular network.
+     * @param network address of the network
+     * @param token address of the token
+     * @return amount of tokens that can be claimed
+     */
+    function balance(address network, address token) external view returns (uint256);
 
     /**
      * @notice Get a claimed amount of a reward for a particular account, network, and token.
