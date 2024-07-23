@@ -217,7 +217,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IStakerRewards
      */
-    function claimRewards(address recipient, address token, bytes calldata data) external override {
+    function claimRewards(address recipient, address token, bytes calldata data) external override nonReentrant {
         // maxRewards - maximum amount of rewards to process
         // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
         (uint256 maxRewards, bytes[] memory activeSharesOfHints) = abi.decode(data, (uint256, bytes[]));
@@ -267,7 +267,7 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    function claimAdminFee(address recipient, address token) external onlyRole(ADMIN_FEE_CLAIM_ROLE) {
+    function claimAdminFee(address recipient, address token) external nonReentrant onlyRole(ADMIN_FEE_CLAIM_ROLE) {
         uint256 claimableAdminFee_ = claimableAdminFee[token];
         if (claimableAdminFee_ == 0) {
             revert InsufficientAdminFee();
