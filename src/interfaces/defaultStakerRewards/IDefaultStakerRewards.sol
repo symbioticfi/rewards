@@ -75,16 +75,19 @@ interface IDefaultStakerRewards is IStakerRewards {
 
     /**
      * @notice Get the admin fee claimer's role.
+     * @return identifier of the admin fee claimer role
      */
     function ADMIN_FEE_CLAIM_ROLE() external view returns (bytes32);
 
     /**
      * @notice Get the network whitelist status setter's role.
+     * @return identifier of the network whitelist status setter role
      */
     function NETWORK_WHITELIST_ROLE() external view returns (bytes32);
 
     /**
      * @notice Get the admin fee setter's role.
+     * @return identifier of the admin fee setter role
      */
     function ADMIN_FEE_SET_ROLE() external view returns (bytes32);
 
@@ -121,6 +124,7 @@ interface IDefaultStakerRewards is IStakerRewards {
     /**
      * @notice Get if a given account is a whitelisted network.
      * @param account address to check
+     * @return if the account is a whitelisted network
      */
     function isNetworkWhitelisted(address account) external view returns (bool);
 
