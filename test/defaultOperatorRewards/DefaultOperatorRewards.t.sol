@@ -203,7 +203,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(token), amount, root);
 
@@ -226,7 +226,7 @@ contract DefaultOperatorRewardsTest is Test {
         feeOnTransferToken.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(feeOnTransferToken), amount, root);
 
@@ -249,7 +249,7 @@ contract DefaultOperatorRewardsTest is Test {
         feeOnTransferToken.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount))));
         bytes32 root = leaf;
         vm.expectRevert(IDefaultOperatorRewards.InsufficientTransfer.selector);
         _distributeRewards(middleware, network, address(feeOnTransferToken), amount, root);
@@ -270,7 +270,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount))));
         bytes32 root = leaf;
         vm.expectRevert(IDefaultOperatorRewards.NotNetworkMiddleware.selector);
         _distributeRewards(bob, network, address(token), amount, root);
@@ -292,7 +292,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount1));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(token), amount1, root);
 
@@ -303,7 +303,7 @@ contract DefaultOperatorRewardsTest is Test {
         assertEq(token.balanceOf(address(defaultOperatorRewards)), 0);
         assertEq(defaultOperatorRewards.claimed(network, address(token), bob), amount1);
 
-        leaf = keccak256(abi.encode(bob, amount1 + amount2));
+        leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1 + amount2))));
         root = leaf;
         _distributeRewards(middleware, network, address(token), amount2, root);
 
@@ -351,7 +351,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount1));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(token), amount1, root);
 
@@ -363,7 +363,7 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1 + 1, proof);
 
         proof = new bytes32[](1);
-        proof[0] = keccak256(abi.encode(bob, amount1));
+        proof[0] = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1))));
         vm.expectRevert(IDefaultOperatorRewards.InvalidProof.selector);
         _claimRewards(bob, network, address(token), amount1 + 1, proof);
     }
@@ -383,7 +383,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount1));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(token), amount1, root);
 
@@ -409,7 +409,7 @@ contract DefaultOperatorRewardsTest is Test {
         token.approve(address(defaultOperatorRewards), type(uint256).max);
         vm.stopPrank();
 
-        bytes32 leaf = keccak256(abi.encode(bob, amount1));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(bob, amount1))));
         bytes32 root = leaf;
         _distributeRewards(middleware, network, address(token), amount1 - 1, root);
 

@@ -81,7 +81,11 @@ contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorR
             revert RootNotSet();
         }
 
-        if (!MerkleProof.verifyCalldata(proof, root_, keccak256(abi.encode(msg.sender, totalClaimable)))) {
+        if (
+            !MerkleProof.verifyCalldata(
+                proof, root_, keccak256(bytes.concat(keccak256(abi.encode(msg.sender, totalClaimable))))
+            )
+        ) {
             revert InvalidProof();
         }
 
