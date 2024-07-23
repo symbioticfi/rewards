@@ -448,7 +448,7 @@ contract RewardsTest is Test {
         _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp);
 
         uint256 balanceBefore = token.balanceOf(alice);
-        bytes[] memory activeSharesOfHints = new bytes[](2);
+        bytes[] memory activeSharesOfHints;
         _claimRewards(alice, address(token), 2, activeSharesOfHints);
         assertEq(token.balanceOf(alice) - balanceBefore, ditributeAmount1 + ditributeAmount2);
 
@@ -517,7 +517,7 @@ contract RewardsTest is Test {
         );
 
         uint256 balanceBefore = token.balanceOf(alice);
-        bytes[] memory activeSharesOfHints = new bytes[](2);
+        bytes[] memory activeSharesOfHints;
         _claimRewards(alice, address(token), 2, activeSharesOfHints);
         assertEq(
             token.balanceOf(alice) - balanceBefore, ditributeAmount1.mulDiv(aliceN, aliceN + bobN) + ditributeAmount2
@@ -562,7 +562,7 @@ contract RewardsTest is Test {
             _distributeRewards(bob, network, address(token), ditributeAmount, 1_720_700_948 + i);
         }
 
-        bytes[] memory activeSharesOfHints = new bytes[](numRewards);
+        bytes[] memory activeSharesOfHints;
 
         uint256 gasLeft = gasleft();
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
@@ -634,7 +634,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        bytes[] memory activeSharesOfHints = new bytes[](0);
+        bytes[] memory activeSharesOfHints;
         vm.startPrank(alice);
         vm.expectRevert(IDefaultStakerRewards.InvalidRecipient.selector);
         defaultStakerRewards.claimRewards(
@@ -662,7 +662,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        bytes[] memory activeSharesOfHints = new bytes[](1);
+        bytes[] memory activeSharesOfHints;
         vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), type(uint256).max, activeSharesOfHints);
     }
@@ -686,7 +686,7 @@ contract RewardsTest is Test {
 
         IERC20 token = IERC20(new Token("Token"));
 
-        bytes[] memory activeSharesOfHints = new bytes[](1);
+        bytes[] memory activeSharesOfHints;
         vm.expectRevert(IDefaultStakerRewards.NoRewardsToClaim.selector);
         _claimRewards(alice, address(token), 0, activeSharesOfHints);
     }

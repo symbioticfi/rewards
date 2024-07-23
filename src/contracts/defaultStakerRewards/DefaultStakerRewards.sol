@@ -235,7 +235,9 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             revert NoRewardsToClaim();
         }
 
-        if (activeSharesOfHints.length != rewardsToClaim) {
+        if (activeSharesOfHints.length == 0) {
+            activeSharesOfHints = new bytes[](rewardsToClaim);
+        } else if (activeSharesOfHints.length != rewardsToClaim) {
             revert InvalidHintsLength();
         }
 
