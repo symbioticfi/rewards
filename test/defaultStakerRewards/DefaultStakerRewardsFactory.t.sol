@@ -193,13 +193,16 @@ contract DefaultStakerRewardsFactoryTest is Test {
         assertEq(defaultStakerRewards.NETWORK_MIDDLEWARE_SERVICE(), address(networkMiddlewareService));
         assertEq(defaultStakerRewards.VAULT(), address(vault));
         assertEq(defaultStakerRewards.version(), 1);
-        assertEq(defaultStakerRewards.isNetworkWhitelisted(alice), false);
-        assertEq(defaultStakerRewards.rewardsLength(alice), 0);
-        assertEq(defaultStakerRewards.claimable(alice, alice, abi.encode(0)), 0);
+        assertEq(defaultStakerRewards.rewardsLength(alice, alice), 0);
+        assertEq(defaultStakerRewards.claimable(alice, alice, abi.encode(address(0), 0)), 0);
         vm.expectRevert();
-        defaultStakerRewards.rewards(alice, 0);
-        assertEq(defaultStakerRewards.lastUnclaimedReward(alice, alice), 0);
+        defaultStakerRewards.rewards(alice, alice, 0);
+        assertEq(defaultStakerRewards.lastUnclaimedReward(alice, alice, alice), 0);
         assertEq(defaultStakerRewards.claimableAdminFee(alice), 0);
+
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.DEFAULT_ADMIN_ROLE(), alice));
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_CLAIM_ROLE(), alice));
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_SET_ROLE(), alice));
     }
 
     function test_CreateRevertNotVault() public {
