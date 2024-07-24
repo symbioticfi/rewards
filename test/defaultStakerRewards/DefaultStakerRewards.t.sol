@@ -265,7 +265,92 @@ contract RewardsTest is Test {
         uint256 balanceBeforeBob = feeOnTransferToken.balanceOf(bob);
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee);
+        _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee, "", "");
+        console2.log("Gas1: ", vm.lastCallGas().gasTotalUsed);
+
+        assertEq(feeOnTransferToken.balanceOf(address(defaultStakerRewards)) - balanceBefore, ditributeAmount - 1);
+        assertEq(balanceBeforeBob - feeOnTransferToken.balanceOf(bob), ditributeAmount);
+
+        uint256 amount__ = ditributeAmount - 1;
+        uint256 adminFeeAmount = amount__.mulDiv(adminFee, defaultStakerRewards.ADMIN_FEE_BASE());
+        amount__ -= adminFeeAmount;
+
+        if (amount__ > 0) {
+            assertEq(defaultStakerRewards.rewardsLength(address(feeOnTransferToken)), 1);
+            (address network_, uint256 amount_, uint48 timestamp_, uint48 creation) =
+                defaultStakerRewards.rewards(address(feeOnTransferToken), 0);
+            assertEq(network_, network);
+            assertEq(amount_, amount__);
+            assertEq(timestamp_, timestamp);
+            assertEq(creation, blockTimestamp);
+        } else {
+            assertEq(defaultStakerRewards.rewardsLength(address(feeOnTransferToken)), 0);
+        }
+
+        assertEq(defaultStakerRewards.claimableAdminFee(address(feeOnTransferToken)), adminFeeAmount);
+
+        assertEq(
+            defaultStakerRewards.claimable(address(feeOnTransferToken), alice, abi.encode(type(uint256).max)), amount__
+        );
+        assertEq(defaultStakerRewards.claimable(address(feeOnTransferToken), alice, abi.encode(1)), amount__);
+        assertEq(defaultStakerRewards.claimable(address(feeOnTransferToken), alice, abi.encode(0)), 0);
+    }
+
+    function test_DistributeRewardsHints(
+        uint256 amount,
+        uint256 ditributeAmount,
+        uint256 adminFee,
+        uint256 maxAdminFee
+    ) public {
+        amount = bound(amount, 1, 100 * 10 ** 18);
+        ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
+
+        uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
+        blockTimestamp = blockTimestamp + 1_720_700_948;
+        vm.warp(blockTimestamp);
+
+        defaultStakerRewards = _getStakerDefaultRewards();
+
+        adminFee = bound(adminFee, 1, defaultStakerRewards.ADMIN_FEE_BASE());
+        maxAdminFee = bound(maxAdminFee, adminFee, type(uint256).max);
+
+        _grantAdminFeeSetRole(alice, alice);
+        _setAdminFee(alice, adminFee);
+
+        address network = bob;
+        _registerNetwork(network, bob);
+
+        for (uint256 i; i < 10; ++i) {
+            _deposit(alice, amount);
+
+            blockTimestamp = blockTimestamp + 1;
+            vm.warp(blockTimestamp);
+        }
+
+        IERC20 feeOnTransferToken = IERC20(new FeeOnTransferToken("FeeOnTransferToken"));
+        feeOnTransferToken.transfer(bob, 100_000 * 1e18);
+        vm.startPrank(bob);
+        feeOnTransferToken.approve(address(defaultStakerRewards), type(uint256).max);
+        vm.stopPrank();
+
+        VaultHints vaultHints = new VaultHints();
+
+        uint256 balanceBefore = feeOnTransferToken.balanceOf(address(defaultStakerRewards));
+        uint256 balanceBeforeBob = feeOnTransferToken.balanceOf(bob);
+        _setNetworkWhitelistStatus(alice, network, true);
+        uint48 timestamp = 1_720_700_948 + 3;
+        _distributeRewards(
+            bob,
+            network,
+            address(feeOnTransferToken),
+            ditributeAmount,
+            timestamp,
+            maxAdminFee,
+            vaultHints.activeSharesHint(address(vault), timestamp),
+            vaultHints.activeStakeHint(address(vault), timestamp)
+        );
+        console2.log("Gas2: ", vm.lastCallGas().gasTotalUsed);
+
         assertEq(feeOnTransferToken.balanceOf(address(defaultStakerRewards)) - balanceBefore, ditributeAmount - 1);
         assertEq(balanceBeforeBob - feeOnTransferToken.balanceOf(bob), ditributeAmount);
 
@@ -323,7 +408,9 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
         vm.expectRevert(IDefaultStakerRewards.NotNetworkMiddleware.selector);
-        _distributeRewards(alice, network, address(feeOnTransferToken), ditributeAmount, timestamp, type(uint256).max);
+        _distributeRewards(
+            alice, network, address(feeOnTransferToken), ditributeAmount, timestamp, type(uint256).max, "", ""
+        );
     }
 
     function test_DistributeRewardsRevertNotWhitelistedNetwork(uint256 amount, uint256 ditributeAmount) public {
@@ -354,7 +441,9 @@ contract RewardsTest is Test {
 
         uint48 timestamp = 1_720_700_948 + 3;
         vm.expectRevert(IDefaultStakerRewards.NotWhitelistedNetwork.selector);
-        _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, type(uint256).max);
+        _distributeRewards(
+            bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, type(uint256).max, "", ""
+        );
     }
 
     function test_DistributeRewardsRevertInvalidRewardTimestamp(uint256 amount, uint256 ditributeAmount) public {
@@ -386,7 +475,14 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         vm.expectRevert(IDefaultStakerRewards.InvalidRewardTimestamp.selector);
         _distributeRewards(
-            bob, network, address(feeOnTransferToken), ditributeAmount, uint48(blockTimestamp), type(uint256).max
+            bob,
+            network,
+            address(feeOnTransferToken),
+            ditributeAmount,
+            uint48(blockTimestamp),
+            type(uint256).max,
+            "",
+            ""
         );
     }
 
@@ -429,7 +525,7 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
         vm.expectRevert(IDefaultStakerRewards.HighAdminFee.selector);
-        _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee);
+        _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee, "", "");
     }
 
     function test_DistributeRewardsRevertInsufficientReward(uint256 amount) public {
@@ -460,7 +556,7 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
         vm.expectRevert(IDefaultStakerRewards.InsufficientReward.selector);
-        _distributeRewards(bob, network, address(feeOnTransferToken), 1, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(feeOnTransferToken), 1, timestamp, type(uint256).max, "", "");
     }
 
     function test_ClaimRewards(uint256 amount, uint256 ditributeAmount1, uint256 ditributeAmount2) public {
@@ -493,11 +589,11 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
 
         _distributeRewards(
-            bob, network, address(token), ditributeAmount1, uint48(blockTimestamp - 1), type(uint256).max
+            bob, network, address(token), ditributeAmount1, uint48(blockTimestamp - 1), type(uint256).max, "", ""
         );
 
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp, type(uint256).max, "", "");
 
         uint256 balanceBefore = token.balanceOf(alice);
         bytes[] memory activeSharesOfHints;
@@ -546,7 +642,7 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
 
         _distributeRewards(
-            bob, network, address(token), ditributeAmount1, uint48(blockTimestamp - 1), type(uint256).max
+            bob, network, address(token), ditributeAmount1, uint48(blockTimestamp - 1), type(uint256).max, "", ""
         );
 
         assertEq(
@@ -559,7 +655,7 @@ contract RewardsTest is Test {
         );
 
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(token), ditributeAmount2, timestamp, type(uint256).max, "", "");
 
         assertEq(
             defaultStakerRewards.claimable(address(token), alice, abi.encode(type(uint256).max)),
@@ -613,7 +709,9 @@ contract RewardsTest is Test {
         _setNetworkWhitelistStatus(alice, network, true);
         uint256 numRewards = 50;
         for (uint48 i = 1; i < numRewards + 1; ++i) {
-            _distributeRewards(bob, network, address(token), ditributeAmount, 1_720_700_948 + i, type(uint256).max);
+            _distributeRewards(
+                bob, network, address(token), ditributeAmount, 1_720_700_948 + i, type(uint256).max, "", ""
+            );
         }
 
         bytes[] memory activeSharesOfHints;
@@ -656,7 +754,7 @@ contract RewardsTest is Test {
         uint256 numRewards = 50;
         for (uint48 i = 1; i < numRewards + 1; ++i) {
             _distributeRewards(
-                bob, network, address(token), ditributeAmount, uint48(1_720_700_948 + i), type(uint256).max
+                bob, network, address(token), ditributeAmount, uint48(1_720_700_948 + i), type(uint256).max, "", ""
             );
         }
 
@@ -775,7 +873,7 @@ contract RewardsTest is Test {
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max, "", "");
 
         bytes[] memory activeSharesOfHints = new bytes[](2);
         vm.expectRevert(IDefaultStakerRewards.InvalidHintsLength.selector);
@@ -815,7 +913,7 @@ contract RewardsTest is Test {
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max, "", "");
 
         uint256 adminFeeAmount = ditributeAmount.mulDiv(adminFee, defaultStakerRewards.ADMIN_FEE_BASE());
         vm.assume(adminFeeAmount > 0);
@@ -864,7 +962,7 @@ contract RewardsTest is Test {
 
         _setNetworkWhitelistStatus(alice, network, true);
         uint48 timestamp = 1_720_700_948 + 3;
-        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max);
+        _distributeRewards(bob, network, address(token), ditributeAmount, timestamp, type(uint256).max, "", "");
 
         vm.assume(defaultStakerRewards.claimableAdminFee(address(token)) > 0);
         _claimAdminFee(alice, address(token));
@@ -928,10 +1026,14 @@ contract RewardsTest is Test {
         address token,
         uint256 amount,
         uint48 timestamp,
-        uint256 maxAdminFee
+        uint256 maxAdminFee,
+        bytes memory activeSharesHint,
+        bytes memory activeStakeHint
     ) internal {
         vm.startPrank(user);
-        defaultStakerRewards.distributeRewards(network, token, amount, abi.encode(timestamp, maxAdminFee));
+        defaultStakerRewards.distributeRewards(
+            network, token, amount, abi.encode(timestamp, maxAdminFee, activeSharesHint, activeStakeHint)
+        );
         vm.stopPrank();
     }
 
