@@ -5,6 +5,7 @@ import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 
 interface IDefaultStakerRewards is IStakerRewards {
     error AlreadySet();
+    error HighAdminFee();
     error InsufficientAdminFee();
     error InsufficientReward();
     error InvalidAdminFee();

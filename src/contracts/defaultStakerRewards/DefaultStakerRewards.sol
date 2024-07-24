@@ -162,7 +162,8 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         bytes calldata data
     ) external override nonReentrant {
         // timestamp - time point stakes must be taken into account at
-        uint48 timestamp = abi.decode(data, (uint48));
+        // maxAdminFee - maximum admin fee to allow
+        (uint48 timestamp, uint256 maxAdminFee) = abi.decode(data, (uint48, uint256));
 
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
             revert NotNetworkMiddleware();
@@ -174,6 +175,10 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
 
         if (timestamp >= Time.timestamp()) {
             revert InvalidRewardTimestamp();
+        }
+
+        if (maxAdminFee < adminFee) {
+            revert HighAdminFee();
         }
 
         if (_activeSharesCache[timestamp] == 0) {
