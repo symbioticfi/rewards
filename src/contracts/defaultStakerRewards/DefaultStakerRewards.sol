@@ -14,8 +14,14 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
-contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgradeable, IDefaultStakerRewards {
+contract DefaultStakerRewards is
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    MulticallUpgradeable,
+    IDefaultStakerRewards
+{
     using SafeERC20 for IERC20;
     using Math for uint256;
 
