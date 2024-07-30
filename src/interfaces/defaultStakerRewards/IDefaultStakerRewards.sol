@@ -12,11 +12,11 @@ interface IDefaultStakerRewards is IStakerRewards {
     error InvalidHintsLength();
     error InvalidRecipient();
     error InvalidRewardTimestamp();
+    error MissingRoles();
     error NoRewardsToClaim();
     error NotNetwork();
     error NotNetworkMiddleware();
     error NotVault();
-    error MissingRoles();
 
     /**
      * @notice Initial parameters needed for a staker rewards contract deployment.
