@@ -74,7 +74,6 @@ contract DefaultOperatorRewardsTest is Test {
         operatorMetadataService = new MetadataService(address(operatorRegistry));
         networkMetadataService = new MetadataService(address(networkRegistry));
         networkMiddlewareService = new NetworkMiddlewareService(address(networkRegistry));
-        networkVaultOptInService = new OptInService(address(networkRegistry), address(vaultFactory));
         operatorVaultOptInService = new OptInService(address(operatorRegistry), address(vaultFactory));
         operatorNetworkOptInService = new OptInService(address(operatorRegistry), address(networkRegistry));
 
@@ -110,9 +109,6 @@ contract DefaultOperatorRewardsTest is Test {
             new Slasher(
                 address(vaultFactory),
                 address(networkMiddlewareService),
-                address(networkVaultOptInService),
-                address(operatorVaultOptInService),
-                address(operatorNetworkOptInService),
                 address(slasherFactory),
                 slasherFactory.totalTypes()
             )
@@ -123,9 +119,6 @@ contract DefaultOperatorRewardsTest is Test {
             new VetoSlasher(
                 address(vaultFactory),
                 address(networkMiddlewareService),
-                address(networkVaultOptInService),
-                address(operatorVaultOptInService),
-                address(operatorNetworkOptInService),
                 address(networkRegistry),
                 address(slasherFactory),
                 slasherFactory.totalTypes()
@@ -133,13 +126,13 @@ contract DefaultOperatorRewardsTest is Test {
         );
         slasherFactory.whitelist(vetoSlasherImpl);
 
+        vaultConfigurator =
+            new VaultConfigurator(address(vaultFactory), address(delegatorFactory), address(slasherFactory));
+
         Token token = new Token("Token");
         collateral = new SimpleCollateral(address(token));
 
         collateral.mint(token.totalSupply());
-
-        vaultConfigurator =
-            new VaultConfigurator(address(vaultFactory), address(delegatorFactory), address(slasherFactory));
 
         address[] memory networkLimitSetRoleHolders = new address[](1);
         networkLimitSetRoleHolders[0] = alice;
