@@ -2,18 +2,19 @@
 pragma solidity 0.8.25;
 
 import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
+import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
+
 import {INetworkMiddlewareService} from "@symbiotic/interfaces/service/INetworkMiddlewareService.sol";
 import {IRegistry} from "@symbiotic/interfaces/common/IRegistry.sol";
-import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 import {IVault} from "@symbiotic/interfaces/vault/IVault.sol";
 
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
-import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 contract DefaultStakerRewards is
     AccessControlUpgradeable,
@@ -110,8 +111,8 @@ contract DefaultStakerRewards is
         address account,
         bytes calldata data
     ) external view override returns (uint256 amount) {
-        // network - network to claim rewards for
-        // maxRewards - maximum amount of rewards to process
+        // network - a network to claim rewards for
+        // maxRewards - the maximum amount of rewards to process
         (address network, uint256 maxRewards) = abi.decode(data, (address, uint256));
 
         RewardDistribution[] storage rewardsByTokenNetwork = rewards[token][network];
@@ -171,10 +172,10 @@ contract DefaultStakerRewards is
         uint256 amount,
         bytes calldata data
     ) external override nonReentrant {
-        // timestamp - time point stakes must be taken into account at
-        // maxAdminFee - maximum admin fee to allow
-        // activeSharesHint - hint index to optimize `activeSharesAt()` processing
-        // activeStakeHint - hint index to optimize `activeStakeAt()` processing
+        // timestamp - a time point stakes must be taken into account at
+        // maxAdminFee - the maximum admin fee to allow
+        // activeSharesHint - a hint index to optimize `activeSharesAt()` processing
+        // activeStakeHint - a hint index to optimize `activeStakeAt()` processing
         (uint48 timestamp, uint256 maxAdminFee, bytes memory activeSharesHint, bytes memory activeStakeHint) =
             abi.decode(data, (uint48, uint256, bytes, bytes));
 
@@ -226,8 +227,8 @@ contract DefaultStakerRewards is
      * @inheritdoc IStakerRewards
      */
     function claimRewards(address recipient, address token, bytes calldata data) external override nonReentrant {
-        // network - network to claim rewards for
-        // maxRewards - maximum amount of rewards to process
+        // network - a network to claim rewards for
+        // maxRewards - the maximum amount of rewards to process
         // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
         (address network, uint256 maxRewards, bytes[] memory activeSharesOfHints) =
             abi.decode(data, (address, uint256, bytes[]));

@@ -2,9 +2,10 @@
 pragma solidity 0.8.25;
 
 import {DefaultOperatorRewards} from "./DefaultOperatorRewards.sol";
-import {Registry} from "@symbiotic/contracts/common/Registry.sol";
 
 import {IDefaultOperatorRewardsFactory} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewardsFactory.sol";
+
+import {Registry} from "@symbiotic/contracts/common/Registry.sol";
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 

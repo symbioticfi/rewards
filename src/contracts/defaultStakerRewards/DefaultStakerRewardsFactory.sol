@@ -2,9 +2,10 @@
 pragma solidity 0.8.25;
 
 import {DefaultStakerRewards} from "./DefaultStakerRewards.sol";
-import {Registry} from "@symbiotic/contracts/common/Registry.sol";
 
 import {IDefaultStakerRewardsFactory} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
+
+import {Registry} from "@symbiotic/contracts/common/Registry.sol";
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 

@@ -20,11 +20,11 @@ interface IDefaultOperatorRewards {
     event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes32 root);
 
     /**
-     * @notice Emitted when a reward is claimed by a particular account for a particular network using a given token.
-     * @param recipient address of the reward's recipient
+     * @notice Emitted when rewards are claimed by a particular account for a particular network using a given token.
+     * @param recipient address of the rewards' recipient
      * @param network address of the network
      * @param token address of the token
-     * @param claimer address of the reward's claimer
+     * @param claimer address of the rewards' claimer
      * @param amount amount of tokens claimed
      */
     event ClaimRewards(
@@ -54,7 +54,7 @@ interface IDefaultOperatorRewards {
     function balance(address network, address token) external view returns (uint256);
 
     /**
-     * @notice Get a claimed amount of a reward for a particular account, network, and token.
+     * @notice Get a claimed amount of rewards for a particular account, network, and token.
      * @param network address of the network
      * @param token address of the token
      * @param account address of the claimer
@@ -73,7 +73,7 @@ interface IDefaultOperatorRewards {
 
     /**
      * @notice Claim rewards for a particular network and token by providing a Merkle proof.
-     * @param recipient address of the reward's recipient
+     * @param recipient address of the rewards' recipient
      * @param network address of the network
      * @param token address of the token
      * @param totalClaimable total amount of the reward tokens for the whole time

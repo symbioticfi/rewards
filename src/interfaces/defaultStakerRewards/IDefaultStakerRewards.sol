@@ -148,7 +148,7 @@ interface IDefaultStakerRewards is IStakerRewards {
     ) external view returns (uint256 amount, uint48 timestamp);
 
     /**
-     * @notice Get a first index of the unclaimed rewards using a particular token by a given account.
+     * @notice Get the first index of the unclaimed rewards using a particular token by a given account.
      * @param account address of the account
      * @param token address of the token
      * @param network address of the network
