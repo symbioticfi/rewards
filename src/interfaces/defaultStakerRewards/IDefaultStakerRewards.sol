@@ -24,7 +24,6 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param adminFee admin fee (up to ADMIN_FEE_BASE inclusively)
      * @param defaultAdminRoleHolder address of the initial DEFAULT_ADMIN_ROLE holder
      * @param adminFeeClaimRoleHolder address of the initial ADMIN_FEE_CLAIM_ROLE holder
-     * @param networkWhitelistRoleHolder address of the initial NETWORK_WHITELIST_ROLE holder
      * @param adminFeeSetRoleHolder address of the initial ADMIN_FEE_SET_ROLE holder
      */
     struct InitParams {
@@ -32,7 +31,6 @@ interface IDefaultStakerRewards is IStakerRewards {
         uint256 adminFee;
         address defaultAdminRoleHolder;
         address adminFeeClaimRoleHolder;
-        address networkWhitelistRoleHolder;
         address adminFeeSetRoleHolder;
     }
 

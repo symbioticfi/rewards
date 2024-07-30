@@ -13,7 +13,6 @@ contract DefaultStakerRewardsScript is Script {
         uint256 adminFee,
         address defaultAdminRoleHolder,
         address adminFeeClaimRoleHolder,
-        address networkWhitelistRoleHolder,
         address adminFeeSetRoleHolder
     ) external {
         vm.startBroadcast();
@@ -24,7 +23,6 @@ contract DefaultStakerRewardsScript is Script {
                 adminFee: adminFee,
                 defaultAdminRoleHolder: defaultAdminRoleHolder,
                 adminFeeClaimRoleHolder: adminFeeClaimRoleHolder,
-                networkWhitelistRoleHolder: networkWhitelistRoleHolder,
                 adminFeeSetRoleHolder: adminFeeSetRoleHolder
             })
         );

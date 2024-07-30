@@ -198,7 +198,6 @@ contract DefaultStakerRewardsTest is Test {
                 adminFee: adminFee,
                 defaultAdminRoleHolder: address(0),
                 adminFeeClaimRoleHolder: address(0),
-                networkWhitelistRoleHolder: alice,
                 adminFeeSetRoleHolder: alice
             })
         );
@@ -214,7 +213,6 @@ contract DefaultStakerRewardsTest is Test {
                 adminFee: adminFee,
                 defaultAdminRoleHolder: alice,
                 adminFeeClaimRoleHolder: alice,
-                networkWhitelistRoleHolder: alice,
                 adminFeeSetRoleHolder: alice
             })
         );
@@ -230,7 +228,6 @@ contract DefaultStakerRewardsTest is Test {
                 adminFee: 0,
                 defaultAdminRoleHolder: alice,
                 adminFeeClaimRoleHolder: alice,
-                networkWhitelistRoleHolder: alice,
                 adminFeeSetRoleHolder: alice
             })
         );
@@ -1013,7 +1010,6 @@ contract DefaultStakerRewardsTest is Test {
             adminFee: 0,
             defaultAdminRoleHolder: alice,
             adminFeeClaimRoleHolder: alice,
-            networkWhitelistRoleHolder: alice,
             adminFeeSetRoleHolder: alice
         });
         return IDefaultStakerRewards(defaultStakerRewardsFactory.create(params));

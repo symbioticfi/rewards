@@ -185,7 +185,6 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 adminFee: adminFee,
                 defaultAdminRoleHolder: address(101),
                 adminFeeClaimRoleHolder: address(102),
-                networkWhitelistRoleHolder: address(103),
                 adminFeeSetRoleHolder: address(104)
             })
         );
@@ -224,7 +223,6 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 adminFee: 0,
                 defaultAdminRoleHolder: alice,
                 adminFeeClaimRoleHolder: alice,
-                networkWhitelistRoleHolder: alice,
                 adminFeeSetRoleHolder: alice
             })
         );
