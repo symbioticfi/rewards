@@ -35,7 +35,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {VaultHints} from "@symbiotic/contracts/hints/VaultHints.sol";
 
-contract RewardsTest is Test {
+contract DefaultStakerRewardsTest is Test {
     using Math for uint256;
 
     address owner;
@@ -188,11 +188,49 @@ contract RewardsTest is Test {
         defaultStakerRewards = _getStakerDefaultRewards();
     }
 
+    function test_CreateRevertMissingRoles(uint256 adminFee) public {
+        adminFee = bound(adminFee, 1, 10_000);
+
+        vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
+        defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: adminFee,
+                defaultAdminRoleHolder: address(0),
+                adminFeeClaimRoleHolder: address(0),
+                adminFeeSetRoleHolder: alice
+            })
+        );
+    }
+
+    function test_CreateRevertInvalidAdminFee(uint256 adminFee) public {
+        adminFee = bound(adminFee, 10_001, type(uint256).max);
+
+        vm.expectRevert(IDefaultStakerRewards.InvalidAdminFee.selector);
+        defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: adminFee,
+                defaultAdminRoleHolder: alice,
+                adminFeeClaimRoleHolder: alice,
+                adminFeeSetRoleHolder: alice
+            })
+        );
+    }
+
     function test_ReinitRevert() public {
         defaultStakerRewards = _getStakerDefaultRewards();
 
         vm.expectRevert();
-        DefaultStakerRewards(address(defaultStakerRewards)).initialize(address(vault));
+        DefaultStakerRewards(address(defaultStakerRewards)).initialize(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: 0,
+                defaultAdminRoleHolder: alice,
+                adminFeeClaimRoleHolder: alice,
+                adminFeeSetRoleHolder: alice
+            })
+        );
     }
 
     function test_DistributeRewards(
@@ -967,7 +1005,14 @@ contract RewardsTest is Test {
     }
 
     function _getStakerDefaultRewards() internal returns (IDefaultStakerRewards) {
-        return IDefaultStakerRewards(defaultStakerRewardsFactory.create(address(vault)));
+        IDefaultStakerRewards.InitParams memory params = IDefaultStakerRewards.InitParams({
+            vault: address(vault),
+            adminFee: 0,
+            defaultAdminRoleHolder: alice,
+            adminFeeClaimRoleHolder: alice,
+            adminFeeSetRoleHolder: alice
+        });
+        return IDefaultStakerRewards(defaultStakerRewardsFactory.create(params));
     }
 
     function _registerOperator(address user) internal {

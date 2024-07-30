@@ -16,6 +16,23 @@ interface IDefaultStakerRewards is IStakerRewards {
     error NotNetwork();
     error NotNetworkMiddleware();
     error NotVault();
+    error MissingRoles();
+
+    /**
+     * @notice Initial parameters needed for a staker rewards contract deployment.
+     * @param vault address of the vault to get stakers' data from
+     * @param adminFee admin fee (up to ADMIN_FEE_BASE inclusively)
+     * @param defaultAdminRoleHolder address of the initial DEFAULT_ADMIN_ROLE holder
+     * @param adminFeeClaimRoleHolder address of the initial ADMIN_FEE_CLAIM_ROLE holder
+     * @param adminFeeSetRoleHolder address of the initial ADMIN_FEE_SET_ROLE holder
+     */
+    struct InitParams {
+        address vault;
+        uint256 adminFee;
+        address defaultAdminRoleHolder;
+        address adminFeeClaimRoleHolder;
+        address adminFeeSetRoleHolder;
+    }
 
     /**
      * @notice Structure for a reward distribution.

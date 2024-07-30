@@ -170,14 +170,24 @@ contract DefaultStakerRewardsFactoryTest is Test {
         vault = Vault(vault_);
     }
 
-    function test_Create() public {
+    function test_Create(uint256 adminFee) public {
+        adminFee = bound(adminFee, 0, 10_000);
+
         address defaultStakerRewards_ = address(
             new DefaultStakerRewards(address(vaultFactory), address(networkRegistry), address(networkMiddlewareService))
         );
 
         defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
-        address defaultStakerRewardsAddress = defaultStakerRewardsFactory.create(address(vault));
+        address defaultStakerRewardsAddress = defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: adminFee,
+                defaultAdminRoleHolder: address(101),
+                adminFeeClaimRoleHolder: address(102),
+                adminFeeSetRoleHolder: address(104)
+            })
+        );
         defaultStakerRewards = DefaultStakerRewards(defaultStakerRewardsAddress);
         assertEq(defaultStakerRewardsFactory.isEntity(defaultStakerRewardsAddress), true);
 
@@ -193,9 +203,10 @@ contract DefaultStakerRewardsFactoryTest is Test {
         assertEq(defaultStakerRewards.lastUnclaimedReward(alice, alice, alice), 0);
         assertEq(defaultStakerRewards.claimableAdminFee(alice), 0);
 
-        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.DEFAULT_ADMIN_ROLE(), alice));
-        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_CLAIM_ROLE(), alice));
-        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_SET_ROLE(), alice));
+        assertEq(defaultStakerRewards.adminFee(), adminFee);
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.DEFAULT_ADMIN_ROLE(), address(101)));
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_CLAIM_ROLE(), address(102)));
+        assertTrue(defaultStakerRewards.hasRole(defaultStakerRewards.ADMIN_FEE_SET_ROLE(), address(104)));
     }
 
     function test_CreateRevertNotVault() public {
@@ -206,7 +217,15 @@ contract DefaultStakerRewardsFactoryTest is Test {
         defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
         vm.expectRevert(IDefaultStakerRewards.NotVault.selector);
-        defaultStakerRewardsFactory.create(address(0));
+        defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(0),
+                adminFee: 0,
+                defaultAdminRoleHolder: alice,
+                adminFeeClaimRoleHolder: alice,
+                adminFeeSetRoleHolder: alice
+            })
+        );
     }
 
     function _registerOperator(address user) internal {
