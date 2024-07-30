@@ -173,7 +173,8 @@ contract DefaultStakerRewards is
             revert InvalidRewardTimestamp();
         }
 
-        if (maxAdminFee < adminFee) {
+        uint256 adminFee_ = adminFee;
+        if (maxAdminFee < adminFee_) {
             revert HighAdminFee();
         }
 
@@ -196,7 +197,7 @@ contract DefaultStakerRewards is
             revert InsufficientReward();
         }
 
-        uint256 adminFeeAmount = amount.mulDiv(adminFee, ADMIN_FEE_BASE);
+        uint256 adminFeeAmount = amount.mulDiv(adminFee_, ADMIN_FEE_BASE);
         uint256 distributeAmount = amount - adminFeeAmount;
 
         claimableAdminFee[token] += adminFeeAmount;
