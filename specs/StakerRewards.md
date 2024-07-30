@@ -1,4 +1,4 @@
-## Rewards
+## Staker Rewards
 
 For staker rewards calculation, the vault provides the following data:
 
@@ -11,7 +11,7 @@ Reward processing is not integrated into the vault's functionality. Instead, ext
 However, we created the first version of the `IStakerRewards` interface to facilitate more generic reward distribution across networks.
 
 - `IStakerRewards.version()` - provides a version of the interface that a particular rewards contract uses
-- `IStakerRewards.distributeRewards(network, token, amount, data)` - call to distribute `amount` of `token` on behalf of `network` using arbitrary `data`
+- `IStakerRewards.distributeRewards(network, token, amount, data)` - call to distribute `amount` of `token` on behalf of `network` using an arbitrary `data`
 
 ### Deploy
 
@@ -32,5 +32,5 @@ forge script script/deploy/defaultStakerRewards/DefaultStakerRewardsFactory.s.so
 Deployment script: [click](../script/deploy/defaultStakerRewards/DefaultStakerRewards.s.sol)
 
 ```shell
-forge script script/deploy/defaultStakerRewards/DefaultStakerRewards.s.sol:DefaultStakerRewardsScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,uint256,address,address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/defaultStakerRewards/DefaultStakerRewards.s.sol:DefaultStakerRewardsScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,uint256,address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
 ```
