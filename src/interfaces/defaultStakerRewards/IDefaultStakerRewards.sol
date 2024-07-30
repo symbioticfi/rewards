@@ -5,6 +5,7 @@ import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 
 interface IDefaultStakerRewards is IStakerRewards {
     error AlreadySet();
+    error HighAdminFee();
     error InsufficientAdminFee();
     error InsufficientReward();
     error InvalidAdminFee();
@@ -15,36 +16,35 @@ interface IDefaultStakerRewards is IStakerRewards {
     error NotNetwork();
     error NotNetworkMiddleware();
     error NotVault();
-    error NotWhitelistedNetwork();
 
     /**
      * @notice Structure for a reward distribution.
-     * @param network network on behalf of which the reward is distributed
      * @param amount amount of tokens to be distributed (admin fee is excluded)
      * @param timestamp time point stakes must taken into account at
-     * @param creation time point the reward distribution was created at
      */
     struct RewardDistribution {
-        address network;
         uint256 amount;
         uint48 timestamp;
-        uint48 creation;
     }
 
     /**
-     * @notice Emitted when a reward is claimed.
+     * @notice Emitted when rewards are claimed.
      * @param token address of the token claimed
-     * @param rewardIndex index of the reward distribution
+     * @param network address of the network
      * @param claimer account that claimed the reward
      * @param recipient account that received the reward
-     * @param claimedAmount amount of tokens claimed
+     * @param firstRewardIndex first index of the claimed rewards
+     * @param numRewards number of rewards claimed
+     * @param amount amount of tokens claimed
      */
     event ClaimRewards(
         address indexed token,
-        uint256 indexed rewardIndex,
+        address indexed network,
         address indexed claimer,
         address recipient,
-        uint256 claimedAmount
+        uint256 firstRewardIndex,
+        uint256 numRewards,
+        uint256 amount
     );
 
     /**
@@ -53,13 +53,6 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param amount amount of the fee claimed
      */
     event ClaimAdminFee(address indexed recipient, uint256 amount);
-
-    /**
-     * @notice Emitted when a network whitelist status is set.
-     * @param network network for which the whitelist status is set
-     * @param status if whitelisted the network
-     */
-    event SetNetworkWhitelistStatus(address indexed network, bool status);
 
     /**
      * @notice Emitted when an admin fee is set.
@@ -75,16 +68,13 @@ interface IDefaultStakerRewards is IStakerRewards {
 
     /**
      * @notice Get the admin fee claimer's role.
+     * @return identifier of the admin fee claimer role
      */
     function ADMIN_FEE_CLAIM_ROLE() external view returns (bytes32);
 
     /**
-     * @notice Get the network whitelist status setter's role.
-     */
-    function NETWORK_WHITELIST_ROLE() external view returns (bytes32);
-
-    /**
      * @notice Get the admin fee setter's role.
+     * @return identifier of the admin fee setter role
      */
     function ADMIN_FEE_SET_ROLE() external view returns (bytes32);
 
@@ -119,39 +109,35 @@ interface IDefaultStakerRewards is IStakerRewards {
     function adminFee() external view returns (uint256);
 
     /**
-     * @notice Get if a given account is a whitelisted network.
-     * @param account address to check
-     */
-    function isNetworkWhitelisted(address account) external view returns (bool);
-
-    /**
-     * @notice Get a total number of rewards using a particular token.
+     * @notice Get a total number of rewards using a particular token for a given network.
      * @param token address of the token
-     * @return total number of the rewards using the token
+     * @param network address of the network
+     * @return total number of the rewards using the token by the network
      */
-    function rewardsLength(address token) external view returns (uint256);
+    function rewardsLength(address token, address network) external view returns (uint256);
 
     /**
      * @notice Get a particular reward distribution.
      * @param token address of the token
+     * @param network address of the network
      * @param rewardIndex index of the reward distribution using the token
-     * @return network network on behalf of which the reward is distributed
      * @return amount amount of tokens to be distributed
      * @return timestamp time point stakes must taken into account at
-     * @return creation time point the reward distribution was created at
      */
     function rewards(
         address token,
+        address network,
         uint256 rewardIndex
-    ) external view returns (address network, uint256 amount, uint48 timestamp, uint48 creation);
+    ) external view returns (uint256 amount, uint48 timestamp);
 
     /**
      * @notice Get a first index of the unclaimed rewards using a particular token by a given account.
      * @param account address of the account
      * @param token address of the token
+     * @param network address of the network
      * @return first index of the unclaimed rewards
      */
-    function lastUnclaimedReward(address account, address token) external view returns (uint256);
+    function lastUnclaimedReward(address account, address token, address network) external view returns (uint256);
 
     /**
      * @notice Get a claimable admin fee amount for a particular token.
@@ -167,14 +153,6 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @dev Only the vault owner can call this function.
      */
     function claimAdminFee(address recipient, address token) external;
-
-    /**
-     * @notice Set a network whitelist status (it allows networks to distribute rewards).
-     * @param network address of the network
-     * @param status if whitelisting the network
-     * @dev Only the NETWORK_WHITELIST_ROLE holder can call this function.
-     */
-    function setNetworkWhitelistStatus(address network, bool status) external;
 
     /**
      * @notice Set an admin fee.

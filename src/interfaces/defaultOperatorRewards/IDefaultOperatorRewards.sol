@@ -2,8 +2,9 @@
 pragma solidity 0.8.25;
 
 interface IDefaultOperatorRewards {
-    error AlreadySet();
+    error InsufficientBalance();
     error InsufficientTotalClaimable();
+    error InsufficientTransfer();
     error InvalidProof();
     error NotNetworkMiddleware();
     error RootNotSet();
@@ -14,7 +15,7 @@ interface IDefaultOperatorRewards {
      * @param token address of the token
      * @param amount amount of tokens sent to the contract
      * @param root Merkle root of the rewards distribution
-     * @dev The Merkle tree's leaves must represent an account, a token, and a claimable amount (the total amount of the reward tokens for the whole time).
+     * @dev The Merkle tree's leaves must represent an account and a claimable amount (the total amount of the reward tokens for the whole time).
      */
     event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes32 root);
 
@@ -40,14 +41,24 @@ interface IDefaultOperatorRewards {
      * @notice Get a Merkle root of a reward distribution for a particular network and token.
      * @param network address of the network
      * @param token address of the token
+     * @return Merkle root of the reward distribution
      */
     function root(address network, address token) external view returns (bytes32);
+
+    /**
+     * @notice Get an amount of tokens that can be claimed for a particular network.
+     * @param network address of the network
+     * @param token address of the token
+     * @return amount of tokens that can be claimed
+     */
+    function balance(address network, address token) external view returns (uint256);
 
     /**
      * @notice Get a claimed amount of a reward for a particular account, network, and token.
      * @param network address of the network
      * @param token address of the token
      * @param account address of the claimer
+     * @return claimed amount of tokens
      */
     function claimed(address network, address token, address account) external view returns (uint256);
 

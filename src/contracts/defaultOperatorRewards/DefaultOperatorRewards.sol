@@ -6,9 +6,9 @@ import {INetworkMiddlewareService} from "@symbiotic/interfaces/service/INetworkM
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
+contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorRewards {
     using SafeERC20 for IERC20;
 
     /**
@@ -24,6 +24,11 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
+    mapping(address network => mapping(address token => uint256 amount)) public balance;
+
+    /**
+     * @inheritdoc IDefaultOperatorRewards
+     */
     mapping(address network => mapping(address token => mapping(address account => uint256 amount))) public claimed;
 
     constructor(address networkMiddlewareService) {
@@ -32,20 +37,28 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
     }
 
+    function initialize() public initializer {
+        __ReentrancyGuard_init();
+    }
+
     /**
      * @inheritdoc IDefaultOperatorRewards
      */
-    function distributeRewards(address network, address token, uint256 amount, bytes32 root_) external {
+    function distributeRewards(address network, address token, uint256 amount, bytes32 root_) external nonReentrant {
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
             revert NotNetworkMiddleware();
         }
 
-        if (root_ == root[network][token]) {
-            revert AlreadySet();
-        }
-
         if (amount > 0) {
+            uint256 balanceBefore = IERC20(token).balanceOf(address(this));
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            amount = IERC20(token).balanceOf(address(this)) - balanceBefore;
+
+            if (amount == 0) {
+                revert InsufficientTransfer();
+            }
+
+            balance[network][token] += amount;
         }
 
         root[network][token] = root_;
@@ -62,13 +75,17 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
         address token,
         uint256 totalClaimable,
         bytes32[] calldata proof
-    ) external returns (uint256 amount) {
+    ) external nonReentrant returns (uint256 amount) {
         bytes32 root_ = root[network][token];
         if (root_ == bytes32(0)) {
             revert RootNotSet();
         }
 
-        if (!MerkleProof.verifyCalldata(proof, root_, keccak256(abi.encode(msg.sender, totalClaimable)))) {
+        if (
+            !MerkleProof.verifyCalldata(
+                proof, root_, keccak256(bytes.concat(keccak256(abi.encode(msg.sender, totalClaimable))))
+            )
+        ) {
             revert InvalidProof();
         }
 
@@ -77,9 +94,16 @@ contract DefaultOperatorRewards is Initializable, IDefaultOperatorRewards {
             revert InsufficientTotalClaimable();
         }
 
-        claimed[network][token][msg.sender] = totalClaimable;
-
         amount = totalClaimable - claimed_;
+
+        uint256 balance_ = balance[network][token];
+        if (amount > balance_) {
+            revert InsufficientBalance();
+        }
+
+        balance[network][token] = balance_ - amount;
+
+        claimed[network][token][msg.sender] = totalClaimable;
 
         IERC20(token).safeTransfer(recipient, amount);
 
