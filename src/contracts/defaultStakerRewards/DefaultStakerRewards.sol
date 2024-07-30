@@ -13,8 +13,14 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
-contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgradeable, IDefaultStakerRewards {
+contract DefaultStakerRewards is
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    MulticallUpgradeable,
+    IDefaultStakerRewards
+{
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -32,11 +38,6 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
      * @inheritdoc IDefaultStakerRewards
      */
     bytes32 public constant ADMIN_FEE_CLAIM_ROLE = keccak256("ADMIN_FEE_CLAIM_ROLE");
-
-    /**
-     * @inheritdoc IDefaultStakerRewards
-     */
-    bytes32 public constant NETWORK_WHITELIST_ROLE = keccak256("NETWORK_WHITELIST_ROLE");
 
     /**
      * @inheritdoc IDefaultStakerRewards
@@ -71,17 +72,13 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    mapping(address account => bool values) public isNetworkWhitelisted;
+    mapping(address token => mapping(address network => RewardDistribution[] rewards_)) public rewards;
 
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    mapping(address token => RewardDistribution[] rewards_) public rewards;
-
-    /**
-     * @inheritdoc IDefaultStakerRewards
-     */
-    mapping(address account => mapping(address token => uint256 rewardIndex)) public lastUnclaimedReward;
+    mapping(address account => mapping(address token => mapping(address network => uint256 rewardIndex))) public
+        lastUnclaimedReward;
 
     /**
      * @inheritdoc IDefaultStakerRewards
@@ -101,8 +98,8 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    function rewardsLength(address token) external view returns (uint256) {
-        return rewards[token].length;
+    function rewardsLength(address token, address network) external view returns (uint256) {
+        return rewards[token][network].length;
     }
 
     /**
@@ -113,16 +110,17 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         address account,
         bytes calldata data
     ) external view override returns (uint256 amount) {
+        // network - network to claim rewards for
         // maxRewards - maximum amount of rewards to process
-        uint256 maxRewards = abi.decode(data, (uint256));
+        (address network, uint256 maxRewards) = abi.decode(data, (address, uint256));
 
-        RewardDistribution[] storage rewardsByToken = rewards[token];
-        uint256 rewardIndex = lastUnclaimedReward[account][token];
+        RewardDistribution[] storage rewardsByTokenNetwork = rewards[token][network];
+        uint256 rewardIndex = lastUnclaimedReward[account][token][network];
 
-        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByToken.length - rewardIndex);
+        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - rewardIndex);
 
         for (uint256 i; i < rewardsToClaim;) {
-            RewardDistribution storage reward = rewardsByToken[rewardIndex];
+            RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
             amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp, new bytes(0)).mulDiv(
                 reward.amount, _activeSharesCache[reward.timestamp]
@@ -140,29 +138,24 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             revert NotVault();
         }
 
+        if (
+            params.defaultAdminRoleHolder == address(0) && params.adminFee != 0
+                && params.adminFeeClaimRoleHolder == address(0)
+        ) {
+            revert MissingRoles();
+        }
+
         __ReentrancyGuard_init();
 
         VAULT = params.vault;
 
         _setAdminFee(params.adminFee);
 
-        if (params.defaultAdminRoleHolder == address(0)) {
-            if (params.networkWhitelistRoleHolder == address(0)) {
-                revert MissingRoleHolders();
-            }
-            if (adminFee != 0 && params.adminFeeClaimRoleHolder == address(0)) {
-                revert MissingRoleHolders();
-            }
-        }
-
         if (params.defaultAdminRoleHolder != address(0)) {
             _grantRole(DEFAULT_ADMIN_ROLE, params.defaultAdminRoleHolder);
         }
         if (params.adminFeeClaimRoleHolder != address(0)) {
             _grantRole(ADMIN_FEE_CLAIM_ROLE, params.adminFeeClaimRoleHolder);
-        }
-        if (params.networkWhitelistRoleHolder != address(0)) {
-            _grantRole(NETWORK_WHITELIST_ROLE, params.networkWhitelistRoleHolder);
         }
         if (params.adminFeeSetRoleHolder != address(0)) {
             _grantRole(ADMIN_FEE_SET_ROLE, params.adminFeeSetRoleHolder);
@@ -179,23 +172,28 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         bytes calldata data
     ) external override nonReentrant {
         // timestamp - time point stakes must be taken into account at
-        uint48 timestamp = abi.decode(data, (uint48));
+        // maxAdminFee - maximum admin fee to allow
+        // activeSharesHint - hint index to optimize `activeSharesAt()` processing
+        // activeStakeHint - hint index to optimize `activeStakeAt()` processing
+        (uint48 timestamp, uint256 maxAdminFee, bytes memory activeSharesHint, bytes memory activeStakeHint) =
+            abi.decode(data, (uint48, uint256, bytes, bytes));
 
         if (INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).middleware(network) != msg.sender) {
             revert NotNetworkMiddleware();
-        }
-
-        if (!isNetworkWhitelisted[network]) {
-            revert NotWhitelistedNetwork();
         }
 
         if (timestamp >= Time.timestamp()) {
             revert InvalidRewardTimestamp();
         }
 
+        uint256 adminFee_ = adminFee;
+        if (maxAdminFee < adminFee_) {
+            revert HighAdminFee();
+        }
+
         if (_activeSharesCache[timestamp] == 0) {
-            uint256 activeShares_ = IVault(VAULT).activeSharesAt(timestamp, new bytes(0));
-            uint256 activeStake_ = IVault(VAULT).activeStakeAt(timestamp, new bytes(0));
+            uint256 activeShares_ = IVault(VAULT).activeSharesAt(timestamp, activeSharesHint);
+            uint256 activeStake_ = IVault(VAULT).activeStakeAt(timestamp, activeStakeHint);
 
             if (activeShares_ == 0 || activeStake_ == 0) {
                 revert InvalidRewardTimestamp();
@@ -212,20 +210,13 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             revert InsufficientReward();
         }
 
-        uint256 adminFeeAmount = amount.mulDiv(adminFee, ADMIN_FEE_BASE);
+        uint256 adminFeeAmount = amount.mulDiv(adminFee_, ADMIN_FEE_BASE);
         uint256 distributeAmount = amount - adminFeeAmount;
 
         claimableAdminFee[token] += adminFeeAmount;
 
         if (distributeAmount > 0) {
-            rewards[token].push(
-                RewardDistribution({
-                    network: network,
-                    amount: distributeAmount,
-                    timestamp: timestamp,
-                    creation: Time.timestamp()
-                })
-            );
+            rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
         emit DistributeRewards(network, token, amount, data);
@@ -234,37 +225,40 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
     /**
      * @inheritdoc IStakerRewards
      */
-    function claimRewards(address recipient, address token, bytes calldata data) external override {
+    function claimRewards(address recipient, address token, bytes calldata data) external override nonReentrant {
+        // network - network to claim rewards for
         // maxRewards - maximum amount of rewards to process
         // activeSharesOfHints - hint indexes to optimize `activeSharesOf()` processing
-        (uint256 maxRewards, bytes[] memory activeSharesOfHints) = abi.decode(data, (uint256, bytes[]));
+        (address network, uint256 maxRewards, bytes[] memory activeSharesOfHints) =
+            abi.decode(data, (address, uint256, bytes[]));
 
         if (recipient == address(0)) {
             revert InvalidRecipient();
         }
 
-        RewardDistribution[] storage rewardsByToken = rewards[token];
-        uint256 rewardIndex = lastUnclaimedReward[msg.sender][token];
+        RewardDistribution[] storage rewardsByTokenNetwork = rewards[token][network];
+        uint256 lastUnclaimedReward_ = lastUnclaimedReward[msg.sender][token][network];
 
-        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByToken.length - rewardIndex);
+        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - lastUnclaimedReward_);
 
         if (rewardsToClaim == 0) {
             revert NoRewardsToClaim();
         }
 
-        if (activeSharesOfHints.length != rewardsToClaim) {
+        if (activeSharesOfHints.length == 0) {
+            activeSharesOfHints = new bytes[](rewardsToClaim);
+        } else if (activeSharesOfHints.length != rewardsToClaim) {
             revert InvalidHintsLength();
         }
 
         uint256 amount;
+        uint256 rewardIndex = lastUnclaimedReward_;
         for (uint256 i; i < rewardsToClaim;) {
-            RewardDistribution storage reward = rewardsByToken[rewardIndex];
+            RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
-            uint256 claimedAmount = IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[i])
-                .mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
-            amount += claimedAmount;
-
-            emit ClaimRewards(token, rewardIndex, msg.sender, recipient, claimedAmount);
+            amount += IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[i]).mulDiv(
+                reward.amount, _activeSharesCache[reward.timestamp]
+            );
 
             unchecked {
                 ++i;
@@ -272,17 +266,19 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
             }
         }
 
-        lastUnclaimedReward[msg.sender][token] = rewardIndex;
+        lastUnclaimedReward[msg.sender][token][network] = rewardIndex;
 
         if (amount > 0) {
             IERC20(token).safeTransfer(recipient, amount);
         }
+
+        emit ClaimRewards(token, network, msg.sender, recipient, lastUnclaimedReward_, rewardsToClaim, amount);
     }
 
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    function claimAdminFee(address recipient, address token) external onlyRole(ADMIN_FEE_CLAIM_ROLE) {
+    function claimAdminFee(address recipient, address token) external nonReentrant onlyRole(ADMIN_FEE_CLAIM_ROLE) {
         uint256 claimableAdminFee_ = claimableAdminFee[token];
         if (claimableAdminFee_ == 0) {
             revert InsufficientAdminFee();
@@ -293,23 +289,6 @@ contract DefaultStakerRewards is AccessControlUpgradeable, ReentrancyGuardUpgrad
         IERC20(token).safeTransfer(recipient, claimableAdminFee_);
 
         emit ClaimAdminFee(token, claimableAdminFee_);
-    }
-
-    /**
-     * @inheritdoc IDefaultStakerRewards
-     */
-    function setNetworkWhitelistStatus(address network, bool status) external onlyRole(NETWORK_WHITELIST_ROLE) {
-        if (!IRegistry(NETWORK_REGISTRY).isEntity(network)) {
-            revert NotNetwork();
-        }
-
-        if (isNetworkWhitelisted[network] == status) {
-            revert AlreadySet();
-        }
-
-        isNetworkWhitelisted[network] = status;
-
-        emit SetNetworkWhitelistStatus(network, status);
     }
 
     /**
