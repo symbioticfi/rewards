@@ -147,6 +147,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
                     epochDuration: 7 days,
                     depositWhitelist: false,
                     defaultAdminRoleHolder: alice,
+                    depositWhitelistSetRoleHolder: alice,
                     depositorWhitelistRoleHolder: alice
                 }),
                 delegatorIndex: 0,
