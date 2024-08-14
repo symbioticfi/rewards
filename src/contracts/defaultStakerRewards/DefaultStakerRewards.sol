@@ -139,11 +139,18 @@ contract DefaultStakerRewards is
             revert NotVault();
         }
 
-        if (
-            params.defaultAdminRoleHolder == address(0) && params.adminFee != 0
-                && params.adminFeeClaimRoleHolder == address(0)
-        ) {
-            revert MissingRoles();
+        if (params.defaultAdminRoleHolder == address(0)) {
+            if (params.adminFee == 0) {
+                if (params.adminFeeClaimRoleHolder == address(0)) {
+                    if (params.adminFeeSetRoleHolder != address(0)) {
+                        revert MissingRoles();
+                    }
+                } else if (params.adminFeeSetRoleHolder == address(0)) {
+                    revert MissingRoles();
+                }
+            } else if (params.adminFeeClaimRoleHolder == address(0)) {
+                revert MissingRoles();
+            }
         }
 
         __ReentrancyGuard_init();
