@@ -189,7 +189,7 @@ contract DefaultStakerRewardsTest is Test {
         defaultStakerRewards = _getStakerDefaultRewards();
     }
 
-    function test_CreateRevertMissingRoles(uint256 adminFee) public {
+    function test_CreateRevertMissingRoles1(uint256 adminFee, address adminFeeSetRoleHolder) public {
         adminFee = bound(adminFee, 1, 10_000);
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -199,7 +199,37 @@ contract DefaultStakerRewardsTest is Test {
                 adminFee: adminFee,
                 defaultAdminRoleHolder: address(0),
                 adminFeeClaimRoleHolder: address(0),
-                adminFeeSetRoleHolder: alice
+                adminFeeSetRoleHolder: adminFeeSetRoleHolder
+            })
+        );
+    }
+
+    function test_CreateRevertMissingRoles2(address adminFeeSetRoleHolder) public {
+        vm.assume(adminFeeSetRoleHolder != address(0));
+
+        vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
+        defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: 0,
+                defaultAdminRoleHolder: address(0),
+                adminFeeClaimRoleHolder: address(0),
+                adminFeeSetRoleHolder: adminFeeSetRoleHolder
+            })
+        );
+    }
+
+    function test_CreateRevertMissingRoles3(address adminFeeClaimRoleHolder) public {
+        vm.assume(adminFeeClaimRoleHolder != address(0));
+
+        vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
+        defaultStakerRewardsFactory.create(
+            IDefaultStakerRewards.InitParams({
+                vault: address(vault),
+                adminFee: 0,
+                defaultAdminRoleHolder: address(0),
+                adminFeeClaimRoleHolder: adminFeeClaimRoleHolder,
+                adminFeeSetRoleHolder: address(0)
             })
         );
     }
