@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
-import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
+import {IDefaultStakerRewards} from "../../interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
+import {IStakerRewards} from "../../interfaces/stakerRewards/IStakerRewards.sol";
 
-import {INetworkMiddlewareService} from "@symbiotic/interfaces/service/INetworkMiddlewareService.sol";
-import {IRegistry} from "@symbiotic/interfaces/common/IRegistry.sol";
-import {IVault} from "@symbiotic/interfaces/vault/IVault.sol";
+import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
+import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -134,7 +134,9 @@ contract DefaultStakerRewards is
         }
     }
 
-    function initialize(InitParams calldata params) external initializer {
+    function initialize(
+        InitParams calldata params
+    ) external initializer {
         if (!IRegistry(VAULT_FACTORY).isEntity(params.vault)) {
             revert NotVault();
         }
@@ -302,7 +304,9 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    function setAdminFee(uint256 adminFee_) external onlyRole(ADMIN_FEE_SET_ROLE) {
+    function setAdminFee(
+        uint256 adminFee_
+    ) external onlyRole(ADMIN_FEE_SET_ROLE) {
         if (adminFee == adminFee_) {
             revert AlreadySet();
         }
@@ -312,7 +316,9 @@ contract DefaultStakerRewards is
         emit SetAdminFee(adminFee_);
     }
 
-    function _setAdminFee(uint256 adminFee_) private {
+    function _setAdminFee(
+        uint256 adminFee_
+    ) private {
         if (adminFee_ > ADMIN_FEE_BASE) {
             revert InvalidAdminFee();
         }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IDefaultOperatorRewards} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
+import {IDefaultOperatorRewards} from "../../interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
-import {INetworkMiddlewareService} from "@symbiotic/interfaces/service/INetworkMiddlewareService.sol";
+import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -32,7 +32,9 @@ contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorR
      */
     mapping(address network => mapping(address token => mapping(address account => uint256 amount))) public claimed;
 
-    constructor(address networkMiddlewareService) {
+    constructor(
+        address networkMiddlewareService
+    ) {
         _disableInitializers();
 
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;

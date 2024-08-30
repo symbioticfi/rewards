@@ -3,7 +3,7 @@ pragma solidity 0.8.25;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {NetworkRegistry} from "@symbiotic/contracts/NetworkRegistry.sol";
+import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.sol";
 
 import {SimpleStakerRewards} from "test/mocks/SimpleStakerRewards.sol";
 

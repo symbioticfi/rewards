@@ -9,5 +9,7 @@ interface IDefaultStakerRewardsFactory {
      * @param params initial parameters needed for a staker rewards contract deployment
      * @return address of the created staker rewards contract
      */
-    function create(IDefaultStakerRewards.InitParams calldata params) external returns (address);
+    function create(
+        IDefaultStakerRewards.InitParams calldata params
+    ) external returns (address);
 }

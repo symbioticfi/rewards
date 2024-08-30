@@ -3,9 +3,9 @@ pragma solidity 0.8.25;
 
 import {DefaultStakerRewards} from "./DefaultStakerRewards.sol";
 
-import {IDefaultStakerRewardsFactory} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
+import {IDefaultStakerRewardsFactory} from "../../interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
 
-import {Registry} from "@symbiotic/contracts/common/Registry.sol";
+import {Registry} from "@symbioticfi/core/src/contracts/common/Registry.sol";
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
@@ -14,14 +14,18 @@ contract DefaultStakerRewardsFactory is Registry, IDefaultStakerRewardsFactory {
 
     address private immutable STAKER_REWARDS_IMPLEMENTATION;
 
-    constructor(address stakerRewardsImplementation) {
+    constructor(
+        address stakerRewardsImplementation
+    ) {
         STAKER_REWARDS_IMPLEMENTATION = stakerRewardsImplementation;
     }
 
     /**
      * @inheritdoc IDefaultStakerRewardsFactory
      */
-    function create(DefaultStakerRewards.InitParams calldata params) external returns (address) {
+    function create(
+        DefaultStakerRewards.InitParams calldata params
+    ) external returns (address) {
         address stakerRewards =
             STAKER_REWARDS_IMPLEMENTATION.cloneDeterministic(keccak256(abi.encode(totalEntities(), params)));
         DefaultStakerRewards(stakerRewards).initialize(params);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
+import {IStakerRewards} from "../stakerRewards/IStakerRewards.sol";
 
 interface IDefaultStakerRewards is IStakerRewards {
     error AlreadySet();
@@ -161,7 +161,9 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param token address of the token
      * @return claimable admin fee
      */
-    function claimableAdminFee(address token) external view returns (uint256);
+    function claimableAdminFee(
+        address token
+    ) external view returns (uint256);
 
     /**
      * @notice Claim an admin fee.
@@ -176,5 +178,7 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param adminFee admin fee (up to ADMIN_FEE_BASE inclusively)
      * @dev Only the ADMIN_FEE_SET_ROLE holder can call this function.
      */
-    function setAdminFee(uint256 adminFee) external;
+    function setAdminFee(
+        uint256 adminFee
+    ) external;
 }
