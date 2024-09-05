@@ -3,12 +3,13 @@ pragma solidity 0.8.25;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {NetworkRegistry} from "@symbiotic/contracts/NetworkRegistry.sol";
-import {NetworkMiddlewareService} from "@symbiotic/contracts/service/NetworkMiddlewareService.sol";
+import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.sol";
+import {NetworkMiddlewareService} from "@symbioticfi/core/src/contracts/service/NetworkMiddlewareService.sol";
 
-import {DefaultOperatorRewardsFactory} from "src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
-import {DefaultOperatorRewards} from "src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
-import {IDefaultOperatorRewards} from "src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
+import {DefaultOperatorRewardsFactory} from
+    "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
+import {IDefaultOperatorRewards} from "../../src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
 contract DefaultOperatorRewardsFactoryTest is Test {
     address owner;

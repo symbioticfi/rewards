@@ -3,31 +3,31 @@ pragma solidity 0.8.25;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {VaultFactory} from "@symbiotic/contracts/VaultFactory.sol";
-import {DelegatorFactory} from "@symbiotic/contracts/DelegatorFactory.sol";
-import {SlasherFactory} from "@symbiotic/contracts/SlasherFactory.sol";
-import {NetworkRegistry} from "@symbiotic/contracts/NetworkRegistry.sol";
-import {OperatorRegistry} from "@symbiotic/contracts/OperatorRegistry.sol";
-import {MetadataService} from "@symbiotic/contracts/service/MetadataService.sol";
-import {NetworkMiddlewareService} from "@symbiotic/contracts/service/NetworkMiddlewareService.sol";
-import {OptInService} from "@symbiotic/contracts/service/OptInService.sol";
+import {VaultFactory} from "@symbioticfi/core/src/contracts/VaultFactory.sol";
+import {DelegatorFactory} from "@symbioticfi/core/src/contracts/DelegatorFactory.sol";
+import {SlasherFactory} from "@symbioticfi/core/src/contracts/SlasherFactory.sol";
+import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.sol";
+import {OperatorRegistry} from "@symbioticfi/core/src/contracts/OperatorRegistry.sol";
+import {MetadataService} from "@symbioticfi/core/src/contracts/service/MetadataService.sol";
+import {NetworkMiddlewareService} from "@symbioticfi/core/src/contracts/service/NetworkMiddlewareService.sol";
+import {OptInService} from "@symbioticfi/core/src/contracts/service/OptInService.sol";
 
-import {Vault} from "@symbiotic/contracts/vault/Vault.sol";
-import {NetworkRestakeDelegator} from "@symbiotic/contracts/delegator/NetworkRestakeDelegator.sol";
-import {FullRestakeDelegator} from "@symbiotic/contracts/delegator/FullRestakeDelegator.sol";
-import {Slasher} from "@symbiotic/contracts/slasher/Slasher.sol";
-import {VetoSlasher} from "@symbiotic/contracts/slasher/VetoSlasher.sol";
+import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
+import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
+import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
+import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
+import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
-import {SimpleCollateral} from "@symbiotic/mocks/SimpleCollateral.sol";
-import {Token} from "@symbiotic/mocks/Token.sol";
-import {VaultConfigurator, IVaultConfigurator} from "@symbiotic/contracts/VaultConfigurator.sol";
-import {IVault} from "@symbiotic/interfaces/IVaultConfigurator.sol";
-import {INetworkRestakeDelegator} from "@symbiotic/interfaces/delegator/INetworkRestakeDelegator.sol";
-import {IBaseDelegator} from "@symbiotic/interfaces/delegator/IBaseDelegator.sol";
+import {SimpleCollateral} from "@symbioticfi/core/test/mocks/SimpleCollateral.sol";
+import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
+import {VaultConfigurator, IVaultConfigurator} from "@symbioticfi/core/src/contracts/VaultConfigurator.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/IVaultConfigurator.sol";
+import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
+import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
 
-import {DefaultStakerRewardsFactory} from "src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
-import {DefaultStakerRewards} from "src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
-import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
+import {DefaultStakerRewardsFactory} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
+import {DefaultStakerRewards} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
+import {IDefaultStakerRewards} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 
 contract DefaultStakerRewardsFactoryTest is Test {
     address owner;
@@ -146,9 +146,13 @@ contract DefaultStakerRewardsFactoryTest is Test {
                     burner: address(0xdEaD),
                     epochDuration: 7 days,
                     depositWhitelist: false,
+                    isDepositLimit: false,
+                    depositLimit: 0,
                     defaultAdminRoleHolder: alice,
                     depositWhitelistSetRoleHolder: alice,
-                    depositorWhitelistRoleHolder: alice
+                    depositorWhitelistRoleHolder: alice,
+                    isDepositLimitSetRoleHolder: alice,
+                    depositLimitSetRoleHolder: alice
                 }),
                 delegatorIndex: 0,
                 delegatorParams: abi.encode(
@@ -171,7 +175,9 @@ contract DefaultStakerRewardsFactoryTest is Test {
         vault = Vault(vault_);
     }
 
-    function test_Create(uint256 adminFee) public {
+    function test_Create(
+        uint256 adminFee
+    ) public {
         adminFee = bound(adminFee, 0, 10_000);
 
         address defaultStakerRewards_ = address(
@@ -229,7 +235,9 @@ contract DefaultStakerRewardsFactoryTest is Test {
         );
     }
 
-    function _registerOperator(address user) internal {
+    function _registerOperator(
+        address user
+    ) internal {
         vm.startPrank(user);
         operatorRegistry.registerOperator();
         vm.stopPrank();

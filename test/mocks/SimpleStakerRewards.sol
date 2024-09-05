@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
+import {IStakerRewards} from "../../src/interfaces/stakerRewards/IStakerRewards.sol";
 
 contract SimpleStakerRewards is IStakerRewards {
     /**

@@ -3,37 +3,37 @@ pragma solidity 0.8.25;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {VaultFactory} from "@symbiotic/contracts/VaultFactory.sol";
-import {DelegatorFactory} from "@symbiotic/contracts/DelegatorFactory.sol";
-import {SlasherFactory} from "@symbiotic/contracts/SlasherFactory.sol";
-import {NetworkRegistry} from "@symbiotic/contracts/NetworkRegistry.sol";
-import {OperatorRegistry} from "@symbiotic/contracts/OperatorRegistry.sol";
-import {MetadataService} from "@symbiotic/contracts/service/MetadataService.sol";
-import {NetworkMiddlewareService} from "@symbiotic/contracts/service/NetworkMiddlewareService.sol";
-import {OptInService} from "@symbiotic/contracts/service/OptInService.sol";
+import {VaultFactory} from "@symbioticfi/core/src/contracts/VaultFactory.sol";
+import {DelegatorFactory} from "@symbioticfi/core/src/contracts/DelegatorFactory.sol";
+import {SlasherFactory} from "@symbioticfi/core/src/contracts/SlasherFactory.sol";
+import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.sol";
+import {OperatorRegistry} from "@symbioticfi/core/src/contracts/OperatorRegistry.sol";
+import {MetadataService} from "@symbioticfi/core/src/contracts/service/MetadataService.sol";
+import {NetworkMiddlewareService} from "@symbioticfi/core/src/contracts/service/NetworkMiddlewareService.sol";
+import {OptInService} from "@symbioticfi/core/src/contracts/service/OptInService.sol";
 
-import {Vault} from "@symbiotic/contracts/vault/Vault.sol";
-import {NetworkRestakeDelegator} from "@symbiotic/contracts/delegator/NetworkRestakeDelegator.sol";
-import {FullRestakeDelegator} from "@symbiotic/contracts/delegator/FullRestakeDelegator.sol";
-import {Slasher} from "@symbiotic/contracts/slasher/Slasher.sol";
-import {VetoSlasher} from "@symbiotic/contracts/slasher/VetoSlasher.sol";
+import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
+import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
+import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
+import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
+import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
-import {SimpleCollateral} from "@symbiotic/mocks/SimpleCollateral.sol";
-import {Token} from "@symbiotic/mocks/Token.sol";
-import {VaultConfigurator, IVaultConfigurator} from "@symbiotic/contracts/VaultConfigurator.sol";
-import {IVault} from "@symbiotic/interfaces/IVaultConfigurator.sol";
-import {INetworkRestakeDelegator} from "@symbiotic/interfaces/delegator/INetworkRestakeDelegator.sol";
-import {IBaseDelegator} from "@symbiotic/interfaces/delegator/IBaseDelegator.sol";
+import {SimpleCollateral} from "@symbioticfi/core/test/mocks/SimpleCollateral.sol";
+import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
+import {VaultConfigurator, IVaultConfigurator} from "@symbioticfi/core/src/contracts/VaultConfigurator.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/IVaultConfigurator.sol";
+import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
+import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
 
-import {DefaultStakerRewardsFactory} from "src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
-import {IDefaultStakerRewards} from "src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
+import {DefaultStakerRewardsFactory} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
+import {IDefaultStakerRewards} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 
-import {DefaultStakerRewards} from "src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
+import {DefaultStakerRewards} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
 
-import {FeeOnTransferToken} from "@symbiotic/mocks/FeeOnTransferToken.sol";
+import {FeeOnTransferToken} from "@symbioticfi/core/test/mocks/FeeOnTransferToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {VaultHints} from "@symbiotic/contracts/hints/VaultHints.sol";
+import {VaultHints} from "@symbioticfi/core/src/contracts/hints/VaultHints.sol";
 
 contract DefaultStakerRewardsTest is Test {
     using Math for uint256;
@@ -154,9 +154,13 @@ contract DefaultStakerRewardsTest is Test {
                     burner: address(0xdEaD),
                     epochDuration: 7 days,
                     depositWhitelist: false,
+                    isDepositLimit: false,
+                    depositLimit: 0,
                     defaultAdminRoleHolder: alice,
                     depositWhitelistSetRoleHolder: alice,
-                    depositorWhitelistRoleHolder: alice
+                    depositorWhitelistRoleHolder: alice,
+                    isDepositLimitSetRoleHolder: alice,
+                    depositLimitSetRoleHolder: alice
                 }),
                 delegatorIndex: 0,
                 delegatorParams: abi.encode(
@@ -204,7 +208,9 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertMissingRoles2(address adminFeeSetRoleHolder) public {
+    function test_CreateRevertMissingRoles2(
+        address adminFeeSetRoleHolder
+    ) public {
         vm.assume(adminFeeSetRoleHolder != address(0));
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -219,7 +225,9 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertMissingRoles3(address adminFeeClaimRoleHolder) public {
+    function test_CreateRevertMissingRoles3(
+        address adminFeeClaimRoleHolder
+    ) public {
         vm.assume(adminFeeClaimRoleHolder != address(0));
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -234,7 +242,9 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertInvalidAdminFee(uint256 adminFee) public {
+    function test_CreateRevertInvalidAdminFee(
+        uint256 adminFee
+    ) public {
         adminFee = bound(adminFee, 10_001, type(uint256).max);
 
         vm.expectRevert(IDefaultStakerRewards.InvalidAdminFee.selector);
@@ -565,7 +575,9 @@ contract DefaultStakerRewardsTest is Test {
         _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee, "", "");
     }
 
-    function test_DistributeRewardsRevertInsufficientReward(uint256 amount) public {
+    function test_DistributeRewardsRevertInsufficientReward(
+        uint256 amount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
 
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
@@ -1004,7 +1016,9 @@ contract DefaultStakerRewardsTest is Test {
         _claimAdminFee(alice, address(token));
     }
 
-    function test_SetAdminFee(uint256 adminFee) public {
+    function test_SetAdminFee(
+        uint256 adminFee
+    ) public {
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
         blockTimestamp = blockTimestamp + 1_720_700_948;
         vm.warp(blockTimestamp);
@@ -1019,7 +1033,9 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.adminFee(), adminFee);
     }
 
-    function test_SetAdminFeeRevertAlreadySet(uint256 adminFee) public {
+    function test_SetAdminFeeRevertAlreadySet(
+        uint256 adminFee
+    ) public {
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
         blockTimestamp = blockTimestamp + 1_720_700_948;
         vm.warp(blockTimestamp);
@@ -1046,7 +1062,9 @@ contract DefaultStakerRewardsTest is Test {
         return IDefaultStakerRewards(defaultStakerRewardsFactory.create(params));
     }
 
-    function _registerOperator(address user) internal {
+    function _registerOperator(
+        address user
+    ) internal {
         vm.startPrank(user);
         operatorRegistry.registerOperator();
         vm.stopPrank();
