@@ -18,7 +18,6 @@ import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/Fu
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
-import {SimpleCollateral} from "@symbioticfi/core/test/mocks/SimpleCollateral.sol";
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
 import {VaultConfigurator, IVaultConfigurator} from "@symbioticfi/core/src/contracts/VaultConfigurator.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/IVaultConfigurator.sol";
@@ -56,7 +55,7 @@ contract DefaultStakerRewardsTest is Test {
     OptInService operatorVaultOptInService;
     OptInService operatorNetworkOptInService;
 
-    SimpleCollateral collateral;
+    Token collateral;
     VaultConfigurator vaultConfigurator;
 
     Vault vault;
@@ -134,10 +133,7 @@ contract DefaultStakerRewardsTest is Test {
         vaultConfigurator =
             new VaultConfigurator(address(vaultFactory), address(delegatorFactory), address(slasherFactory));
 
-        Token token = new Token("Token");
-        collateral = new SimpleCollateral(address(token));
-
-        collateral.mint(token.totalSupply());
+        collateral = new Token("Token");
 
         address[] memory networkLimitSetRoleHolders = new address[](1);
         networkLimitSetRoleHolders[0] = alice;

@@ -25,6 +25,6 @@
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
-    "@symbioticfi/core": "1.0.0-devnet.3"
+    "@symbioticfi/core": "1.0.0-devnet.5"
   }
 }
