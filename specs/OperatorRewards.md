@@ -13,3 +13,25 @@ For operator rewards, the delegator module of the vault provides:
 - `Delegator.stakeAt(network, operator, timestamp, hint)` - Active stake of an operator in the network.
 
 Additionally, all operators register through the network, providing necessary details such as commission rates, fixed payments, and other relevant conditions. This registration process ensures that networks have the required data to perform accurate on-chain reward calculations in their middleware.
+
+### Deploy
+
+```shell
+source .env
+```
+
+#### Deploy factory
+
+Deployment script: [click](../script/deploy/DefaultOperatorRewardsFactory.s.sol)
+
+```shell
+forge script script/deploy/DefaultOperatorRewardsFactory.s.sol:DefaultOperatorRewardsFactoryScript 0x0000000000000000000000000000000000000000 --sig "run(address)" --broadcast --rpc-url=$ETH_RPC_URL
+```
+
+#### Deploy entity
+
+Deployment script: [click](../script/deploy/DefaultOperatorRewards.s.sol)
+
+```shell
+forge script script/deploy/DefaultOperatorRewards.s.sol:DefaultOperatorRewardsScript 0x0000000000000000000000000000000000000000 --sig "run(address)" --broadcast --rpc-url=$ETH_RPC_URL
+```

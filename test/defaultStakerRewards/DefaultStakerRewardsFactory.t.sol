@@ -18,10 +18,9 @@ import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/Fu
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
-import {SimpleCollateral} from "@symbioticfi/core/test/mocks/SimpleCollateral.sol";
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
 import {VaultConfigurator, IVaultConfigurator} from "@symbioticfi/core/src/contracts/VaultConfigurator.sol";
-import {IVault} from "@symbioticfi/core/src/interfaces/IVaultConfigurator.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
 import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
 
@@ -48,7 +47,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
     OptInService operatorVaultOptInService;
     OptInService operatorNetworkOptInService;
 
-    SimpleCollateral collateral;
+    Token collateral;
     VaultConfigurator vaultConfigurator;
 
     Vault vault;
@@ -126,10 +125,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
         vaultConfigurator =
             new VaultConfigurator(address(vaultFactory), address(delegatorFactory), address(slasherFactory));
 
-        Token token = new Token("Token");
-        collateral = new SimpleCollateral(address(token));
-
-        collateral.mint(token.totalSupply());
+        collateral = new Token("Token");
 
         address[] memory networkLimitSetRoleHolders = new address[](1);
         networkLimitSetRoleHolders[0] = alice;
@@ -139,21 +135,21 @@ contract DefaultStakerRewardsFactoryTest is Test {
             IVaultConfigurator.InitParams({
                 version: vaultFactory.lastVersion(),
                 owner: alice,
-                vaultParams: IVault.InitParams({
-                    collateral: address(collateral),
-                    delegator: address(0),
-                    slasher: address(0),
-                    burner: address(0xdEaD),
-                    epochDuration: 7 days,
-                    depositWhitelist: false,
-                    isDepositLimit: false,
-                    depositLimit: 0,
-                    defaultAdminRoleHolder: alice,
-                    depositWhitelistSetRoleHolder: alice,
-                    depositorWhitelistRoleHolder: alice,
-                    isDepositLimitSetRoleHolder: alice,
-                    depositLimitSetRoleHolder: alice
-                }),
+                vaultParams: abi.encode(
+                    IVault.InitParams({
+                        collateral: address(collateral),
+                        burner: address(0xdEaD),
+                        epochDuration: 7 days,
+                        depositWhitelist: false,
+                        isDepositLimit: false,
+                        depositLimit: 0,
+                        defaultAdminRoleHolder: alice,
+                        depositWhitelistSetRoleHolder: alice,
+                        depositorWhitelistRoleHolder: alice,
+                        isDepositLimitSetRoleHolder: alice,
+                        depositLimitSetRoleHolder: alice
+                    })
+                ),
                 delegatorIndex: 0,
                 delegatorParams: abi.encode(
                     INetworkRestakeDelegator.InitParams({

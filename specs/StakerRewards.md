@@ -21,16 +21,16 @@ source .env
 
 #### Deploy factory
 
-Deployment script: [click](../script/deploy/defaultStakerRewards/DefaultStakerRewardsFactory.s.sol)
+Deployment script: [click](../script/deploy/DefaultStakerRewardsFactory.s.sol)
 
 ```shell
-forge script script/deploy/defaultStakerRewards/DefaultStakerRewardsFactory.s.sol:DefaultStakerRewardsFactoryScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/DefaultStakerRewardsFactory.s.sol:DefaultStakerRewardsFactoryScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
 ```
 
 #### Deploy entity
 
-Deployment script: [click](../script/deploy/defaultStakerRewards/DefaultStakerRewards.s.sol)
+Deployment script: [click](../script/deploy/DefaultStakerRewards.s.sol)
 
 ```shell
-forge script script/deploy/defaultStakerRewards/DefaultStakerRewards.s.sol:DefaultStakerRewardsScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,uint256,address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/DefaultStakerRewards.s.sol:DefaultStakerRewardsScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address,uint256,address,address,address)" --broadcast --rpc-url=$ETH_RPC_URL
 ```

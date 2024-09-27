@@ -3,9 +3,8 @@ pragma solidity 0.8.25;
 
 import {Script} from "forge-std/Script.sol";
 
-import {IDefaultStakerRewards} from "../../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
-import {IDefaultStakerRewardsFactory} from
-    "../../../src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
+import {IDefaultStakerRewards} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
+import {IDefaultStakerRewardsFactory} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
 
 contract DefaultStakerRewardsScript is Script {
     function run(
