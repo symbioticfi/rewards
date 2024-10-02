@@ -53,11 +53,6 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    address public immutable NETWORK_REGISTRY;
-
-    /**
-     * @inheritdoc IDefaultStakerRewards
-     */
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
 
     /**
@@ -88,11 +83,10 @@ contract DefaultStakerRewards is
 
     mapping(uint48 timestamp => uint256 amount) private _activeSharesCache;
 
-    constructor(address vaultFactory, address networkRegistry, address networkMiddlewareService) {
+    constructor(address vaultFactory, address networkMiddlewareService) {
         _disableInitializers();
 
         VAULT_FACTORY = vaultFactory;
-        NETWORK_REGISTRY = networkRegistry;
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
     }
 
