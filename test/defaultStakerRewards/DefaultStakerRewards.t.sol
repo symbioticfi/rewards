@@ -178,9 +178,8 @@ contract DefaultStakerRewardsTest is Test {
 
         vault = Vault(vault_);
 
-        address defaultStakerRewards_ = address(
-            new DefaultStakerRewards(address(vaultFactory), address(networkRegistry), address(networkMiddlewareService))
-        );
+        address defaultStakerRewards_ =
+            address(new DefaultStakerRewards(address(vaultFactory), address(networkMiddlewareService)));
 
         defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
     }

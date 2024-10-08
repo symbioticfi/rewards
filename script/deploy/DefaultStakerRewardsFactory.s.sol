@@ -7,11 +7,11 @@ import {DefaultStakerRewards} from "../../src/contracts/defaultStakerRewards/Def
 import {DefaultStakerRewardsFactory} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
 
 contract DefaultStakerRewardsFactoryScript is Script {
-    function run(address vaultFactory, address networkRegistry, address networkMiddlewareService) external {
+    function run(address vaultFactory, address networkMiddlewareService) external {
         vm.startBroadcast();
 
         DefaultStakerRewards stakerRewardsImplementation =
-            new DefaultStakerRewards(vaultFactory, networkRegistry, networkMiddlewareService);
+            new DefaultStakerRewards(vaultFactory, networkMiddlewareService);
         new DefaultStakerRewardsFactory(address(stakerRewardsImplementation));
 
         vm.stopBroadcast();

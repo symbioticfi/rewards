@@ -176,9 +176,8 @@ contract DefaultStakerRewardsFactoryTest is Test {
     ) public {
         adminFee = bound(adminFee, 0, 10_000);
 
-        address defaultStakerRewards_ = address(
-            new DefaultStakerRewards(address(vaultFactory), address(networkRegistry), address(networkMiddlewareService))
-        );
+        address defaultStakerRewards_ =
+            address(new DefaultStakerRewards(address(vaultFactory), address(networkMiddlewareService)));
 
         defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 
@@ -194,7 +193,6 @@ contract DefaultStakerRewardsFactoryTest is Test {
         defaultStakerRewards = DefaultStakerRewards(defaultStakerRewardsAddress);
         assertEq(defaultStakerRewardsFactory.isEntity(defaultStakerRewardsAddress), true);
 
-        assertEq(defaultStakerRewards.NETWORK_REGISTRY(), address(networkRegistry));
         assertEq(defaultStakerRewards.VAULT_FACTORY(), address(vaultFactory));
         assertEq(defaultStakerRewards.NETWORK_MIDDLEWARE_SERVICE(), address(networkMiddlewareService));
         assertEq(defaultStakerRewards.VAULT(), address(vault));
@@ -213,9 +211,8 @@ contract DefaultStakerRewardsFactoryTest is Test {
     }
 
     function test_CreateRevertNotVault() public {
-        address defaultStakerRewards_ = address(
-            new DefaultStakerRewards(address(vaultFactory), address(networkRegistry), address(networkMiddlewareService))
-        );
+        address defaultStakerRewards_ =
+            address(new DefaultStakerRewards(address(vaultFactory), address(networkMiddlewareService)));
 
         defaultStakerRewardsFactory = new DefaultStakerRewardsFactory(defaultStakerRewards_);
 

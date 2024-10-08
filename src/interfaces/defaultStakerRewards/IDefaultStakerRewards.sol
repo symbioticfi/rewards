@@ -102,12 +102,6 @@ interface IDefaultStakerRewards is IStakerRewards {
     function VAULT_FACTORY() external view returns (address);
 
     /**
-     * @notice Get the network registry's address.
-     * @return address of the network registry
-     */
-    function NETWORK_REGISTRY() external view returns (address);
-
-    /**
      * @notice Get the network middleware service's address.
      * @return address of the network middleware service
      */
