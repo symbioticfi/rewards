@@ -303,14 +303,14 @@ contract DefaultOperatorRewardsTest is Test {
         vm.stopPrank();
 
         address operator = 0x0000000000000000000000000000000000000003;
-        uint256 amount = 600000000000000000;
+        uint256 amount = 600_000_000_000_000_000;
         bytes32[] memory proof = new bytes32[](2);
         proof[0] = 0x92864efb389a13533b2b5d94eda464bce7dbe336d06c6d5feb673c30460c10ee;
         proof[1] = 0xb77d490dc0f9580cc767909bba59fd55900dec274b637ed820a391c018c8858a;
         bytes32 root = 0x1421466e8f910cab140a44dd533adb90ebc2d87e0ab91e851737a77ecd394224;
 
         _distributeRewards(middleware, network, address(token), amount, root);
-        
+
         _claimRewards(operator, network, address(token), amount, proof);
     }
 
