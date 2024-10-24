@@ -1,6 +1,6 @@
 {
   "name": "@symbioticfi/rewards",
-  "version": "1.0.0-devnet.3",
+  "version": "1.0.0-devnet.4",
   "description": "Symbiotic is a shared security protocol enabling decentralized networks to control and customize their own multi-asset restaking implementation.",
   "homepage": "https://symbiotic.fi/",
   "bugs": "https://github.com/symbioticfi/rewards/issues",
@@ -9,7 +9,8 @@
   "files": [
     "src/**/*",
     "test/mocks/**/*",
-    "out/**/*.json"
+    "out/**/*.json",
+    "cli/**/*"
   ],
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "@openzeppelin/merkle-tree": "1.0.7",
     "@symbioticfi/core": "1.0.0-devnet.8"
   }
 }
