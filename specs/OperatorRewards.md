@@ -49,7 +49,7 @@ npm install
 **distributionToRoots**
 
 ```shell
-node cli/distributionToProofs.js
+node cli/defaultOperatorRewards/distributionToRoots.js
 ```
 
 Get a Merkle root for each rewards distribution by token.
@@ -61,7 +61,7 @@ _Make sure to save `distribution.json` to `cli/defaultOperatorRewards/data` fold
 **distributionToProofs**
 
 ```shell
-node cli/distributionToProofs.js OPERATOR
+node cli/defaultOperatorRewards/distributionToProofs.js OPERATOR
 ```
 
 Get proofs for all tokens in a rewards distribution for a given operator.
@@ -77,7 +77,7 @@ Arguments:
 **distributionToTrees**
 
 ```shell
-node cli/distributionToTrees.js
+node cli/defaultOperatorRewards/distributionToTrees.js
 ```
 
 Saves OZ Merkle tree structures constructed from the rewards distribution to `cli/defaultOperatorRewards/data/trees.json`.
@@ -89,7 +89,7 @@ _Make sure to save `distribution.json` to `cli/defaultOperatorRewards/data` fold
 **treesToRoots**
 
 ```shell
-node cli/treesToRoots.js
+node cli/defaultOperatorRewards/treesToRoots.js
 ```
 
 Get a Merkle root for each Merkle tree by token.
@@ -101,7 +101,7 @@ _Make sure to save `trees.json` to `cli/defaultOperatorRewards/data` folder. You
 **treesToProofs**
 
 ```shell
-node cli/treesToProofs.js OPERATOR
+node cli/defaultOperatorRewards/treesToProofs.js OPERATOR
 ```
 
 Get proofs for all tokens in Merkle trees for a given operator.
@@ -117,7 +117,7 @@ Arguments:
 **treesToDistribution**
 
 ```shell
-node cli/treesToDistribution.js
+node cli/defaultOperatorRewards/treesToDistribution.js
 ```
 
 Saves a rewards distribution constructed from the OZ Merkle trees to `cli/defaultOperatorRewards/data/distribution.json`.

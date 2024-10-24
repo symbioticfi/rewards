@@ -1,4 +1,6 @@
 const { StandardMerkleTree } = require('@openzeppelin/merkle-tree')
+const fs = require('fs')
+const path = require('path')
 
 const Trees = require('./data/trees.json')
 
@@ -19,11 +21,22 @@ function parseMerkleTrees() {
 function main() {
   const trees = parseMerkleTrees()
 
-  for (const [token, { tree }] of Object.entries(trees)) {
-    console.log(`-------------------------------`)
-    console.log(`Token: ${token}`)
-    console.log(`Merkle Root: ${tree.root}`)
+  const distributionJson = []
+  for (const [token, { values }] of Object.entries(trees)) {
+    distributionJson.push({
+      token,
+      operators: values.map(([operator, reward]) => ({
+        operator,
+        reward,
+      })),
+    })
   }
+
+  const fileName = 'data/distribution.json'
+  const filePath = path.join(__dirname, fileName)
+
+  fs.writeFileSync(filePath, JSON.stringify(distributionJson, null, 2))
+  console.log(`Distribution written to ${fileName}`)
 }
 
 main()
