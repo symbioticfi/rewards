@@ -4,6 +4,10 @@
 
 This repository contains a Symbiotic Staker Rewards interface, its default implementation, and a default Operator Rewards.
 
+## Documentation
+
+Can be found [here](https://docs.symbiotic.fi/core-modules/rewards).
+
 ## Technical Documentation
 
 Can be found [here](./specs).

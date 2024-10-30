@@ -289,6 +289,31 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1, proof);
     }
 
+    function test_ClaimRewardsCustom() public {
+        defaultOperatorRewards = _getOperatorDefaultRewards();
+
+        address network = alice;
+        address middleware = alice;
+        _registerNetwork(network, middleware);
+
+        IERC20 token = IERC20(new Token("Token"));
+        token.transfer(middleware, 100_000 * 1e18);
+        vm.startPrank(middleware);
+        token.approve(address(defaultOperatorRewards), type(uint256).max);
+        vm.stopPrank();
+
+        address operator = 0x0000000000000000000000000000000000000003;
+        uint256 amount = 600_000_000_000_000_000;
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0x92864efb389a13533b2b5d94eda464bce7dbe336d06c6d5feb673c30460c10ee;
+        proof[1] = 0xb77d490dc0f9580cc767909bba59fd55900dec274b637ed820a391c018c8858a;
+        bytes32 root = 0x1421466e8f910cab140a44dd533adb90ebc2d87e0ab91e851737a77ecd394224;
+
+        _distributeRewards(middleware, network, address(token), amount, root);
+
+        _claimRewards(operator, network, address(token), amount, proof);
+    }
+
     function _getOperatorDefaultRewards() internal returns (IDefaultOperatorRewards) {
         return IDefaultOperatorRewards(defaultOperatorRewardsFactory.create());
     }

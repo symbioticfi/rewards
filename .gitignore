@@ -17,3 +17,6 @@ docs/
 # Other files
 .gas-snapshot
 lcov.info
+
+node_modules
+package-lock.json
