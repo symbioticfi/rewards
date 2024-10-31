@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Script} from "forge-std/Script.sol";
+import {console2, Script} from "forge-std/Script.sol";
 
 import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {DefaultOperatorRewardsFactory} from
@@ -14,7 +14,10 @@ contract DefaultOperatorRewardsFactoryScript is Script {
         vm.startBroadcast();
 
         DefaultOperatorRewards operatorRewardsImplementation = new DefaultOperatorRewards(networkMiddlewareService);
-        new DefaultOperatorRewardsFactory(address(operatorRewardsImplementation));
+        address defaultOperatorRewardsFactory =
+            address(new DefaultOperatorRewardsFactory(address(operatorRewardsImplementation)));
+
+        console2.log("Default Operator Rewards Factory: ", defaultOperatorRewardsFactory);
 
         vm.stopBroadcast();
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Script} from "forge-std/Script.sol";
+import {console2, Script} from "forge-std/Script.sol";
 
 import {IDefaultStakerRewards} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 import {IDefaultStakerRewardsFactory} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
@@ -17,7 +17,7 @@ contract DefaultStakerRewardsScript is Script {
     ) external {
         vm.startBroadcast();
 
-        IDefaultStakerRewardsFactory(defaultStakerRewardsFactory).create(
+        address defaultStakerRewards = IDefaultStakerRewardsFactory(defaultStakerRewardsFactory).create(
             IDefaultStakerRewards.InitParams({
                 vault: vault,
                 adminFee: adminFee,
@@ -26,6 +26,8 @@ contract DefaultStakerRewardsScript is Script {
                 adminFeeSetRoleHolder: adminFeeSetRoleHolder
             })
         );
+
+        console2.log("Default Staker Rewards: ", defaultStakerRewards);
 
         vm.stopBroadcast();
     }
