@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./SymbioticDefaultRewardsImports.sol";
+import "./SymbioticRewardsImports.sol";
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 import {Test} from "forge-std/Test.sol";
 
-contract SymbioticDefaultRewardsBindings is Test {
+contract SymbioticRewardsBindings is Test {
     using SafeERC20 for IERC20;
 
-    function _createDefaultStakerRewards_SymbioticDefaultRewards(
+    function _createDefaultStakerRewards_SymbioticRewards(
         ISymbioticDefaultStakerRewardsFactory symbioticDefaultStakerRewardsFactory,
         address who,
         address vault,
@@ -33,7 +33,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _createDefaultOperatorRewards_SymbioticDefaultRewards(
+    function _createDefaultOperatorRewards_SymbioticRewards(
         ISymbioticDefaultOperatorRewardsFactory symbioticDefaultOperatorRewardsFactory,
         address who
     ) internal virtual returns (address defaultOperatorRewards) {
@@ -42,7 +42,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _distributeRewards_SymbioticDefaultRewards(
+    function _distributeRewards_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         address network,
@@ -66,7 +66,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _claimRewards_SymbioticDefaultRewards(
+    function _claimRewards_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         address recipient,
@@ -81,16 +81,16 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _claimRewards_SymbioticDefaultRewards(
+    function _claimRewards_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         address token,
         address network
     ) internal virtual {
-        _claimRewards_SymbioticDefaultRewards(who, defaultStakerRewards, who, token, network);
+        _claimRewards_SymbioticRewards(who, defaultStakerRewards, who, token, network);
     }
 
-    function _claimAdminFee_SymbioticDefaultRewards(
+    function _claimAdminFee_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         address recipient,
@@ -101,15 +101,15 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _claimAdminFee_SymbioticDefaultRewards(
+    function _claimAdminFee_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         address token
     ) internal virtual {
-        _claimAdminFee_SymbioticDefaultRewards(who, defaultStakerRewards, who, token);
+        _claimAdminFee_SymbioticRewards(who, defaultStakerRewards, who, token);
     }
 
-    function _setAdminFee_SymbioticDefaultRewards(
+    function _setAdminFee_SymbioticRewards(
         address who,
         address defaultStakerRewards,
         uint256 adminFee
@@ -119,7 +119,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _distributeRewards_SymbioticDefaultRewards(
+    function _distributeRewards_SymbioticRewards(
         address who,
         address defaultOperatorRewards,
         address network,
@@ -133,7 +133,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _claimRewards_SymbioticDefaultRewards(
+    function _claimRewards_SymbioticRewards(
         address who,
         address defaultOperatorRewards,
         address recipient,
@@ -149,7 +149,7 @@ contract SymbioticDefaultRewardsBindings is Test {
         vm.stopPrank();
     }
 
-    function _claimRewards_SymbioticDefaultRewards(
+    function _claimRewards_SymbioticRewards(
         address who,
         address defaultOperatorRewards,
         address network,
@@ -157,45 +157,24 @@ contract SymbioticDefaultRewardsBindings is Test {
         uint256 totalClaimable,
         bytes32[] memory proof
     ) internal virtual {
-        _claimRewards_SymbioticDefaultRewards(who, defaultOperatorRewards, who, network, token, totalClaimable, proof);
+        _claimRewards_SymbioticRewards(who, defaultOperatorRewards, who, network, token, totalClaimable, proof);
     }
 
-    function _grantRole_SymbioticDefaultRewards(
-        address who,
-        address where,
-        bytes32 role,
-        address account
-    ) internal virtual {
+    function _grantRole_SymbioticRewards(address who, address where, bytes32 role, address account) internal virtual {
         vm.startPrank(who);
         AccessControl(where).grantRole(role, account);
         vm.stopPrank();
     }
 
-    function _grantRoleDefaultAdmin_SymbioticDefaultRewards(
-        address who,
-        address where,
-        address account
-    ) internal virtual {
-        _grantRole_SymbioticDefaultRewards(who, where, AccessControl(where).DEFAULT_ADMIN_ROLE(), account);
+    function _grantRoleDefaultAdmin_SymbioticRewards(address who, address where, address account) internal virtual {
+        _grantRole_SymbioticRewards(who, where, AccessControl(where).DEFAULT_ADMIN_ROLE(), account);
     }
 
-    function _grantRoleAdminFeeClaim_SymbioticDefaultRewards(
-        address who,
-        address where,
-        address account
-    ) internal virtual {
-        _grantRole_SymbioticDefaultRewards(
-            who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_CLAIM_ROLE(), account
-        );
+    function _grantRoleAdminFeeClaim_SymbioticRewards(address who, address where, address account) internal virtual {
+        _grantRole_SymbioticRewards(who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_CLAIM_ROLE(), account);
     }
 
-    function _grantRoleAdminFeeSet_SymbioticDefaultRewards(
-        address who,
-        address where,
-        address account
-    ) internal virtual {
-        _grantRole_SymbioticDefaultRewards(
-            who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_SET_ROLE(), account
-        );
+    function _grantRoleAdminFeeSet_SymbioticRewards(address who, address where, address account) internal virtual {
+        _grantRole_SymbioticRewards(who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_SET_ROLE(), account);
     }
 }

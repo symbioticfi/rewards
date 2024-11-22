@@ -10,4 +10,4 @@ import {DefaultOperatorRewards as SymbioticDefaultOperatorRewards} from
 import {DefaultOperatorRewardsFactory as SymbioticDefaultOperatorRewardsFactory} from
     "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
-interface SymbioticDefaultRewardsImportsContracts {}
+interface SymbioticRewardsImportsContracts {}

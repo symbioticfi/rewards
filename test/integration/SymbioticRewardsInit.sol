@@ -3,16 +3,16 @@ pragma solidity ^0.8.0;
 
 import "@symbioticfi/core/test/integration/SymbioticCoreInit.sol";
 
-import "./SymbioticDefaultRewardsImports.sol";
+import "./SymbioticRewardsImports.sol";
 
-import {SymbioticDefaultRewardsConstants} from "./SymbioticDefaultRewardsConstants.sol";
-import {SymbioticDefaultRewardsBindings} from "./SymbioticDefaultRewardsBindings.sol";
+import {SymbioticRewardsConstants} from "./SymbioticRewardsConstants.sol";
+import {SymbioticRewardsBindings} from "./SymbioticRewardsBindings.sol";
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewardsBindings {
+contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -36,21 +36,21 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
     function setUp() public virtual override {
         super.setUp();
 
-        _initDefaultRewards_SymbioticDefaultRewards(SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT);
+        _initRewards_SymbioticRewards(SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT);
     }
 
     // ------------------------------------------------------------ GENERAL HELPERS ------------------------------------------------------------ //
 
-    function _initDefaultRewards_SymbioticDefaultRewards() internal virtual {
-        symbioticDefaultStakerRewardsFactory = SymbioticDefaultRewardsConstants.defaultStakerRewardsFactory();
-        symbioticDefaultOperatorRewardsFactory = SymbioticDefaultRewardsConstants.defaultOperatorRewardsFactory();
+    function _initRewards_SymbioticRewards() internal virtual {
+        symbioticDefaultStakerRewardsFactory = SymbioticRewardsConstants.defaultStakerRewardsFactory();
+        symbioticDefaultOperatorRewardsFactory = SymbioticRewardsConstants.defaultOperatorRewardsFactory();
     }
 
-    function _initDefaultRewards_SymbioticDefaultRewards(
+    function _initRewards_SymbioticRewards(
         bool useExisting
     ) internal virtual {
         if (useExisting) {
-            _initDefaultRewards_SymbioticDefaultRewards();
+            _initRewards_SymbioticRewards();
         } else {
             address defaultStakerRewardsImplementation = deployCode(
                 string.concat(
@@ -87,10 +87,10 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
 
     // ------------------------------------------------------------ DEFAULT-REWARDS-RELATED HELPERS ------------------------------------------------------------ //
 
-    function _getDefaultStakerRewards_SymbioticDefaultRewards(
+    function _getDefaultStakerRewards_SymbioticRewards(
         address vault
     ) internal virtual returns (address) {
-        return _createDefaultStakerRewards_SymbioticDefaultRewards({
+        return _createDefaultStakerRewards_SymbioticRewards({
             symbioticDefaultStakerRewardsFactory: symbioticDefaultStakerRewardsFactory,
             who: address(this),
             vault: vault,
@@ -101,12 +101,12 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
         });
     }
 
-    function _getDefaultStakerRewards_SymbioticDefaultRewards(
+    function _getDefaultStakerRewards_SymbioticRewards(
         address vault,
         uint256 adminFee,
         address admin
     ) internal virtual returns (address) {
-        return _createDefaultStakerRewards_SymbioticDefaultRewards({
+        return _createDefaultStakerRewards_SymbioticRewards({
             symbioticDefaultStakerRewardsFactory: symbioticDefaultStakerRewardsFactory,
             who: address(this),
             vault: vault,
@@ -117,10 +117,10 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
         });
     }
 
-    function _getDefaultStakerRewardsRandom_SymbioticDefaultRewards(
+    function _getDefaultStakerRewardsRandom_SymbioticRewards(
         address vault
     ) internal virtual returns (address) {
-        return _getDefaultStakerRewards_SymbioticDefaultRewards(
+        return _getDefaultStakerRewards_SymbioticRewards(
             vault,
             _randomWithBounds_Symbiotic(
                 SYMBIOTIC_DEFAULT_REWARDS_MIN_ADMIN_FEE, SYMBIOTIC_DEFAULT_REWARDS_MAX_ADMIN_FEE
@@ -129,18 +129,18 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
         );
     }
 
-    function _getDefaultOperatorRewards_SymbioticDefaultRewards() internal virtual returns (address) {
-        return _createDefaultOperatorRewards_SymbioticDefaultRewards({
+    function _getDefaultOperatorRewards_SymbioticRewards() internal virtual returns (address) {
+        return _createDefaultOperatorRewards_SymbioticRewards({
             symbioticDefaultOperatorRewardsFactory: symbioticDefaultOperatorRewardsFactory,
             who: address(this)
         });
     }
 
-    function _getDefaultOperatorRewardsRandom_SymbioticDefaultRewards() internal virtual returns (address) {
-        return _getDefaultOperatorRewards_SymbioticDefaultRewards();
+    function _getDefaultOperatorRewardsRandom_SymbioticRewards() internal virtual returns (address) {
+        return _getDefaultOperatorRewards_SymbioticRewards();
     }
 
-    function _fundMiddleware_SymbioticDefaultRewards(address token, address middleware) internal virtual {
+    function _fundMiddleware_SymbioticRewards(address token, address middleware) internal virtual {
         deal(
             token,
             middleware,
@@ -151,16 +151,16 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
 
     // ------------------------------------------------------------ STAKER-RELATED HELPERS ------------------------------------------------------------ //
 
-    function _stakerClaim_SymbioticDefaultRewards(
+    function _stakerClaim_SymbioticRewards(
         address staker,
         address defaultStakerRewards,
         address token,
         address network
     ) internal virtual {
-        _claimRewards_SymbioticDefaultRewards(staker, defaultStakerRewards, token, network);
+        _claimRewards_SymbioticRewards(staker, defaultStakerRewards, token, network);
     }
 
-    function _stakerClaimWeak_SymbioticDefaultRewards(
+    function _stakerClaimWeak_SymbioticRewards(
         address staker,
         address defaultStakerRewards,
         address token,
@@ -169,7 +169,7 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
         if (
             ISymbioticDefaultStakerRewards(defaultStakerRewards).claimable(token, staker, abi.encode(network, 1000)) > 0
         ) {
-            _stakerClaim_SymbioticDefaultRewards(staker, defaultStakerRewards, token, network);
+            _stakerClaim_SymbioticRewards(staker, defaultStakerRewards, token, network);
             return true;
         }
         return false;
@@ -177,7 +177,7 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
 
     // ------------------------------------------------------------ OPERATOR-RELATED HELPERS ------------------------------------------------------------ //
 
-    function _operatorClaim_SymbioticDefaultRewards(
+    function _operatorClaim_SymbioticRewards(
         address operator,
         address defaultOperatorRewards,
         address network,
@@ -185,36 +185,36 @@ contract SymbioticDefaultRewardsInit is SymbioticCoreInit, SymbioticDefaultRewar
         uint256 totalClaimable,
         bytes32[] memory proof
     ) internal virtual {
-        _claimRewards_SymbioticDefaultRewards(operator, defaultOperatorRewards, network, token, totalClaimable, proof);
+        _claimRewards_SymbioticRewards(operator, defaultOperatorRewards, network, token, totalClaimable, proof);
     }
 
     // ------------------------------------------------------------ CURATOR-RELATED HELPERS ------------------------------------------------------------ //
 
-    function _curatorClaim_SymbioticDefaultRewards(
+    function _curatorClaim_SymbioticRewards(
         address curator,
         address defaultStakerRewards,
         address token
     ) public virtual {
-        _claimAdminFee_SymbioticDefaultRewards(curator, defaultStakerRewards, token);
+        _claimAdminFee_SymbioticRewards(curator, defaultStakerRewards, token);
     }
 
-    function _curatorClaimWeak_SymbioticDefaultRewards(
+    function _curatorClaimWeak_SymbioticRewards(
         address curator,
         address defaultStakerRewards,
         address token
     ) internal virtual returns (bool) {
-        try this._curatorClaim_SymbioticDefaultRewards(curator, defaultStakerRewards, token) {
+        try this._curatorClaim_SymbioticRewards(curator, defaultStakerRewards, token) {
             return true;
         } catch {
             return false;
         }
     }
 
-    function _curatorSetAdminFee_SymbioticDefaultRewards(
+    function _curatorSetAdminFee_SymbioticRewards(
         address curator,
         address defaultStakerRewards,
         uint256 adminFee
     ) internal virtual {
-        _setAdminFee_SymbioticDefaultRewards(curator, defaultStakerRewards, adminFee);
+        _setAdminFee_SymbioticRewards(curator, defaultStakerRewards, adminFee);
     }
 }

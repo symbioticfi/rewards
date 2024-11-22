@@ -12,4 +12,4 @@ import {IDefaultOperatorRewards as ISymbioticDefaultOperatorRewards} from
 import {IDefaultOperatorRewardsFactory as ISymbioticDefaultOperatorRewardsFactory} from
     "../../src/interfaces/defaultOperatorRewards/IDefaultOperatorRewardsFactory.sol";
 
-interface SymbioticDefaultRewardsImports {}
+interface SymbioticRewardsImports {}

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./SymbioticDefaultRewardsIntegration.sol";
+import "./SymbioticRewardsIntegration.sol";
 
 import {console2} from "forge-std/Test.sol";
 
-contract SymbioticDefaultRewardsIntegrationExample is SymbioticDefaultRewardsIntegration {
+contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
     using SymbioticSubnetwork for bytes32;
     using SymbioticSubnetwork for address;
 
@@ -99,7 +99,7 @@ contract SymbioticDefaultRewardsIntegrationExample is SymbioticDefaultRewardsInt
         _skipBlocks_Symbiotic(1);
 
         uint48 captureTimestamp = uint48(vm.getBlockTimestamp() - 1);
-        _fundMiddleware_SymbioticDefaultRewards(rewardsToken, middleware);
+        _fundMiddleware_SymbioticRewards(rewardsToken, middleware);
         for (uint256 i; i < confirmedNetworkVaults.length; ++i) {
             uint256 delegatedAmount;
             for (uint256 j; j < confirmedNetworkOperators[confirmedNetworkVaults[i]].length; ++j) {
@@ -111,9 +111,9 @@ contract SymbioticDefaultRewardsIntegrationExample is SymbioticDefaultRewardsInt
             if (delegatedAmount == 0) {
                 continue;
             }
-            _distributeRewards_SymbioticDefaultRewards(
+            _distributeRewards_SymbioticRewards(
                 middleware,
-                defaultStakerRewards_SymbioticDefaultRewards[confirmedNetworkVaults[i]][0],
+                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[i]][0],
                 network.addr,
                 rewardsToken,
                 delegatedAmount,
@@ -123,11 +123,11 @@ contract SymbioticDefaultRewardsIntegrationExample is SymbioticDefaultRewardsInt
 
         for (uint256 i; i < stakers_SymbioticCore.length; ++i) {
             uint256 claimable = ISymbioticDefaultStakerRewards(
-                defaultStakerRewards_SymbioticDefaultRewards[confirmedNetworkVaults[0]][0]
+                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
             ).claimable(rewardsToken, stakers_SymbioticCore[i].addr, abi.encode(network.addr, 1000));
-            _stakerClaimWeak_SymbioticDefaultRewards(
+            _stakerClaimWeak_SymbioticRewards(
                 stakers_SymbioticCore[i].addr,
-                defaultStakerRewards_SymbioticDefaultRewards[confirmedNetworkVaults[0]][0],
+                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0],
                 rewardsToken,
                 network.addr
             );
@@ -135,10 +135,10 @@ contract SymbioticDefaultRewardsIntegrationExample is SymbioticDefaultRewardsInt
         }
 
         uint256 claimableAdminFee = ISymbioticDefaultStakerRewards(
-            defaultStakerRewards_SymbioticDefaultRewards[confirmedNetworkVaults[0]][0]
+            defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
         ).claimableAdminFee(rewardsToken);
-        _curatorClaimWeak_SymbioticDefaultRewards(
-            address(this), defaultStakerRewards_SymbioticDefaultRewards[confirmedNetworkVaults[0]][0], rewardsToken
+        _curatorClaimWeak_SymbioticRewards(
+            address(this), defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0], rewardsToken
         );
         console2.log("Admin claimed ", claimableAdminFee);
     }
