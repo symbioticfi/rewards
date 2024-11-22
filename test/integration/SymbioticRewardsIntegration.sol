@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@symbioticfi/core/test/integration/SymbioticCoreIntegration.sol";
 
 import "./SymbioticRewardsInit.sol";
-import {console2} from "forge-std/Test.sol";
 
 contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreIntegration {
     address[] public tokens_SymbioticRewards;
