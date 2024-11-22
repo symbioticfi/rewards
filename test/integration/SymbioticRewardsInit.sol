@@ -30,8 +30,8 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
     uint256 public SYMBIOTIC_DEFAULT_REWARDS_MIN_ADMIN_FEE = 0;
     uint256 public SYMBIOTIC_DEFAULT_REWARDS_MAX_ADMIN_FEE = 5000;
 
-    ISymbioticDefaultStakerRewardsFactory symbioticDefaultStakerRewardsFactory;
-    ISymbioticDefaultOperatorRewardsFactory symbioticDefaultOperatorRewardsFactory;
+    ISymbioticDefaultStakerRewardsFactory public symbioticDefaultStakerRewardsFactory;
+    ISymbioticDefaultOperatorRewardsFactory public symbioticDefaultOperatorRewardsFactory;
 
     function setUp() public virtual override {
         super.setUp();
