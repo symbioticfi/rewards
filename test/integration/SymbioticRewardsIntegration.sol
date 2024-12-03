@@ -14,24 +14,24 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
     mapping(address vault => address[]) public existingDefaultStakerRewards_SymbioticRewards;
     address[] public existingDefaultOperatorRewards_SymbioticRewards;
 
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_CHANCE = 4; // lower -> higher probability
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_CLAIM_STAKER_REWARDS_CHANCE = 2;
+    uint256 public SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_CHANCE = 4; // lower -> higher probability
+    uint256 public SYMBIOTIC_REWARDS_CLAIM_STAKER_REWARDS_CHANCE = 2;
 
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_MIN_AMOUNT_TIMES_1e18 = 0.1 * 1e18;
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_MAX_AMOUNT_TIMES_1e18 = 1_000_000 * 1e18;
+    uint256 public SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_MIN_AMOUNT_TIMES_1e18 = 0.1 * 1e18;
+    uint256 public SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_MAX_AMOUNT_TIMES_1e18 = 1_000_000 * 1e18;
 
     function setUp() public virtual override(SymbioticRewardsInit, SymbioticCoreIntegration) {
         SymbioticCoreIntegration.setUp();
-        _initRewards_SymbioticRewards(SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT);
+        _initRewards_SymbioticRewards(SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT);
 
         _addPossibleTokens_SymbioticRewards();
 
         _loadExistingEntities_SymbioticRewards();
-        if (SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT) {
+        if (SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT) {
             _addExistingEntities_SymbioticRewards();
         }
 
-        if (!SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT) {
+        if (!SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT) {
             _createEnvironment_SymbioticRewards();
         }
     }
@@ -42,7 +42,7 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
     }
 
     function _loadExistingDefaultStakerRewards_SymbioticRewards() internal virtual {
-        if (SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT) {
+        if (SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT) {
             uint256 numberOfDefaultStakerRewards = symbioticDefaultStakerRewardsFactory.totalEntities();
             for (uint256 i; i < numberOfDefaultStakerRewards; ++i) {
                 address defaultStakerRewards = symbioticDefaultStakerRewardsFactory.entity(i);
@@ -53,7 +53,7 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
     }
 
     function _loadExistingDefaultOperatorRewards_SymbioticRewards() internal virtual {
-        if (SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT) {
+        if (SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT) {
             uint256 numberOfDefaultOperatorRewards = symbioticDefaultOperatorRewardsFactory.totalEntities();
             for (uint256 i; i < numberOfDefaultOperatorRewards; ++i) {
                 address defaultOperatorRewards = symbioticDefaultOperatorRewardsFactory.entity(i);
@@ -148,12 +148,8 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
         address token = _randomPick_Symbiotic(possibleTokens);
         _fundMiddleware_SymbioticRewards(token, tempMiddleware);
         uint256 amount = _randomWithBounds_Symbiotic(
-            _normalizeForToken_Symbiotic(
-                SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_MIN_AMOUNT_TIMES_1e18, token
-            ),
-            _normalizeForToken_Symbiotic(
-                SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_MAX_AMOUNT_TIMES_1e18, token
-            )
+            _normalizeForToken_Symbiotic(SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_MIN_AMOUNT_TIMES_1e18, token),
+            _normalizeForToken_Symbiotic(SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_MAX_AMOUNT_TIMES_1e18, token)
         );
         _distributeRewards_SymbioticRewards(
             tempMiddleware, defaultStakerRewards, network, token, amount, captureTimestamp
@@ -164,7 +160,7 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
     function _distributeStakerRewards_SymbioticRewards() internal virtual {
         for (uint256 i; i < vaults_SymbioticCore.length; ++i) {
             for (uint256 j; j < networks_SymbioticCore.length; ++j) {
-                if (_randomChoice_Symbiotic(SYMBIOTIC_DEFAULT_REWARDS_DISTRIBUTE_STAKER_REWARDS_CHANCE)) {
+                if (_randomChoice_Symbiotic(SYMBIOTIC_REWARDS_DISTRIBUTE_STAKER_REWARDS_CHANCE)) {
                     _distributeStakerRewardsOnBehalfOfNetworkRandom_SymbioticRewards(
                         defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][0],
                         networks_SymbioticCore[j].addr,
@@ -187,7 +183,7 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
             for (uint256 j; j < networks_SymbioticCore.length; ++j) {
                 for (uint256 k; k < stakers_SymbioticCore.length; ++k) {
                     for (uint256 l; l < tokens_SymbioticRewards.length; ++l) {
-                        if (_randomChoice_Symbiotic(SYMBIOTIC_DEFAULT_REWARDS_CLAIM_STAKER_REWARDS_CHANCE)) {
+                        if (_randomChoice_Symbiotic(SYMBIOTIC_REWARDS_CLAIM_STAKER_REWARDS_CHANCE)) {
                             _stakerClaimWeak_SymbioticRewards(
                                 stakers_SymbioticCore[k].addr,
                                 defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][0],

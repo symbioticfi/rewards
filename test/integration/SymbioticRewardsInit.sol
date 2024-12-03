@@ -18,17 +18,17 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
 
     // General config
 
-    string public SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT = "";
-    bool public SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT = false;
+    string public SYMBIOTIC_REWARDS_PROJECT_ROOT = "";
+    bool public SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT = false;
 
     // Middleware-related config
 
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_TOKENS_TO_SET_TIMES_1e18 = 100_000_000 * 1e18;
+    uint256 public SYMBIOTIC_REWARDS_TOKENS_TO_SET_TIMES_1e18 = 100_000_000 * 1e18;
 
     // DefaultStakerRewards-related config
 
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_MIN_ADMIN_FEE = 0;
-    uint256 public SYMBIOTIC_DEFAULT_REWARDS_MAX_ADMIN_FEE = 5000;
+    uint256 public SYMBIOTIC_REWARDS_MIN_ADMIN_FEE = 0;
+    uint256 public SYMBIOTIC_REWARDS_MAX_ADMIN_FEE = 5000;
 
     ISymbioticDefaultStakerRewardsFactory public symbioticDefaultStakerRewardsFactory;
     ISymbioticDefaultOperatorRewardsFactory public symbioticDefaultOperatorRewardsFactory;
@@ -36,7 +36,7 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
     function setUp() public virtual override {
         super.setUp();
 
-        _initRewards_SymbioticRewards(SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT);
+        _initRewards_SymbioticRewards(SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT);
     }
 
     // ------------------------------------------------------------ GENERAL HELPERS ------------------------------------------------------------ //
@@ -53,15 +53,13 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
             _initRewards_SymbioticRewards();
         } else {
             address defaultStakerRewardsImplementation = deployCode(
-                string.concat(
-                    SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT, "out/DefaultStakerRewards.sol/DefaultStakerRewards.json"
-                ),
+                string.concat(SYMBIOTIC_REWARDS_PROJECT_ROOT, "out/DefaultStakerRewards.sol/DefaultStakerRewards.json"),
                 abi.encode(address(symbioticCore.vaultFactory), address(symbioticCore.networkMiddlewareService))
             );
             symbioticDefaultStakerRewardsFactory = ISymbioticDefaultStakerRewardsFactory(
                 deployCode(
                     string.concat(
-                        SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT,
+                        SYMBIOTIC_REWARDS_PROJECT_ROOT,
                         "out/DefaultStakerRewardsFactory.sol/DefaultStakerRewardsFactory.json"
                     ),
                     abi.encode(defaultStakerRewardsImplementation)
@@ -69,14 +67,14 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
             );
             address defaultOperatorRewardsImplementation = deployCode(
                 string.concat(
-                    SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT, "out/DefaultOperatorRewards.sol/DefaultOperatorRewards.json"
+                    SYMBIOTIC_REWARDS_PROJECT_ROOT, "out/DefaultOperatorRewards.sol/DefaultOperatorRewards.json"
                 ),
                 abi.encode(address(symbioticCore.networkMiddlewareService))
             );
             symbioticDefaultOperatorRewardsFactory = ISymbioticDefaultOperatorRewardsFactory(
                 deployCode(
                     string.concat(
-                        SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT,
+                        SYMBIOTIC_REWARDS_PROJECT_ROOT,
                         "out/DefaultOperatorRewardsFactory.sol/DefaultOperatorRewardsFactory.json"
                     ),
                     abi.encode(defaultOperatorRewardsImplementation)
@@ -85,7 +83,7 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
         }
     }
 
-    // ------------------------------------------------------------ DEFAULT-REWARDS-RELATED HELPERS ------------------------------------------------------------ //
+    // ------------------------------------------------------------ REWARDS-RELATED HELPERS ------------------------------------------------------------ //
 
     function _getDefaultStakerRewards_SymbioticRewards(
         address vault
@@ -122,9 +120,7 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
     ) internal virtual returns (address) {
         return _getDefaultStakerRewards_SymbioticRewards(
             vault,
-            _randomWithBounds_Symbiotic(
-                SYMBIOTIC_DEFAULT_REWARDS_MIN_ADMIN_FEE, SYMBIOTIC_DEFAULT_REWARDS_MAX_ADMIN_FEE
-            ),
+            _randomWithBounds_Symbiotic(SYMBIOTIC_REWARDS_MIN_ADMIN_FEE, SYMBIOTIC_REWARDS_MAX_ADMIN_FEE),
             address(this)
         );
     }
@@ -141,12 +137,7 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
     }
 
     function _fundMiddleware_SymbioticRewards(address token, address middleware) internal virtual {
-        deal(
-            token,
-            middleware,
-            _normalizeForToken_Symbiotic(SYMBIOTIC_DEFAULT_REWARDS_TOKENS_TO_SET_TIMES_1e18, token),
-            true
-        ); // should cover most cases
+        deal(token, middleware, _normalizeForToken_Symbiotic(SYMBIOTIC_REWARDS_TOKENS_TO_SET_TIMES_1e18, token), true); // should cover most cases
     }
 
     // ------------------------------------------------------------ STAKER-RELATED HELPERS ------------------------------------------------------------ //

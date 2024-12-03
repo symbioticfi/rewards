@@ -19,11 +19,11 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
 
     function setUp() public override {
         SYMBIOTIC_CORE_PROJECT_ROOT = "lib/core/";
-        SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT = "";
+        SYMBIOTIC_REWARDS_PROJECT_ROOT = "";
         // vm.selectFork(vm.createFork(vm.rpcUrl("holesky")));
         // SYMBIOTIC_INIT_BLOCK = 2_727_202;
         // SYMBIOTIC_CORE_USE_EXISTING_DEPLOYMENT = true;
-        // SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT = true;
+        // SYMBIOTIC_REWARDS_USE_EXISTING_DEPLOYMENT = true;
 
         SYMBIOTIC_CORE_NUMBER_OF_STAKERS = 10;
 
