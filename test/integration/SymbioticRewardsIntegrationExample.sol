@@ -21,7 +21,7 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
         SYMBIOTIC_CORE_PROJECT_ROOT = "lib/core/";
         SYMBIOTIC_DEFAULT_REWARDS_PROJECT_ROOT = "";
         // vm.selectFork(vm.createFork(vm.rpcUrl("holesky")));
-        // SYMBIOTIC_INIT_BLOCK = 21_227_029;
+        // SYMBIOTIC_INIT_BLOCK = 2_727_202;
         // SYMBIOTIC_CORE_USE_EXISTING_DEPLOYMENT = true;
         // SYMBIOTIC_DEFAULT_REWARDS_USE_EXISTING_DEPLOYMENT = true;
 
@@ -111,6 +111,11 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
             if (delegatedAmount == 0) {
                 continue;
             }
+
+            if (defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[i]].length == 0) {
+                continue;
+            }
+
             _distributeRewards_SymbioticRewards(
                 middleware,
                 defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[i]][0],
@@ -122,6 +127,9 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
         }
 
         for (uint256 i; i < stakers_SymbioticCore.length; ++i) {
+            if (defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]].length == 0) {
+                continue;
+            }
             uint256 claimable = ISymbioticDefaultStakerRewards(
                 defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
             ).claimable(rewardsToken, stakers_SymbioticCore[i].addr, abi.encode(network.addr, 1000));
@@ -134,12 +142,14 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
             console2.log("Staker ", stakers_SymbioticCore[i].addr, " claimed ", claimable);
         }
 
-        uint256 claimableAdminFee = ISymbioticDefaultStakerRewards(
-            defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
-        ).claimableAdminFee(rewardsToken);
-        _curatorClaimWeak_SymbioticRewards(
-            address(this), defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0], rewardsToken
-        );
-        console2.log("Admin claimed ", claimableAdminFee);
+        if (defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]].length > 0) {
+            uint256 claimableAdminFee = ISymbioticDefaultStakerRewards(
+                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
+            ).claimableAdminFee(rewardsToken);
+            _curatorClaimWeak_SymbioticRewards(
+                address(this), defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0], rewardsToken
+            );
+            console2.log("Admin claimed ", claimableAdminFee);
+        }
     }
 }

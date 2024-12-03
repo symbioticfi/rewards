@@ -78,11 +78,11 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
                 if (
                     !_contains_Symbiotic(
                         defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]],
-                        existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][i]
+                        existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][j]
                     )
                 ) {
                     defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]].push(
-                        existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][i]
+                        existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][j]
                     );
                 }
             }
@@ -137,6 +137,11 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
         address network,
         address[] memory possibleTokens
     ) internal virtual {
+        uint48 captureTimestamp = uint48(vm.getBlockTimestamp() - 1);
+        address vault = ISymbioticDefaultStakerRewards(defaultStakerRewards).VAULT();
+        if (ISymbioticVault(vault).activeStakeAt(captureTimestamp, new bytes(0)) == 0) {
+            return;
+        }
         address currentMiddleware = symbioticCore.networkMiddlewareService.middleware(network);
         address tempMiddleware = address(this);
         _networkSetMiddleware_SymbioticCore(network, tempMiddleware);
@@ -151,7 +156,7 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
             )
         );
         _distributeRewards_SymbioticRewards(
-            tempMiddleware, defaultStakerRewards, network, token, amount, uint48(vm.getBlockTimestamp() - 1)
+            tempMiddleware, defaultStakerRewards, network, token, amount, captureTimestamp
         );
         _networkSetMiddleware_SymbioticCore(network, currentMiddleware);
     }
