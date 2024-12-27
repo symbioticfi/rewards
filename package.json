@@ -1,7 +1,7 @@
 {
   "name": "@symbioticfi/rewards",
   "version": "1.0.0-devnet.5",
-  "description": "Symbiotic is a shared security protocol enabling decentralized networks to control and customize their own multi-asset restaking implementation.",
+  "description": "Symbiotic Rewards repository contains a Symbiotic Staker Rewards interface providing a standardized way for rewards implementations by different parties, and default implementations of Staker and Operator Rewards.",
   "homepage": "https://symbiotic.fi/",
   "bugs": "https://github.com/symbioticfi/rewards/issues",
   "license": "MIT",
