@@ -16,6 +16,8 @@ import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
 import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
+import {OperatorNetworkSpecificDelegator} from
+    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
@@ -118,6 +120,19 @@ contract DefaultStakerRewardsFactoryTest is Test {
             )
         );
         delegatorFactory.whitelist(operatorSpecificDelegatorImpl);
+
+        address operatorNetworkSpecificDelegatorImpl = address(
+            new OperatorNetworkSpecificDelegator(
+                address(operatorRegistry),
+                address(networkRegistry),
+                address(vaultFactory),
+                address(operatorVaultOptInService),
+                address(operatorNetworkOptInService),
+                address(delegatorFactory),
+                delegatorFactory.totalTypes()
+            )
+        );
+        delegatorFactory.whitelist(operatorNetworkSpecificDelegatorImpl);
 
         address slasherImpl = address(
             new Slasher(
