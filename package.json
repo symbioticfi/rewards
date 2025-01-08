@@ -1,6 +1,6 @@
 {
   "name": "@symbioticfi/rewards",
-  "version": "1.0.0-devnet.5",
+  "version": "1.0.0-devnet.6",
   "description": "Symbiotic Rewards repository contains a Symbiotic Staker Rewards interface providing a standardized way for rewards implementations by different parties, and default implementations of Staker and Operator Rewards.",
   "homepage": "https://symbiotic.fi/",
   "bugs": "https://github.com/symbioticfi/rewards/issues",
