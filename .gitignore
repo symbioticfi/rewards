@@ -1,6 +1,10 @@
 # Compiler files
 cache/
-out/
+out/**/
+!out/DefaultStakerRewardsFactory.sol/
+!out/DefaultStakerRewards.sol/
+!out/DefaultOperatorRewardsFactory.sol/
+!out/DefaultOperatorRewards.sol/
 
 # Ignores development broadcast logs
 !/broadcast
