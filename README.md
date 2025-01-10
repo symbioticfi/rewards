@@ -1,5 +1,3 @@
-## ⚠️ Disclaimer: This code is going through audits. It is NOT intended for a production use yet.
-
 **[Symbiotic Protocol](https://symbiotic.fi) is an extremely flexible and permissionless shared security system.**
 
 This repository contains a Symbiotic Staker Rewards interface, its default implementation, and a default Operator Rewards.
@@ -11,6 +9,10 @@ Can be found [here](https://docs.symbiotic.fi/core-modules/rewards).
 ## Technical Documentation
 
 Can be found [here](./specs).
+
+## Security
+
+Security audits can be found [here](./audits).
 
 ## Usage
 
