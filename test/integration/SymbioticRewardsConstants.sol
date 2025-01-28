@@ -11,7 +11,7 @@ library SymbioticRewardsConstants {
     function defaultStakerRewardsFactory() internal view returns (ISymbioticDefaultStakerRewardsFactory) {
         if (block.chainid == 1) {
             // mainnet
-            revert("SymbioticRewardsConstants.defaultStakerRewardsFactory(): mainnet not supported yet");
+            return ISymbioticDefaultStakerRewardsFactory(0x290CAB97a312164Ccf095d75D6175dF1C4A0a25F);
         } else if (block.chainid == 17_000) {
             // holesky
             return ISymbioticDefaultStakerRewardsFactory(0x698C36DE44D73AEfa3F0Ce3c0255A8667bdE7cFD);
@@ -26,7 +26,7 @@ library SymbioticRewardsConstants {
     function defaultOperatorRewardsFactory() internal view returns (ISymbioticDefaultOperatorRewardsFactory) {
         if (block.chainid == 1) {
             // mainnet
-            revert("SymbioticRewardsConstants.defaultOperatorRewardsFactory(): mainnet not supported yet");
+            return ISymbioticDefaultOperatorRewardsFactory(0x6D52fC402b2dA2669348Cc2682D85c61c122755D);
         } else if (block.chainid == 17_000) {
             // holesky
             return ISymbioticDefaultOperatorRewardsFactory(0x00055dee9933F578340db42AA978b9c8B25640f6);
