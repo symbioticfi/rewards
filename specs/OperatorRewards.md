@@ -22,10 +22,10 @@ source .env
 
 #### Deploy factory
 
-Deployment script: [click](../script/deploy/DefaultOperatorRewardsFactory.s.sol)
+Deployment script: [click](../script/deploy/genesis/DefaultOperatorRewardsFactory.s.sol)
 
 ```shell
-forge script script/deploy/DefaultOperatorRewardsFactory.s.sol:DefaultOperatorRewardsFactoryScript 0x0000000000000000000000000000000000000000 --sig "run(address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/genesis/DefaultOperatorRewardsFactory.s.sol:DefaultOperatorRewardsFactoryScript 0x0000000000000000000000000000000000000000 --sig "run(address)" --broadcast --rpc-url=$ETH_RPC_URL
 ```
 
 #### Deploy entity
@@ -33,7 +33,7 @@ forge script script/deploy/DefaultOperatorRewardsFactory.s.sol:DefaultOperatorRe
 Deployment script: [click](../script/deploy/DefaultOperatorRewards.s.sol)
 
 ```shell
-forge script script/deploy/DefaultOperatorRewards.s.sol:DefaultOperatorRewardsScript 0x0000000000000000000000000000000000000000 --sig "run(address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/DefaultOperatorRewards.s.sol:DefaultOperatorRewardsScript --sig "run()" --broadcast --rpc-url=$ETH_RPC_URL
 ```
 
 ### CLI

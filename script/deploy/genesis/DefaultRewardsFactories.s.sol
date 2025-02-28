@@ -3,12 +3,12 @@ pragma solidity 0.8.25;
 
 import {console2, Script} from "forge-std/Script.sol";
 
-import {DefaultStakerRewards} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
-import {DefaultStakerRewardsFactory} from "../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
+import {DefaultStakerRewards} from "../../../src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
+import {DefaultStakerRewardsFactory} from "../../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
 
-import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
+import {DefaultOperatorRewards} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {DefaultOperatorRewardsFactory} from
-    "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+    "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultRewardsFactoriesScript is Script {
     function run(address vaultFactory, address networkMiddlewareService) external {

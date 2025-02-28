@@ -3,9 +3,9 @@ pragma solidity 0.8.25;
 
 import {console2, Script} from "forge-std/Script.sol";
 
-import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
+import {DefaultOperatorRewards} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {DefaultOperatorRewardsFactory} from
-    "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+    "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultOperatorRewardsFactoryScript is Script {
     function run(
