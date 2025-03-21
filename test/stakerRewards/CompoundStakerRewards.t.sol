@@ -3,10 +3,10 @@ pragma solidity 0.8.25;
 
 import "../integration/SymbioticRewardsIntegration.sol";
 
-import {CompoundingStakingRewards} from "../../src/contracts/CompoundingStakerRewards.sol";
+import {CompoundStakerRewards} from "../../src/contracts/CompoundStakerRewards.sol";
 
 contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
-    CompoundingStakingRewards compoundingStakingRewards;
+    CompoundStakerRewards compoundStakerRewards;
     ISymbioticStakerRewards stakerRewards;
     ISymbioticVaultTokenized vault;
 
@@ -30,7 +30,7 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
         stakerRewards = ISymbioticStakerRewards(
             _getDefaultStakerRewards_SymbioticRewards(address(vault))
         );
-        compoundingStakingRewards = new CompoundingStakingRewards(
+        compoundStakerRewards = new CompoundStakerRewards(
             vault,
             stakerRewards,
             name,
@@ -39,24 +39,21 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
     }
 
     function test_constructor() public {
-        assertEq(address(compoundingStakingRewards.vault()), address(vault));
+        assertEq(address(compoundStakerRewards.vault()), address(vault));
         assertEq(
-            address(compoundingStakingRewards.rewards()),
+            address(compoundStakerRewards.rewards()),
             address(stakerRewards)
         );
-        assertEq(compoundingStakingRewards.name(), name);
-        assertEq(compoundingStakingRewards.symbol(), symbol);
-        assertEq(
-            address(compoundingStakingRewards.token()),
-            vault.collateral()
-        );
+        assertEq(compoundStakerRewards.name(), name);
+        assertEq(compoundStakerRewards.symbol(), symbol);
+        assertEq(address(compoundStakerRewards.token()), vault.collateral());
     }
 
     function test_compound_revertsWhenNoRewards() public {
         vm.expectRevert(
             ISymbioticDefaultStakerRewards.NoRewardsToClaim.selector
         );
-        compoundingStakingRewards.compound(networks_SymbioticCore[0].addr);
+        compoundStakerRewards.compound(networks_SymbioticCore[0].addr);
     }
 
     function test_compound() public {
@@ -64,7 +61,7 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
 
         // give address(this) amount of tokenized vault
         _deal_Symbiotic(
-            address(compoundingStakingRewards.token()),
+            address(compoundStakerRewards.token()),
             address(this),
             amount,
             true
@@ -75,11 +72,8 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
             address(this),
             amount
         );
-        IERC20(address(vault)).approve(
-            address(compoundingStakingRewards),
-            amount
-        );
-        compoundingStakingRewards.deposit(amount, address(this));
+        IERC20(address(vault)).approve(address(compoundStakerRewards), amount);
+        compoundStakerRewards.deposit(amount, address(this));
 
         _skipBlocks_Symbiotic(1);
 
@@ -88,9 +82,9 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
         _distributeStakerRewardsOnBehalfOfNetworkRandom_SymbioticRewards(
             address(stakerRewards),
             network,
-            address(compoundingStakingRewards.token())
+            address(compoundStakerRewards.token())
         );
-        compoundingStakingRewards.compound(network);
+        compoundStakerRewards.compound(network);
     }
 
     function _getVault_SymbioticCore(

@@ -8,7 +8,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IVaultTokenized} from "@symbioticfi/core/src/interfaces/vault/IVaultTokenized.sol";
 import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 
-contract CompoundingStakingRewards is ERC4626 {
+contract CompoundStakerRewards is ERC4626 {
     using SafeERC20 for IERC20;
 
     IVaultTokenized public immutable vault;
