@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -9,6 +9,8 @@ import {IVaultTokenized} from "@symbioticfi/core/src/interfaces/vault/IVaultToke
 import {IStakerRewards} from "src/interfaces/stakerRewards/IStakerRewards.sol";
 
 contract CompoundingStakingRewards is ERC4626 {
+    using SafeERC20 for IERC20;
+
     IVaultTokenized public immutable vault;
     IERC20 public immutable token;
     IStakerRewards public immutable rewards;
@@ -29,14 +31,15 @@ contract CompoundingStakingRewards is ERC4626 {
     /**
      * @notice Claim staking rewards and deposit into the symbiotic vault.
      */
-    function compound() external {
+    function compound(address network) external {
         uint256 maxRewards = 1;
         rewards.claimRewards(
             address(this),
             address(token),
-            abi.encode(maxRewards)
+            abi.encode(network, maxRewards, new bytes(0))
         );
         uint256 rewardsBalance = token.balanceOf(address(this));
+        token.forceApprove(address(vault), rewardsBalance);
         (uint256 amount, uint256 shares) = vault.deposit(
             address(this),
             rewardsBalance
