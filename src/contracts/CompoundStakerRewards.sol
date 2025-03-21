@@ -30,9 +30,10 @@ contract CompoundStakerRewards is ERC4626 {
 
     /**
      * @notice Claim staking rewards and deposit into the symbiotic vault.
+     * @param network The address of the network to claim rewards from.
+     * @param maxRewards The maximum number of reward distributions to claim.
      */
-    function compound(address network) external {
-        uint256 maxRewards = 1;
+    function compound(address network, uint256 maxRewards) external {
         rewards.claimRewards(
             address(this),
             address(token),

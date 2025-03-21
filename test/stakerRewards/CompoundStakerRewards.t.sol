@@ -53,7 +53,7 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
         vm.expectRevert(
             ISymbioticDefaultStakerRewards.NoRewardsToClaim.selector
         );
-        compoundStakerRewards.compound(networks_SymbioticCore[0].addr);
+        compoundStakerRewards.compound(networks_SymbioticCore[0].addr, 1);
     }
 
     function test_compound() public {
@@ -84,7 +84,7 @@ contract CompoundStakerRewardsTest is SymbioticRewardsIntegration {
             network,
             address(compoundStakerRewards.token())
         );
-        compoundStakerRewards.compound(network);
+        compoundStakerRewards.compound(network, 1);
     }
 
     function _getVault_SymbioticCore(
