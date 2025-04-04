@@ -16,15 +16,12 @@ interface IStakerRewards {
 
     /**
      * @notice Emitted when a reward is claimed.
-     * @param network network on behalf of which the reward is claimed
      * @param token address of the token
      * @param claimer address of the claimer
      * @param amount amount of tokens
      * @param data some used data
      */
-    event ClaimRewards(
-        address indexed network, address indexed token, address indexed claimer, uint256 amount, bytes data
-    );
+    event ClaimRewards(address indexed token, address indexed claimer, uint256 amount, bytes data);
 
     /**
      * @notice Emitted when the admin fee is set.

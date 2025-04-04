@@ -277,7 +277,7 @@ contract DefaultStakerRewards is
         }
 
         emit ClaimRewards(
-            token, network, msg.sender, amount, abi.encode(recipient, lastUnclaimedReward_, rewardsToClaim)
+            token, msg.sender, amount, abi.encode(network, recipient, lastUnclaimedReward_, rewardsToClaim)
         );
     }
 
