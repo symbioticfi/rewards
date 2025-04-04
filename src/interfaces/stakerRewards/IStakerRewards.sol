@@ -7,14 +7,41 @@ interface IStakerRewards {
      * @param network network on behalf of which the reward is distributed
      * @param token address of the token
      * @param amount amount of tokens
+     * @param timestamp timestamp of the distribution
      * @param data some used data
      */
-    event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes data);
+    event DistributeRewards(
+        address indexed network, address indexed token, uint256 amount, uint48 timestamp, bytes data
+    );
+
+    /**
+     * @notice Emitted when a reward is claimed.
+     * @param network network on behalf of which the reward is claimed
+     * @param token address of the token
+     * @param claimer address of the claimer
+     * @param amount amount of tokens
+     * @param data some used data
+     */
+    event ClaimRewards(
+        address indexed network, address indexed token, address indexed claimer, uint256 amount, bytes data
+    );
+
+    /**
+     * @notice Emitted when the admin fee is set.
+     * @param adminFee new admin fee
+     */
+    event SetAdminFee(uint256 adminFee);
+
+    /**
+     * @notice Get the maximum admin fee (= 100%).
+     * @return maximum admin fee
+     */
+    function ADMIN_FEE_BASE() external view returns (uint256);
 
     /**
      * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
      * @return version of the staker rewards contract
-     * @dev Must return 1 for this one.
+     * @dev Must return 2 for this one.
      */
     function version() external view returns (uint64);
 
@@ -26,6 +53,12 @@ interface IStakerRewards {
      * @return amount of claimable tokens
      */
     function claimable(address token, address account, bytes calldata data) external view returns (uint256);
+
+    /**
+     * @notice Get an admin fee.
+     * @return admin fee
+     */
+    function adminFee() external view returns (uint256);
 
     /**
      * @notice Distribute rewards on behalf of a particular network using a given token.

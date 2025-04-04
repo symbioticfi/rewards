@@ -68,7 +68,7 @@ contract DefaultStakerRewardsTest is Test {
     Slasher slasher;
 
     DefaultStakerRewardsFactory defaultStakerRewardsFactory;
-    IDefaultStakerRewards defaultStakerRewards;
+    DefaultStakerRewards defaultStakerRewards;
 
     function setUp() public {
         owner = address(this);
@@ -1079,7 +1079,7 @@ contract DefaultStakerRewardsTest is Test {
         _setAdminFee(alice, adminFee);
     }
 
-    function _getStakerDefaultRewards() internal returns (IDefaultStakerRewards) {
+    function _getStakerDefaultRewards() internal returns (DefaultStakerRewards) {
         IDefaultStakerRewards.InitParams memory params = IDefaultStakerRewards.InitParams({
             vault: address(vault),
             adminFee: 0,
@@ -1087,7 +1087,7 @@ contract DefaultStakerRewardsTest is Test {
             adminFeeClaimRoleHolder: alice,
             adminFeeSetRoleHolder: alice
         });
-        return IDefaultStakerRewards(defaultStakerRewardsFactory.create(params));
+        return DefaultStakerRewards(defaultStakerRewardsFactory.create(params));
     }
 
     function _registerOperator(

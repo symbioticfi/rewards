@@ -28,10 +28,10 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IStakerRewards
      */
-    uint64 public constant version = 1;
+    uint64 public constant version = 2;
 
     /**
-     * @inheritdoc IDefaultStakerRewards
+     * @inheritdoc IStakerRewards
      */
     uint256 public constant ADMIN_FEE_BASE = 10_000;
 
@@ -61,7 +61,7 @@ contract DefaultStakerRewards is
     address public VAULT;
 
     /**
-     * @inheritdoc IDefaultStakerRewards
+     * @inheritdoc IStakerRewards
      */
     uint256 public adminFee;
 
@@ -223,7 +223,7 @@ contract DefaultStakerRewards is
             rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
-        emit DistributeRewards(network, token, amount, data);
+        emit DistributeRewards(network, token, amount, timestamp, data);
     }
 
     /**
@@ -276,7 +276,9 @@ contract DefaultStakerRewards is
             IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimRewards(token, network, msg.sender, recipient, lastUnclaimedReward_, rewardsToClaim, amount);
+        emit ClaimRewards(
+            token, network, msg.sender, amount, abi.encode(recipient, lastUnclaimedReward_, rewardsToClaim)
+        );
     }
 
     /**
@@ -306,8 +308,6 @@ contract DefaultStakerRewards is
         }
 
         _setAdminFee(adminFee_);
-
-        emit SetAdminFee(adminFee_);
     }
 
     function _setAdminFee(
@@ -318,5 +318,7 @@ contract DefaultStakerRewards is
         }
 
         adminFee = adminFee_;
+
+        emit SetAdminFee(adminFee_);
     }
 }

@@ -45,43 +45,11 @@ interface IDefaultStakerRewards is IStakerRewards {
     }
 
     /**
-     * @notice Emitted when rewards are claimed.
-     * @param token address of the token claimed
-     * @param network address of the network
-     * @param claimer account that claimed the reward
-     * @param recipient account that received the reward
-     * @param firstRewardIndex first index of the claimed rewards
-     * @param numRewards number of rewards claimed
-     * @param amount amount of tokens claimed
-     */
-    event ClaimRewards(
-        address indexed token,
-        address indexed network,
-        address indexed claimer,
-        address recipient,
-        uint256 firstRewardIndex,
-        uint256 numRewards,
-        uint256 amount
-    );
-
-    /**
      * @notice Emitted when an admin fee is claimed.
      * @param recipient account that received the fee
      * @param amount amount of the fee claimed
      */
     event ClaimAdminFee(address indexed recipient, uint256 amount);
-
-    /**
-     * @notice Emitted when an admin fee is set.
-     * @param adminFee admin fee
-     */
-    event SetAdminFee(uint256 adminFee);
-
-    /**
-     * @notice Get the maximum admin fee (= 100%).
-     * @return maximum admin fee
-     */
-    function ADMIN_FEE_BASE() external view returns (uint256);
 
     /**
      * @notice Get the admin fee claimer's role.
@@ -112,12 +80,6 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @return address of the vault
      */
     function VAULT() external view returns (address);
-
-    /**
-     * @notice Get an admin fee.
-     * @return admin fee
-     */
-    function adminFee() external view returns (uint256);
 
     /**
      * @notice Get a total number of rewards using a particular token for a given network.
