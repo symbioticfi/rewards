@@ -229,7 +229,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
         assertEq(defaultStakerRewards.VAULT_FACTORY(), address(vaultFactory));
         assertEq(defaultStakerRewards.NETWORK_MIDDLEWARE_SERVICE(), address(networkMiddlewareService));
         assertEq(defaultStakerRewards.VAULT(), address(vault));
-        assertEq(defaultStakerRewards.version(), 1);
+        assertEq(defaultStakerRewards.version(), 2);
         assertEq(defaultStakerRewards.rewardsLength(alice, alice), 0);
         assertEq(defaultStakerRewards.claimable(alice, alice, abi.encode(address(0), 0)), 0);
         vm.expectRevert();

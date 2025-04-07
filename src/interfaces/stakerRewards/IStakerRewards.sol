@@ -6,15 +6,34 @@ interface IStakerRewards {
      * @notice Emitted when a reward is distributed.
      * @param network network on behalf of which the reward is distributed
      * @param token address of the token
-     * @param amount amount of tokens
-     * @param data some used data
+     * @param distributeAmount amount of tokens to distribute
+     * @param adminFeeAmount amount of tokens to keep as an admin fee
+     * @param timestamp timestamp of the distribution
      */
-    event DistributeRewards(address indexed network, address indexed token, uint256 amount, bytes data);
+    event DistributeRewards(
+        address indexed network,
+        address indexed token,
+        uint256 distributeAmount,
+        uint256 adminFeeAmount,
+        uint48 timestamp
+    );
+
+    /**
+     * @notice Emitted when a reward is claimed.
+     * @param network network whose rewards are claimed
+     * @param token address of the token
+     * @param claimer address of the claimer
+     * @param amount amount of tokens
+     * @param recipient address of the tokens' recipient
+     */
+    event ClaimRewards(
+        address indexed network, address indexed token, address indexed claimer, uint256 amount, address recipient
+    );
 
     /**
      * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
      * @return version of the staker rewards contract
-     * @dev Must return 1 for this one.
+     * @dev Must return 2 for this one.
      */
     function version() external view returns (uint64);
 

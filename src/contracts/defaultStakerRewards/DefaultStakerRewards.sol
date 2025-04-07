@@ -28,7 +28,7 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IStakerRewards
      */
-    uint64 public constant version = 1;
+    uint64 public constant version = 2;
 
     /**
      * @inheritdoc IDefaultStakerRewards
@@ -152,6 +152,7 @@ contract DefaultStakerRewards is
         __ReentrancyGuard_init();
 
         VAULT = params.vault;
+        emit InitVault(params.vault);
 
         _setAdminFee(params.adminFee);
 
@@ -223,7 +224,7 @@ contract DefaultStakerRewards is
             rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
-        emit DistributeRewards(network, token, amount, data);
+        emit DistributeRewards(network, token, distributeAmount, adminFeeAmount, timestamp);
     }
 
     /**
@@ -276,7 +277,8 @@ contract DefaultStakerRewards is
             IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimRewards(token, network, msg.sender, recipient, lastUnclaimedReward_, rewardsToClaim, amount);
+        emit ClaimRewards(network, token, msg.sender, amount, recipient);
+        emit ClaimRewardsExtra(network, token, msg.sender, lastUnclaimedReward_, rewardsToClaim);
     }
 
     /**
@@ -306,8 +308,6 @@ contract DefaultStakerRewards is
         }
 
         _setAdminFee(adminFee_);
-
-        emit SetAdminFee(adminFee_);
     }
 
     function _setAdminFee(
@@ -318,5 +318,7 @@ contract DefaultStakerRewards is
         }
 
         adminFee = adminFee_;
+
+        emit SetAdminFee(adminFee_);
     }
 }
