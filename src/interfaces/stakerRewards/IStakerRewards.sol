@@ -6,10 +6,17 @@ interface IStakerRewards {
      * @notice Emitted when a reward is distributed.
      * @param network network on behalf of which the reward is distributed
      * @param token address of the token
-     * @param amount amount of tokens
+     * @param distributeAmount amount of tokens to distribute
+     * @param adminFeeAmount amount of tokens to keep as an admin fee
      * @param timestamp timestamp of the distribution
      */
-    event DistributeRewards(address indexed network, address indexed token, uint256 amount, uint48 timestamp);
+    event DistributeRewards(
+        address indexed network,
+        address indexed token,
+        uint256 distributeAmount,
+        uint256 adminFeeAmount,
+        uint48 timestamp
+    );
 
     /**
      * @notice Emitted when a reward is claimed.
@@ -22,18 +29,6 @@ interface IStakerRewards {
     event ClaimRewards(
         address indexed network, address indexed token, address indexed claimer, uint256 amount, address recipient
     );
-
-    /**
-     * @notice Emitted when the admin fee is set.
-     * @param adminFee new admin fee
-     */
-    event SetAdminFee(uint256 adminFee);
-
-    /**
-     * @notice Get the maximum admin fee (= 100%).
-     * @return maximum admin fee
-     */
-    function ADMIN_FEE_BASE() external view returns (uint256);
 
     /**
      * @notice Get a version of the staker rewards contract (different versions mean different interfaces).
@@ -50,12 +45,6 @@ interface IStakerRewards {
      * @return amount of claimable tokens
      */
     function claimable(address token, address account, bytes calldata data) external view returns (uint256);
-
-    /**
-     * @notice Get an admin fee.
-     * @return admin fee
-     */
-    function adminFee() external view returns (uint256);
 
     /**
      * @notice Distribute rewards on behalf of a particular network using a given token.

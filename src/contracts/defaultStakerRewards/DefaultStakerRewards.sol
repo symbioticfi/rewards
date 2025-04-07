@@ -31,7 +31,7 @@ contract DefaultStakerRewards is
     uint64 public constant version = 2;
 
     /**
-     * @inheritdoc IStakerRewards
+     * @inheritdoc IDefaultStakerRewards
      */
     uint256 public constant ADMIN_FEE_BASE = 10_000;
 
@@ -61,7 +61,7 @@ contract DefaultStakerRewards is
     address public VAULT;
 
     /**
-     * @inheritdoc IStakerRewards
+     * @inheritdoc IDefaultStakerRewards
      */
     uint256 public adminFee;
 
@@ -224,7 +224,7 @@ contract DefaultStakerRewards is
             rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
-        emit DistributeRewards(network, token, amount, timestamp);
+        emit DistributeRewards(network, token, distributeAmount, adminFeeAmount, timestamp);
     }
 
     /**
