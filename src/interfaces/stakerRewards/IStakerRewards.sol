@@ -8,20 +8,20 @@ interface IStakerRewards {
      * @param token address of the token
      * @param amount amount of tokens
      * @param timestamp timestamp of the distribution
-     * @param data some used data
      */
-    event DistributeRewards(
-        address indexed network, address indexed token, uint256 amount, uint48 timestamp, bytes data
-    );
+    event DistributeRewards(address indexed network, address indexed token, uint256 amount, uint48 timestamp);
 
     /**
      * @notice Emitted when a reward is claimed.
+     * @param network network whose rewards are claimed
      * @param token address of the token
      * @param claimer address of the claimer
      * @param amount amount of tokens
-     * @param data some used data
+     * @param recipient address of the tokens' recipient
      */
-    event ClaimRewards(address indexed token, address indexed claimer, uint256 amount, bytes data);
+    event ClaimRewards(
+        address indexed network, address indexed token, address indexed claimer, uint256 amount, address recipient
+    );
 
     /**
      * @notice Emitted when the admin fee is set.

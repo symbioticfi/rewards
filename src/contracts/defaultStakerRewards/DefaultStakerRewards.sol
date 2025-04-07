@@ -224,7 +224,7 @@ contract DefaultStakerRewards is
             rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
-        emit DistributeRewards(network, token, amount, timestamp, new bytes(0));
+        emit DistributeRewards(network, token, amount, timestamp);
     }
 
     /**
@@ -277,9 +277,8 @@ contract DefaultStakerRewards is
             IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimRewards(
-            token, msg.sender, amount, abi.encode(network, recipient, lastUnclaimedReward_, rewardsToClaim)
-        );
+        emit ClaimRewards(network, token, msg.sender, amount, recipient);
+        emit ClaimRewardsExtra(network, token, msg.sender, lastUnclaimedReward_, rewardsToClaim);
     }
 
     /**

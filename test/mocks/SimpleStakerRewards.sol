@@ -25,7 +25,7 @@ contract SimpleStakerRewards is IStakerRewards {
      * @inheritdoc IStakerRewards
      */
     function distributeRewards(address network, address token, uint256 amount, bytes memory data) external override {
-        emit DistributeRewards(network, token, amount, uint48(block.timestamp), data);
+        emit DistributeRewards(network, token, amount, uint48(block.timestamp));
     }
 
     /**

@@ -51,6 +51,22 @@ interface IDefaultStakerRewards is IStakerRewards {
     event InitVault(address vault);
 
     /**
+     * @notice Emitted when a reward is claimed.
+     * @param network network whose rewards are claimed
+     * @param token address of the token
+     * @param claimer address of the claimer
+     * @param firstClaimedRewardIndex first claimed reward index
+     * @param rewardsClaimed number of rewards claimed
+     */
+    event ClaimRewardsExtra(
+        address indexed network,
+        address indexed token,
+        address indexed claimer,
+        uint256 firstClaimedRewardIndex,
+        uint256 rewardsClaimed
+    );
+
+    /**
      * @notice Emitted when an admin fee is claimed.
      * @param recipient account that received the fee
      * @param amount amount of the fee claimed
