@@ -45,6 +45,12 @@ interface IDefaultStakerRewards is IStakerRewards {
     }
 
     /**
+     * @notice Emitted when a vault is initialized.
+     * @param vault address of the vault
+     */
+    event InitVault(address vault);
+
+    /**
      * @notice Emitted when an admin fee is claimed.
      * @param recipient account that received the fee
      * @param amount amount of the fee claimed

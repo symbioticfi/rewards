@@ -152,6 +152,7 @@ contract DefaultStakerRewards is
         __ReentrancyGuard_init();
 
         VAULT = params.vault;
+        emit InitVault(params.vault);
 
         _setAdminFee(params.adminFee);
 
@@ -223,7 +224,7 @@ contract DefaultStakerRewards is
             rewards[token][network].push(RewardDistribution({amount: distributeAmount, timestamp: timestamp}));
         }
 
-        emit DistributeRewards(network, token, amount, timestamp, data);
+        emit DistributeRewards(network, token, amount, timestamp, new bytes(0));
     }
 
     /**
