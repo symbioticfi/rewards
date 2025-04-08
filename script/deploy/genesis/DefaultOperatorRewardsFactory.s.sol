@@ -3,17 +3,20 @@ pragma solidity 0.8.25;
 
 import {console2, Script} from "forge-std/Script.sol";
 
+import {SymbioticCoreConstants} from "@symbioticfi/core/test/integration/SymbioticCoreConstants.sol";
+
 import {DefaultOperatorRewards} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {DefaultOperatorRewardsFactory} from
     "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultOperatorRewardsFactoryScript is Script {
-    function run(
-        address networkMiddlewareService
-    ) external {
+    function run() external {
         vm.startBroadcast();
 
-        DefaultOperatorRewards operatorRewardsImplementation = new DefaultOperatorRewards(networkMiddlewareService);
+        SymbioticCoreConstants.Core memory symbioticCore = SymbioticCoreConstants.core();
+
+        DefaultOperatorRewards operatorRewardsImplementation =
+            new DefaultOperatorRewards(address(symbioticCore.networkMiddlewareService));
         address defaultOperatorRewardsFactory =
             address(new DefaultOperatorRewardsFactory(address(operatorRewardsImplementation)));
 

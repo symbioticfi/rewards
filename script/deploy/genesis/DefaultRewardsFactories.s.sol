@@ -3,6 +3,8 @@ pragma solidity 0.8.25;
 
 import {console2, Script} from "forge-std/Script.sol";
 
+import {SymbioticCoreConstants} from "@symbioticfi/core/test/integration/SymbioticCoreConstants.sol";
+
 import {DefaultStakerRewards} from "../../../src/contracts/defaultStakerRewards/DefaultStakerRewards.sol";
 import {DefaultStakerRewardsFactory} from "../../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
 
@@ -11,15 +13,19 @@ import {DefaultOperatorRewardsFactory} from
     "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultRewardsFactoriesScript is Script {
-    function run(address vaultFactory, address networkMiddlewareService) external {
+    function run() external {
         vm.startBroadcast();
 
-        DefaultStakerRewards stakerRewardsImplementation =
-            new DefaultStakerRewards(vaultFactory, networkMiddlewareService);
+        SymbioticCoreConstants.Core memory symbioticCore = SymbioticCoreConstants.core();
+
+        DefaultStakerRewards stakerRewardsImplementation = new DefaultStakerRewards(
+            address(symbioticCore.vaultFactory), address(symbioticCore.networkMiddlewareService)
+        );
         address defaultStakerRewardsFactory =
             address(new DefaultStakerRewardsFactory(address(stakerRewardsImplementation)));
 
-        DefaultOperatorRewards operatorRewardsImplementation = new DefaultOperatorRewards(networkMiddlewareService);
+        DefaultOperatorRewards operatorRewardsImplementation =
+            new DefaultOperatorRewards(address(symbioticCore.networkMiddlewareService));
         address defaultOperatorRewardsFactory =
             address(new DefaultOperatorRewardsFactory(address(operatorRewardsImplementation)));
 

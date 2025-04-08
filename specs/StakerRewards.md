@@ -24,7 +24,7 @@ source .env
 Deployment script: [click](../script/deploy/genesis/DefaultStakerRewardsFactory.s.sol)
 
 ```shell
-forge script script/deploy/genesis/DefaultStakerRewardsFactory.s.sol:DefaultStakerRewardsFactoryScript 0x0000000000000000000000000000000000000000 0x0000000000000000000000000000000000000000 --sig "run(address,address)" --broadcast --rpc-url=$ETH_RPC_URL
+forge script script/deploy/genesis/DefaultStakerRewardsFactory.s.sol:DefaultStakerRewardsFactoryScript --broadcast --rpc-url=$ETH_RPC_URL
 ```
 
 #### Deploy entity
