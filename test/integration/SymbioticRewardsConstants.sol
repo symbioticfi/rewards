@@ -11,13 +11,13 @@ library SymbioticRewardsConstants {
     function defaultStakerRewardsFactory() internal view returns (ISymbioticDefaultStakerRewardsFactory) {
         if (block.chainid == 1) {
             // mainnet
-            return ISymbioticDefaultStakerRewardsFactory(0x290CAB97a312164Ccf095d75D6175dF1C4A0a25F);
+            return ISymbioticDefaultStakerRewardsFactory(0x0000000000000000000000000000000000000000);
         } else if (block.chainid == 17_000) {
             // holesky
-            return ISymbioticDefaultStakerRewardsFactory(0x698C36DE44D73AEfa3F0Ce3c0255A8667bdE7cFD);
+            return ISymbioticDefaultStakerRewardsFactory(0x3b3A7d40dbEFC7Dcf1853DB7EcFf5AA9710B7f7F);
         } else if (block.chainid == 11_155_111) {
             // sepolia
-            return ISymbioticDefaultStakerRewardsFactory(0x70C618a13D1A57f7234c0b893b9e28C5cA8E7f37);
+            return ISymbioticDefaultStakerRewardsFactory(0x3b3A7d40dbEFC7Dcf1853DB7EcFf5AA9710B7f7F);
         } else {
             revert("SymbioticRewardsConstants.defaultStakerRewardsFactory(): chainid not supported");
         }
