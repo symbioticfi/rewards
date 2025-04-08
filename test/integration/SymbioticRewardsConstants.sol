@@ -14,10 +14,10 @@ library SymbioticRewardsConstants {
             return ISymbioticDefaultStakerRewardsFactory(0x0000000000000000000000000000000000000000);
         } else if (block.chainid == 17_000) {
             // holesky
-            return ISymbioticDefaultStakerRewardsFactory(0x3b3A7d40dbEFC7Dcf1853DB7EcFf5AA9710B7f7F);
+            return ISymbioticDefaultStakerRewardsFactory(0x58E80fA5Eb938525f2ca80C5bdE724D7a99A7892);
         } else if (block.chainid == 11_155_111) {
             // sepolia
-            return ISymbioticDefaultStakerRewardsFactory(0x3b3A7d40dbEFC7Dcf1853DB7EcFf5AA9710B7f7F);
+            return ISymbioticDefaultStakerRewardsFactory(0xE6381EDA7444672da17Cd859e442aFFcE7e170F0);
         } else {
             revert("SymbioticRewardsConstants.defaultStakerRewardsFactory(): chainid not supported");
         }
