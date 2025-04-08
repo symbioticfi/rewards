@@ -45,23 +45,25 @@ interface IDefaultStakerRewards is IStakerRewards {
     }
 
     /**
-     * @notice Emitted when rewards are claimed.
-     * @param token address of the token claimed
-     * @param network address of the network
-     * @param claimer account that claimed the reward
-     * @param recipient account that received the reward
-     * @param firstRewardIndex first index of the claimed rewards
-     * @param numRewards number of rewards claimed
-     * @param amount amount of tokens claimed
+     * @notice Emitted when a vault is initialized.
+     * @param vault address of the vault
      */
-    event ClaimRewards(
-        address indexed token,
+    event InitVault(address vault);
+
+    /**
+     * @notice Emitted when a reward is claimed.
+     * @param network network whose rewards are claimed
+     * @param token address of the token
+     * @param claimer address of the claimer
+     * @param firstClaimedRewardIndex first claimed reward index
+     * @param rewardsClaimed number of rewards claimed
+     */
+    event ClaimRewardsExtra(
         address indexed network,
+        address indexed token,
         address indexed claimer,
-        address recipient,
-        uint256 firstRewardIndex,
-        uint256 numRewards,
-        uint256 amount
+        uint256 firstClaimedRewardIndex,
+        uint256 rewardsClaimed
     );
 
     /**
@@ -72,8 +74,8 @@ interface IDefaultStakerRewards is IStakerRewards {
     event ClaimAdminFee(address indexed recipient, uint256 amount);
 
     /**
-     * @notice Emitted when an admin fee is set.
-     * @param adminFee admin fee
+     * @notice Emitted when the admin fee is set.
+     * @param adminFee new admin fee
      */
     event SetAdminFee(uint256 adminFee);
 

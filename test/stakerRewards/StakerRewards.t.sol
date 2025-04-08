@@ -27,7 +27,7 @@ contract StakerRewardsTest is Test {
     }
 
     function test_Create() public {
-        assertEq(stakerRewards.version(), 1);
+        assertEq(stakerRewards.version(), 2);
 
         vm.startPrank(bob);
         networkRegistry.registerNetwork();
