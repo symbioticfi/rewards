@@ -11,7 +11,7 @@ library SymbioticRewardsConstants {
     function defaultStakerRewardsFactory() internal view returns (ISymbioticDefaultStakerRewardsFactory) {
         if (block.chainid == 1) {
             // mainnet
-            return ISymbioticDefaultStakerRewardsFactory(0x0000000000000000000000000000000000000000);
+            return ISymbioticDefaultStakerRewardsFactory(0xFEB871581C2ab2e1EEe6f7dDC7e6246cFa087A23);
         } else if (block.chainid == 17_000) {
             // holesky
             return ISymbioticDefaultStakerRewardsFactory(0x58E80fA5Eb938525f2ca80C5bdE724D7a99A7892);
