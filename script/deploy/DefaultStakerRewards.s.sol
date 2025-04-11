@@ -3,12 +3,12 @@ pragma solidity 0.8.25;
 
 import {console2, Script} from "forge-std/Script.sol";
 
+import {SymbioticRewardsConstants} from "../../test/integration/SymbioticRewardsConstants.sol";
+
 import {IDefaultStakerRewards} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
-import {IDefaultStakerRewardsFactory} from "../../src/interfaces/defaultStakerRewards/IDefaultStakerRewardsFactory.sol";
 
 contract DefaultStakerRewardsScript is Script {
     function run(
-        address defaultStakerRewardsFactory,
         address vault,
         uint256 adminFee,
         address defaultAdminRoleHolder,
@@ -17,7 +17,7 @@ contract DefaultStakerRewardsScript is Script {
     ) external {
         vm.startBroadcast();
 
-        address defaultStakerRewards = IDefaultStakerRewardsFactory(defaultStakerRewardsFactory).create(
+        address defaultStakerRewards = SymbioticRewardsConstants.defaultStakerRewardsFactory().create(
             IDefaultStakerRewards.InitParams({
                 vault: vault,
                 adminFee: adminFee,
