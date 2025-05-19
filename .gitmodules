@@ -10,3 +10,4 @@
 [submodule "lib/core"]
 	path = lib/core
 	url = https://github.com/symbioticfi/core
+	branch = hoodi
