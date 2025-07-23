@@ -18,7 +18,7 @@ library SymbioticRewardsConstants {
         } else if (block.chainid == 11_155_111) {
             // sepolia
             return ISymbioticDefaultStakerRewardsFactory(0xE6381EDA7444672da17Cd859e442aFFcE7e170F0);
-        }  else if (block.chainid == 560048) {
+        } else if (block.chainid == 560_048) {
             // hoodi
             return ISymbioticDefaultStakerRewardsFactory(0x1eA0b919721C20dae19aBc4391850D94eDbe9b1c);
         } else {
