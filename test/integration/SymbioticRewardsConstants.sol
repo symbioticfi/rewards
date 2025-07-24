@@ -36,7 +36,7 @@ library SymbioticRewardsConstants {
         } else if (block.chainid == 11_155_111) {
             // sepolia
             return ISymbioticDefaultOperatorRewardsFactory(0x8D6C873cb7ffa6BE615cE1D55801a9417Ed55f9B);
-        } else if (block.chainid == 11_155_111) {
+        } else if (block.chainid == 560_048) {
             // hoodi
             return ISymbioticDefaultOperatorRewardsFactory(0xE7e597655C3F76117302ea6103f5F2B3F3D75c5d);
         } else {
