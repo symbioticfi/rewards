@@ -18,6 +18,9 @@ library SymbioticRewardsConstants {
         } else if (block.chainid == 11_155_111) {
             // sepolia
             return ISymbioticDefaultStakerRewardsFactory(0xE6381EDA7444672da17Cd859e442aFFcE7e170F0);
+        } else if (block.chainid == 560_048) {
+            // hoodi
+            return ISymbioticDefaultStakerRewardsFactory(0x1eA0b919721C20dae19aBc4391850D94eDbe9b1c);
         } else {
             revert("SymbioticRewardsConstants.defaultStakerRewardsFactory(): chainid not supported");
         }
@@ -33,6 +36,9 @@ library SymbioticRewardsConstants {
         } else if (block.chainid == 11_155_111) {
             // sepolia
             return ISymbioticDefaultOperatorRewardsFactory(0x8D6C873cb7ffa6BE615cE1D55801a9417Ed55f9B);
+        } else if (block.chainid == 560_048) {
+            // hoodi
+            return ISymbioticDefaultOperatorRewardsFactory(0xE7e597655C3F76117302ea6103f5F2B3F3D75c5d);
         } else {
             revert("SymbioticRewardsConstants.defaultOperatorRewardsFactory(): chainid not supported");
         }

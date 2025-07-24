@@ -2,6 +2,8 @@
 
 This repository contains a Symbiotic Staker Rewards interface, its default implementation, and a default Operator Rewards.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/rewards)
+
 ## Documentation
 
 Can be found [here](https://docs.symbiotic.fi/core-modules/rewards).
