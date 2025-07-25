@@ -24,7 +24,7 @@ function main() {
 
   const treesJson = []
   for (const [token, { tree }] of Object.entries(trees)) {
-    treesJson.push({ token, tree })
+    treesJson.push({ token, tree: tree.dump() })
   }
 
   const fileName = 'data/trees.json'

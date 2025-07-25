@@ -11,7 +11,7 @@ function parseMerkleTrees() {
     const values = tokenData.tree.values.map(
       ({ value: [operator, reward] }) => [operator, reward]
     )
-    const tree = StandardMerkleTree.load(tokenData.tree);
+    const tree = StandardMerkleTree.load(tokenData.tree)
     trees[tokenData.token] = { tree, values }
   })
 
