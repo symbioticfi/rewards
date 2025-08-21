@@ -92,7 +92,9 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, Multicall, 
         emit DistributionTypeUpdated(newDistributionType);
     }
 
-    function getDistributionTypeAt(uint48 epoch) external view returns (uint32) {
+    function getDistributionTypeAt(
+        uint48 epoch
+    ) external view returns (uint32) {
         (,, uint208 value,) = distributionType.upperLookupRecentCheckpoint(epoch, new bytes(0));
         return uint32(value);
     }

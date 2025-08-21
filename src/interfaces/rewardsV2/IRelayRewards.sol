@@ -29,7 +29,9 @@ interface IRelayRewards {
         uint32 newDistributionType
     ) external;
 
-    function getDistributionTypeAt(uint48 epoch) external view returns (uint32);
+    function getDistributionTypeAt(
+        uint48 epoch
+    ) external view returns (uint32);
 
     function getDistributionType() external view returns (uint32);
 }

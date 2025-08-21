@@ -62,8 +62,7 @@ contract CuratorRegistry is ICuratorRegistry, Multicall {
         uint48 timestamp,
         bytes memory hint
     ) external view returns (address curator) {
-        (bool exists,, uint208 value,) =
-            curators[network][vault].upperLookupRecentCheckpoint(timestamp, hint);
+        (bool exists,, uint208 value,) = curators[network][vault].upperLookupRecentCheckpoint(timestamp, hint);
         if (exists) {
             return address(uint160(value));
         }

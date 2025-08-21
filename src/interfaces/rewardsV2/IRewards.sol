@@ -68,14 +68,11 @@ interface IRewards {
         bytes32[] calldata proof
     ) external;
 
-
     function addDistributionData(address token, bytes32 data) external;
-
 
     function removeDistributionData(
         address token
     ) external;
-
 
     function setRewarder(
         address rewarder_
