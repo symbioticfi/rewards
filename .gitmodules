@@ -10,7 +10,6 @@
 [submodule "lib/core"]
 	path = lib/core
 	url = https://github.com/symbioticfi/core
-
 [submodule "lib/relay-contracts"]
 	path = lib/relay-contracts
 	url = https://github.com/symbioticfi/relay-contracts
