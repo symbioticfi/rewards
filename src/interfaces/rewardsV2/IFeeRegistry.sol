@@ -9,16 +9,15 @@ pragma solidity 0.8.25;
  * Fees are stored with timestamps to support historical fee tracking and updates.
  */
 interface IFeeRegistry {
-    // Events for fee updates
+    /* EVENTS */
 
     /**
      * @notice Emitted when an operator's global fee is updated
      * @param operator The address of the operator whose fee was updated
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
-    event OperatorGlobalFeeUpdated(address indexed operator, bool isEnabled, uint256 fee, uint48 timestamp);
+    event OperatorGlobalFeeUpdated(address indexed operator, bool isEnabled, uint256 fee);
 
     /**
      * @notice Emitted when an operator's vault-specific fee is updated
@@ -26,11 +25,8 @@ interface IFeeRegistry {
      * @param vault The address of the vault for which the fee applies
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
-    event OperatorVaultFeeUpdated(
-        address indexed operator, address indexed vault, bool isEnabled, uint256 fee, uint48 timestamp
-    );
+    event OperatorVaultFeeUpdated(address indexed operator, address indexed vault, bool isEnabled, uint256 fee);
 
     /**
      * @notice Emitted when an operator's network-specific fee is updated
@@ -38,11 +34,8 @@ interface IFeeRegistry {
      * @param network The address of the network for which the fee applies
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
-    event OperatorNetworkFeeUpdated(
-        address indexed operator, address indexed network, bool isEnabled, uint256 fee, uint48 timestamp
-    );
+    event OperatorNetworkFeeUpdated(address indexed operator, address indexed network, bool isEnabled, uint256 fee);
 
     /**
      * @notice Emitted when an operator's vault-network specific fee is updated
@@ -51,15 +44,9 @@ interface IFeeRegistry {
      * @param network The address of the network for which the fee applies
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
     event OperatorVaultNetworkFeeUpdated(
-        address indexed operator,
-        address indexed vault,
-        address indexed network,
-        bool isEnabled,
-        uint256 fee,
-        uint48 timestamp
+        address indexed operator, address indexed vault, address indexed network, bool isEnabled, uint256 fee
     );
 
     /**
@@ -67,9 +54,8 @@ interface IFeeRegistry {
      * @param curator The address of the curator whose fee was updated
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
-    event CuratorGlobalFeeUpdated(address indexed curator, bool isEnabled, uint256 fee, uint48 timestamp);
+    event CuratorGlobalFeeUpdated(address indexed curator, bool isEnabled, uint256 fee);
 
     /**
      * @notice Emitted when a curator's vault-specific fee is updated
@@ -77,13 +63,14 @@ interface IFeeRegistry {
      * @param vault The address of the vault for which the fee applies
      * @param isEnabled Whether the fee is enabled (true) or disabled (false)
      * @param fee The fee amount in basis points (1/100th of a percent)
-     * @param timestamp The timestamp when the fee was updated
      */
-    event CuratorVaultFeeUpdated(
-        address indexed curator, address indexed vault, bool isEnabled, uint256 fee, uint48 timestamp
-    );
+    event CuratorVaultFeeUpdated(address indexed curator, address indexed vault, bool isEnabled, uint256 fee);
 
-    // Operator fee getters
+    /* ERRORS */
+
+    error FeeTooHigh();
+
+    /* FUNCTIONS */
 
     /**
      * @notice Get the operator fee for a specific vault and network at a given timestamp
@@ -91,6 +78,7 @@ interface IFeeRegistry {
      * @param vault The address of the vault
      * @param network The address of the network
      * @param timestamp The timestamp to query the fee for
+     * @param hint The hint to use for the checkpoint lookup
      * @return fee The fee amount in basis points (1/100th of a percent)
      * @dev This function returns the fee that was active at the specified timestamp,
      * allowing for historical fee queries and audit trails.
@@ -99,7 +87,8 @@ interface IFeeRegistry {
         address operator,
         address vault,
         address network,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) external view returns (uint256 fee);
 
     /**
@@ -162,18 +151,22 @@ interface IFeeRegistry {
         address network
     ) external view returns (bool isEnabled, uint256 fee);
 
-    // Curator fee getters
-
     /**
      * @notice Get the curator fee for a specific vault at a given timestamp
      * @param curator The address of the curator
      * @param vault The address of the vault
      * @param timestamp The timestamp to query the fee for
+     * @param hint The hint to use for the checkpoint lookup
      * @return fee The fee amount in basis points (1/100th of a percent)
      * @dev This function returns the fee that was active at the specified timestamp,
      * allowing for historical fee queries and audit trails.
      */
-    function getCuratorFeeAt(address curator, address vault, uint48 timestamp) external view returns (uint256 fee);
+    function getCuratorFeeAt(
+        address curator,
+        address vault,
+        uint48 timestamp,
+        bytes memory hint
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Get the current curator fee for a specific vault
@@ -205,8 +198,6 @@ interface IFeeRegistry {
      * @dev Vault fees override global fees for that specific vault
      */
     function getCuratorVaultFee(address curator, address vault) external view returns (bool isEnabled, uint256 fee);
-
-    // Operator fee setters
 
     /**
      * @notice Set the operator's global fee
@@ -247,8 +238,6 @@ interface IFeeRegistry {
      * Only callable by authorized accounts (typically the operator themselves or governance).
      */
     function setOperatorVaultNetworkFee(address vault, address network, bool enable, uint256 fee) external;
-
-    // Curator fee setters
 
     /**
      * @notice Set the curator's global fee

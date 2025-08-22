@@ -6,6 +6,12 @@ pragma solidity 0.8.25;
  * @notice Interface for the RewardsReceiverRegistry contract that manages rewards receiver assignments
  */
 interface IRewardsReceiverRegistry {
+    /* ERRORS */
+
+    error InvalidReceiver();
+
+    /* EVENTS */
+
     /**
      * @notice Emitted when a global rewards receiver is set for a rewardee
      * @param rewardee The address that earns rewards
@@ -29,6 +35,9 @@ interface IRewardsReceiverRegistry {
      * @param hint Optional hint for checkpoint lookup optimization
      * @return receiver The rewards receiver address at the specified timestamp, or the rewardee if no receiver is set
      */
+
+    /* FUNCTIONS */
+
     function getRewardsReceiverAt(
         address rewardee,
         uint64 chainId,

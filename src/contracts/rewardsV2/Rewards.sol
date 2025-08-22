@@ -19,17 +19,18 @@ contract Rewards is Multicall, IRewards {
     using EnumerableMap for EnumerableMap.AddressToBytes32Map;
     using SafeERC20 for IERC20;
 
-    // State variables
-    mapping(address network => CumulativeDistribution) internal cumulativeDistributions;
+    /* STATE VARIABLES */
+
+    mapping(address network => CumulativeDistribution) public cumulativeDistributions;
     mapping(address network => mapping(bytes32 root => CumulativeDistribution value)) public
         cumulativeDistributionsByRoot;
     mapping(address network => mapping(address token => uint256 amount)) public balances;
     mapping(address network => mapping(address token => mapping(address rewardee => uint256 amount))) public claimed;
     mapping(address network => address value) public rewarder;
+    mapping(address network => EnumerableMap.AddressToBytes32Map) internal _distributionData;
 
-    mapping(address network => EnumerableMap.AddressToBytes32Map) internal distributionData;
+    /* MODIFIERS */
 
-    // Modifiers
     modifier onlyNetworkRewarder(
         address network
     ) {
@@ -39,22 +40,28 @@ contract Rewards is Multicall, IRewards {
         _;
     }
 
-    // Constructor
-    // (No constructor in this contract)
+    /* EXTERNAL FUNCTIONS */
 
-    // External functions
     /**
      * @inheritdoc IRewards
      */
     function claimable(address token, address rewardee, bytes calldata data) external view returns (uint256) {
-        uint256 amount = abi.decode(data, (uint256));
-        uint256 claimedAmount = claimed[msg.sender][token][rewardee];
+        (address network, CumulativeDistributionLeaf memory leaf, bytes32[] memory proof) =
+            abi.decode(data, (address, CumulativeDistributionLeaf, bytes32[]));
 
-        if (amount <= claimedAmount) {
+        bytes32 leafHash = keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount))));
+
+        if (!MerkleProof.verify(proof, cumulativeDistributions[network].merkleRoot, leafHash)) {
             return 0;
         }
 
-        return amount - claimedAmount;
+        uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee];
+
+        if (leaf.amount <= claimedAmount) {
+            return 0;
+        }
+
+        return leaf.amount - claimedAmount;
     }
 
     /**
@@ -63,11 +70,11 @@ contract Rewards is Multicall, IRewards {
     function getDistributionData(
         address network
     ) external view returns (DistributionData[] memory) {
-        EnumerableMap.AddressToBytes32Map storage networkDistributionData = distributionData[network];
+        EnumerableMap.AddressToBytes32Map storage networkDistributionData = _distributionData[network];
         uint256 length = networkDistributionData.length();
         DistributionData[] memory result = new DistributionData[](length);
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; i++) {
             (address token, bytes32 data) = networkDistributionData.at(i);
             result[i] = DistributionData({token: token, data: data});
         }
@@ -78,12 +85,14 @@ contract Rewards is Multicall, IRewards {
     /**
      * @inheritdoc IRewards
      */
-    function distributeRewards(
-        address network,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external onlyNetworkRewarder(network) {
+    function isCumulativeDistributionRoot(address network, bytes32 merkleRoot) public view returns (bool) {
+        return cumulativeDistributionsByRoot[network][merkleRoot].timestamp > 0;
+    }
+
+    /**
+     * @inheritdoc IRewards
+     */
+    function distributeRewards(address network, address token, uint256 amount, bytes calldata data) external {
         CumulativeDistribution memory cumulativeDistribution = abi.decode(data, (CumulativeDistribution));
         TopUp[] memory topUps = new TopUp[](1);
         topUps[0] = TopUp({token: token, amount: amount});
@@ -96,6 +105,7 @@ contract Rewards is Multicall, IRewards {
     function topUpBalance(address network, TopUp memory topUp) external {
         IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
         balances[network][topUp.token] += topUp.amount;
+        emit TopUpBalance(network, topUp.token, topUp.amount);
     }
 
     /**
@@ -123,15 +133,14 @@ contract Rewards is Multicall, IRewards {
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof
     ) external {
-        bytes32 root = cumulativeDistributions[network].merkleRoot;
-        _claimRewards(network, rewardee, leaf, proof, root);
+        _claimRewards(network, rewardee, leaf, proof, cumulativeDistributions[network].merkleRoot);
     }
 
     /**
      * @inheritdoc IRewards
      */
     function addDistributionData(address token, bytes32 data) external {
-        distributionData[msg.sender].set(token, data);
+        _distributionData[msg.sender].set(token, data);
     }
 
     /**
@@ -140,7 +149,7 @@ contract Rewards is Multicall, IRewards {
     function removeDistributionData(
         address token
     ) external {
-        distributionData[msg.sender].remove(token);
+        _distributionData[msg.sender].remove(token);
     }
 
     /**
@@ -159,7 +168,8 @@ contract Rewards is Multicall, IRewards {
         return 2;
     }
 
-    // Public functions
+    /* PUBLIC FUNCTIONS */
+
     /**
      * @inheritdoc IRewards
      */
@@ -175,21 +185,15 @@ contract Rewards is Multicall, IRewards {
         cumulativeDistributions[network] = cumulativeDistribution;
         cumulativeDistributionsByRoot[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution;
 
-        for (uint256 i = 0; i < topUps.length; i++) {
+        for (uint256 i; i < topUps.length; i++) {
             TopUp memory topUp = topUps[i];
             IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
             balances[network][topUp.token] += topUp.amount;
         }
     }
 
-    /**
-     * @inheritdoc IRewards
-     */
-    function isCumulativeDistributionRoot(address network, bytes32 merkleRoot) public view returns (bool) {
-        return cumulativeDistributionsByRoot[network][merkleRoot].timestamp > 0;
-    }
+    /* INTERNAL FUNCTIONS */
 
-    // Internal functions
     function _claimRewards(
         address network,
         address rewardee,
@@ -225,7 +229,4 @@ contract Rewards is Multicall, IRewards {
 
         emit ClaimRewards(network, leaf.token, msg.sender, rewardee, claimableAmount);
     }
-
-    // Private functions
-    // (No private functions in this contract)
 }

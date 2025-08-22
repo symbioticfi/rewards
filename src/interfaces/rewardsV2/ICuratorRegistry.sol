@@ -6,6 +6,12 @@ pragma solidity 0.8.25;
  * @notice Interface for the CuratorRegistry contract that manages curator assignments for networks and vaults
  */
 interface ICuratorRegistry {
+    /* ERRORS */
+
+    error NotNetworkMiddleware();
+
+    /* EVENTS */
+
     /**
      * @notice Emitted when a curator is set for a network and vault
      * @param network The network identifier
@@ -14,10 +20,7 @@ interface ICuratorRegistry {
      */
     event CuratorSet(address indexed network, address indexed vault, address indexed curator);
 
-    /**
-     * @notice Error thrown when the caller is not the network middleware
-     */
-    error NotNetworkMiddleware();
+    /* FUNCTIONS */
 
     /**
      * @notice Get the curator for a network and vault at a specific timestamp
