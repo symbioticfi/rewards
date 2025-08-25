@@ -22,8 +22,8 @@ contract Rewards is Multicall, IRewards {
     /* STATE VARIABLES */
 
     mapping(address network => CumulativeDistribution) public cumulativeDistributions;
-    mapping(address network => mapping(bytes32 root => CumulativeDistribution value)) public
-        cumulativeDistributionsByRoot;
+	mapping(address network => mapping(bytes32 root => bool value)) public isCumulativeDistributionRoot;
+	mapping(address network => mapping(bytes32 root => bytes value)) public cumulativeDistributionDaData;
     mapping(address network => mapping(address token => uint256 amount)) public balances;
     mapping(address network => mapping(address token => mapping(address rewardee => uint256 amount))) public claimed;
     mapping(address network => address value) public rewarder;
@@ -85,13 +85,6 @@ contract Rewards is Multicall, IRewards {
     /**
      * @inheritdoc IRewards
      */
-    function isCumulativeDistributionRoot(address network, bytes32 merkleRoot) public view returns (bool) {
-        return cumulativeDistributionsByRoot[network][merkleRoot].timestamp > 0;
-    }
-
-    /**
-     * @inheritdoc IRewards
-     */
     function distributeRewards(address network, address token, uint256 amount, bytes calldata data) external {
         CumulativeDistribution memory cumulativeDistribution = abi.decode(data, (CumulativeDistribution));
         TopUp[] memory topUps = new TopUp[](1);
@@ -118,7 +111,7 @@ contract Rewards is Multicall, IRewards {
         bytes32[] calldata proof,
         bytes32 merkleRoot
     ) external {
-        if (!isCumulativeDistributionRoot(network, merkleRoot)) {
+        if (!isCumulativeDistributionRoot[network][merkleRoot]) {
             revert RootNotSet();
         }
         _claimRewards(network, rewardee, leaf, proof, merkleRoot);
@@ -183,7 +176,8 @@ contract Rewards is Multicall, IRewards {
         }
 
         cumulativeDistributions[network] = cumulativeDistribution;
-        cumulativeDistributionsByRoot[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution;
+        isCumulativeDistributionRoot[network][cumulativeDistribution.merkleRoot] = true;
+        cumulativeDistributionDaData[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution.daData;
 
         for (uint256 i; i < topUps.length; i++) {
             TopUp memory topUp = topUps[i];
