@@ -18,7 +18,7 @@ interface ICuratorRegistry {
      * @param vault The vault address
      * @param curator The curator address
      */
-    event CuratorSet(address indexed network, address indexed vault, address indexed curator);
+    event SetCurator(address indexed network, address indexed vault, address indexed curator);
 
     /* FUNCTIONS */
 

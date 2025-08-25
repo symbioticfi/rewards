@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity ^0.8.25;
+
+import {IRelayRewards} from "../../interfaces/rewardsV2/IRelayRewards.sol";
+import {IRewards} from "../../interfaces/rewardsV2/IRewards.sol";
 
 import {NetworkManager} from "@symbioticfi/relay-contracts/src/contracts/modules/base/NetworkManager.sol";
 import {PermissionManager} from "@symbioticfi/relay-contracts/src/contracts/modules/base/PermissionManager.sol";
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
-import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {ISettlement} from "@symbioticfi/relay-contracts/src/interfaces/modules/settlement/ISettlement.sol";
-import {IRewards} from "../../interfaces/rewardsV2/IRewards.sol";
-import {IRelayRewards} from "../../interfaces/rewardsV2/IRelayRewards.sol";
+
+import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 
 /**
  * @title RelayRewards
@@ -39,33 +41,33 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, IRelayRewar
     function __RelayRewards_init(
         RelayRewardsInitParams memory initParams
     ) internal onlyInitializing {
+        __NetworkManager_init(initParams.networkInitParams);
         RelayRewardsStorage storage $ = _getRelayRewardsStorage();
         $.unrewardedEpoch = initParams.unrewardedEpoch;
         $.settlement = initParams.settlement;
         $.requiredKeyTag = initParams.requiredKeyTag;
-        __NetworkManager_init(initParams.networkInitParams);
     }
 
-    /* EXTERNAL FUNCTIONS */
+    /* PUBLIC FUNCTIONS */
 
     /**
      * @inheritdoc IRelayRewards
      */
-    function getDistributionTypeAt(uint48 epoch, bytes memory hint) external view returns (uint32) {
+    function getDistributionTypeAt(uint48 epoch, bytes memory hint) public view returns (uint32) {
         return uint32(_getRelayRewardsStorage().distributionType.upperLookupRecent(epoch, hint));
     }
 
     /**
      * @inheritdoc IRelayRewards
      */
-    function getDistributionType() external view returns (uint32) {
+    function getDistributionType() public view returns (uint32) {
         return uint32(_getRelayRewardsStorage().distributionType.latest());
     }
 
     /**
      * @inheritdoc IRelayRewards
      */
-    function getRequiredKeyTag() external view returns (uint8) {
+    function getRequiredKeyTag() public view returns (uint8) {
         return _getRelayRewardsStorage().requiredKeyTag;
     }
 
@@ -78,14 +80,14 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, IRelayRewar
         bytes calldata daData,
         IRewards.TopUp[] calldata topUps,
         uint48 validatorSetEpoch,
-        bytes calldata proof
-    ) external {
+        bytes calldata proof,
+        bytes calldata hints
+    ) public {
         RelayRewardsStorage storage $ = _getRelayRewardsStorage();
         if (rewardsEpoch < $.unrewardedEpoch) {
             revert RewardsEpochIsInvalid();
         }
 
-        // check signingEpoch for staleness
         if (validatorSetEpoch < ISettlement($.settlement).getLastCommittedHeaderEpoch() - 1) {
             revert ValidatorSetEpochIsStale();
         }
@@ -96,7 +98,7 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, IRelayRewar
             ISettlement($.settlement).getQuorumThresholdFromValSetHeaderAt(validatorSetEpoch),
             proof,
             validatorSetEpoch,
-            new bytes(0)
+            hints
         );
 
         // TODO: what happens in case of missed epochs all over the system
@@ -118,12 +120,12 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, IRelayRewar
      */
     function setDistributionType(
         uint32 newDistributionType
-    ) external checkPermission {
-        RelayRewardsStorage storage $ = _getRelayRewardsStorage();
-        $.distributionType.push(
-            ISettlement($.settlement).getLastCommittedHeaderEpoch() + 1, uint208(newDistributionType)
+    ) public checkPermission {
+        _getRelayRewardsStorage().distributionType.push(
+            ISettlement(_getRelayRewardsStorage().settlement).getLastCommittedHeaderEpoch() + 1,
+            uint208(newDistributionType)
         );
-        emit DistributionTypeUpdated(newDistributionType);
+        emit SetDistributionType(newDistributionType);
     }
 
     /**
@@ -131,7 +133,7 @@ abstract contract RelayRewards is NetworkManager, PermissionManager, IRelayRewar
      */
     function setRequiredKeyTag(
         uint8 requiredKeyTag
-    ) external checkPermission {
+    ) public checkPermission {
         _getRelayRewardsStorage().requiredKeyTag = requiredKeyTag;
     }
 }

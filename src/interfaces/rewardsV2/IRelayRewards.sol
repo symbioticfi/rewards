@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity ^0.8.25;
 
 import {IRewards} from "./IRewards.sol";
+
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
 import {INetworkManager} from "@symbioticfi/relay-contracts/src/interfaces/modules/base/INetworkManager.sol";
 
@@ -65,7 +66,7 @@ interface IRelayRewards {
      * @param newType The new distribution type that was set
      * @dev This event allows external systems to track changes in distribution strategy
      */
-    event DistributionTypeUpdated(uint32 indexed newType);
+    event SetDistributionType(uint32 indexed newType);
 
     /* FUNCTIONS */
 
@@ -79,8 +80,7 @@ interface IRelayRewards {
      * @param topUps Array of top-up rewards to be distributed
      * @param validatorSetEpoch The epoch of the validator set used for validation
      * @param proof Proof data for validating the distribution
-     * @custom:security This function should only be called by authorized operators
-     *                  and should validate all input parameters thoroughly
+     * @param hints Optional hints for the distribution
      */
     function distributeRewards(
         uint48 rewardsEpoch,
@@ -88,7 +88,8 @@ interface IRelayRewards {
         bytes calldata daData,
         IRewards.TopUp[] calldata topUps,
         uint48 validatorSetEpoch,
-        bytes calldata proof
+        bytes calldata proof,
+        bytes calldata hints
     ) external;
 
     /**

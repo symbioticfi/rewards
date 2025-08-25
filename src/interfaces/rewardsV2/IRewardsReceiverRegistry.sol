@@ -17,7 +17,7 @@ interface IRewardsReceiverRegistry {
      * @param rewardee The address that earns rewards
      * @param receiver The address that receives the rewards
      */
-    event GlobalRewardsReceiverSet(address indexed rewardee, address indexed receiver);
+    event SetGlobalRewardsReceiver(address indexed rewardee, address indexed receiver);
 
     /**
      * @notice Emitted when a chain-specific rewards receiver is set for a rewardee
@@ -25,7 +25,7 @@ interface IRewardsReceiverRegistry {
      * @param chainId The chain ID for which the receiver is set
      * @param receiver The address that receives the rewards
      */
-    event ChainRewardsReceiverSet(address indexed rewardee, uint256 indexed chainId, address indexed receiver);
+    event SetChainRewardsReceiver(address indexed rewardee, uint256 indexed chainId, address indexed receiver);
 
     /**
      * @notice Get the rewards receiver for a rewardee at a specific timestamp on a specific chain

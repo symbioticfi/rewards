@@ -1,6 +1,8 @@
     // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 /**
  * @title IRewards
  * @notice Interface for the Symbiotic Rewards V2 system
@@ -109,6 +111,59 @@ interface IRewards {
     /* FUNCTIONS */
 
     /**
+     * @notice Get the cumulative distribution data for a specific network
+     * @param network The address of the network
+     * @return timestamp The timestamp of the cumulative distribution
+     * @return merkleRoot The Merkle root of the cumulative distribution
+     * @return daData The DA data of the cumulative distribution
+     */
+    function cumulativeDistributions(
+        address network
+    ) external view returns (uint48 timestamp, bytes32 merkleRoot, bytes memory daData);
+
+    /**
+     * @notice Check if a specific Merkle root has been set for a network's cumulative distribution
+     * @param network The address of the network
+     * @param root The Merkle root to check
+     * @return True if the root is set, false otherwise
+     */
+    function isCumulativeDistributionRoot(address network, bytes32 root) external view returns (bool);
+
+    /**
+     * @notice Get the DA (Data Availability) data for a specific network and Merkle root combination
+     * @param network The address of the network
+     * @param root The Merkle root associated with the DA data
+     * @return The DA data as bytes
+     */
+    function cumulativeDistributionDaData(address network, bytes32 root) external view returns (bytes memory);
+
+    /**
+     * @notice Get the token balance for a specific network-token pair
+     * @param network The address of the network
+     * @param token The address of the token
+     * @return The current balance amount for the network-token pair
+     */
+    function balances(address network, address token) external view returns (uint256);
+
+    /**
+     * @notice Get the claimed amount for a specific network, token, and rewardee combination
+     * @param network The address of the network
+     * @param token The address of the token
+     * @param rewardee The address of the account that claimed rewards
+     * @return The total amount claimed by this rewardee for this network-token pair
+     */
+    function claimed(address network, address token, address rewardee) external view returns (uint256);
+
+    /**
+     * @notice Get the authorized rewarder address for a specific network
+     * @param network The address of the network
+     * @return The address of the authorized rewarder for this network
+     */
+    function rewarder(
+        address network
+    ) external view returns (address);
+
+    /**
      * @notice Calculate the claimable amount for a specific token and rewardee
      * @param token The address of the token to check
      * @param rewardee The address of the account to check claimable amount for
@@ -116,14 +171,6 @@ interface IRewards {
      * @return The amount of tokens that can be claimed
      */
     function claimable(address token, address rewardee, bytes calldata data) external view returns (uint256);
-
-    /**
-     * @notice Check if a Merkle root has been set for a network's cumulative distribution
-     * @param network The address of the network to check
-     * @param merkleRoot The Merkle root to verify
-     * @return True if the root is set, false otherwise
-     */
-    function isCumulativeDistributionRoot(address network, bytes32 merkleRoot) external view returns (bool);
 
     /**
      * @notice Get the distribution data for a specific network
