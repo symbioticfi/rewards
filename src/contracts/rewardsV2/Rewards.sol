@@ -51,7 +51,7 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
     /**
      * @inheritdoc IRewards
      */
-    mapping(address network => mapping(address token => mapping(address rewardee => uint256 amount))) public claimed;
+    mapping(address network => mapping(address token => mapping(address rewardee => mapping(uint256 rewardeeType => uint256 amount)))) public claimed;
 
     /**
      * @inheritdoc IRewards
@@ -73,13 +73,13 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
             !MerkleProof.verify(
                 proof,
                 cumulativeDistributions[network].merkleRoot,
-                keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount))))
+                keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash))))
             )
         ) {
             return 0;
         }
 
-        uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee];
+        uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee][leaf.rewardeeType];
         if (leaf.amount <= claimedAmount) {
             return 0;
         }
@@ -216,13 +216,13 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
 
         if (
             !MerkleProof.verifyCalldata(
-                proof, root, keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount))))
+                proof, root, keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash))))
             )
         ) {
             revert InvalidProof();
         }
 
-        uint256 claimedAmount = claimed[network][leaf.token][msg.sender];
+        uint256 claimedAmount = claimed[network][leaf.token][msg.sender][leaf.rewardeeType];
         uint256 claimableAmount = leaf.amount.saturatingSub(claimedAmount);
         if (claimableAmount == 0) {
             revert InsufficientClaimableAmount();
@@ -234,7 +234,7 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
             revert InsufficientBalance();
         }
 
-        claimed[network][leaf.token][msg.sender] = leaf.amount;
+        claimed[network][leaf.token][msg.sender][leaf.rewardeeType] = leaf.amount;
         balances[network][leaf.token] = networkBalance - claimableAmount;
 
         IERC20(leaf.token).safeTransfer(rewardee, claimableAmount);

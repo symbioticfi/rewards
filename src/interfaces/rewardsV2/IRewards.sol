@@ -81,11 +81,15 @@ interface IRewards {
      * @param token The address of the token being distributed
      * @param rewardee The address of the account eligible for rewards
      * @param amount The amount of rewards allocated to this account
+     * @param rewardeeType The type of rewardee
+     * @param rewardeeDataHash The hash of the rewardee data
      */
     struct CumulativeDistributionLeaf {
         address token;
         address rewardee;
         uint256 amount;
+        uint256 rewardeeType;
+        bytes32 rewardeeDataHash;
     }
 
     /**
@@ -150,9 +154,10 @@ interface IRewards {
      * @param network The address of the network
      * @param token The address of the token
      * @param rewardee The address of the account that claimed rewards
+     * @param rewardeeType The type of rewardee
      * @return The total amount claimed by this rewardee for this network-token pair
      */
-    function claimed(address network, address token, address rewardee) external view returns (uint256);
+    function claimed(address network, address token, address rewardee, uint256 rewardeeType) external view returns (uint256);
 
     /**
      * @notice Get the authorized rewarder address for a specific network
