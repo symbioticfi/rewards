@@ -51,7 +51,10 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
     /**
      * @inheritdoc IRewards
      */
-    mapping(address network => mapping(address token => mapping(address rewardee => mapping(uint256 rewardeeType => uint256 amount)))) public claimed;
+    mapping(
+        address network
+            => mapping(address token => mapping(address rewardee => mapping(uint256 rewardeeType => uint256 amount)))
+    ) public claimed;
 
     /**
      * @inheritdoc IRewards
@@ -73,7 +76,13 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
             !MerkleProof.verify(
                 proof,
                 cumulativeDistributions[network].merkleRoot,
-                keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash))))
+                keccak256(
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash)
+                        )
+                    )
+                )
             )
         ) {
             return 0;
@@ -216,7 +225,15 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
 
         if (
             !MerkleProof.verifyCalldata(
-                proof, root, keccak256(bytes.concat(keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash))))
+                proof,
+                root,
+                keccak256(
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash)
+                        )
+                    )
+                )
             )
         ) {
             revert InvalidProof();

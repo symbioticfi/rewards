@@ -157,7 +157,12 @@ interface IRewards {
      * @param rewardeeType The type of rewardee
      * @return The total amount claimed by this rewardee for this network-token pair
      */
-    function claimed(address network, address token, address rewardee, uint256 rewardeeType) external view returns (uint256);
+    function claimed(
+        address network,
+        address token,
+        address rewardee,
+        uint256 rewardeeType
+    ) external view returns (uint256);
 
     /**
      * @notice Get the authorized rewarder address for a specific network
