@@ -40,6 +40,9 @@ interface IRewards {
     /// @notice Error thrown when the provided timestamp is invalid
     error InvalidTimestamp();
 
+    /// @notice Error thrown when the chain ID in the leaf doesn't match the current chain ID
+    error InvalidChainId();
+
     /* EVENTS */
 
     /**
@@ -83,6 +86,7 @@ interface IRewards {
      * @param amount The amount of rewards allocated to this account
      * @param rewardeeType The type of rewardee
      * @param rewardeeDataHash The hash of the rewardee data
+     * @param chainId The chain ID of the network
      */
     struct CumulativeDistributionLeaf {
         address token;
@@ -90,6 +94,7 @@ interface IRewards {
         uint256 amount;
         uint256 rewardeeType;
         bytes32 rewardeeDataHash;
+        uint64 chainId;
     }
 
     /**

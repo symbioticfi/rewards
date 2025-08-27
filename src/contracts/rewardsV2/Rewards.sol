@@ -72,6 +72,11 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         (address network, CumulativeDistributionLeaf memory leaf, bytes32[] memory proof) =
             abi.decode(data, (address, CumulativeDistributionLeaf, bytes32[]));
 
+        // Check that current chain ID matches the leaf chain ID
+        if (block.chainid != leaf.chainId) {
+            return 0;
+        }
+
         if (
             !MerkleProof.verify(
                 proof,
@@ -79,7 +84,14 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
                 keccak256(
                     bytes.concat(
                         keccak256(
-                            abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash)
+                            abi.encode(
+                                leaf.token,
+                                leaf.rewardee,
+                                leaf.amount,
+                                leaf.rewardeeType,
+                                leaf.rewardeeDataHash,
+                                leaf.chainId
+                            )
                         )
                     )
                 )
@@ -223,6 +235,11 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
             revert RootNotSet();
         }
 
+        // Check that current chain ID matches the leaf chain ID
+        if (block.chainid != leaf.chainId) {
+            revert InvalidChainId();
+        }
+
         if (
             !MerkleProof.verifyCalldata(
                 proof,
@@ -230,7 +247,14 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
                 keccak256(
                     bytes.concat(
                         keccak256(
-                            abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash)
+                            abi.encode(
+                                leaf.token,
+                                leaf.rewardee,
+                                leaf.amount,
+                                leaf.rewardeeType,
+                                leaf.rewardeeDataHash,
+                                leaf.chainId
+                            )
                         )
                     )
                 )

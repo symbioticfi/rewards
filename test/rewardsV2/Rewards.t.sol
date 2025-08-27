@@ -33,6 +33,7 @@ contract RewardsTest is Test {
     uint256 constant TEST_AMOUNT = 1000e18;
     uint256 constant TEST_REWARDEE_TYPE = 1;
     bytes32 constant TEST_REWARDEE_DATA_HASH = keccak256("test data");
+    uint64 constant TEST_CHAIN_ID = 31_337; // Anvil default chain ID
 
     function setUp() public {
         (network, networkPrivateKey) = makeAddrAndKey("network");
@@ -60,7 +61,8 @@ contract RewardsTest is Test {
             rewardee: rewardee,
             amount: TEST_AMOUNT,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: TEST_CHAIN_ID
         });
 
         // Setup test proof (simplified for testing)
@@ -380,7 +382,8 @@ contract RewardsTest is Test {
             rewardee: claimer,
             amount: TEST_AMOUNT,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: TEST_CHAIN_ID
         });
 
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(selfClaimLeaf);
@@ -468,6 +471,104 @@ contract RewardsTest is Test {
         assertEq(rewards.version(), 2);
     }
 
+    function test_Claim_InvalidChainId() public {
+        // Create leaf with different chain ID than current
+        uint64 wrongChainId = 1; // Ethereum mainnet
+        IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
+            token: address(token),
+            rewardee: rewardee,
+            amount: TEST_AMOUNT,
+            rewardeeType: TEST_REWARDEE_TYPE,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: wrongChainId
+        });
+
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.InvalidChainId.selector);
+        rewards.claim(network, rewardee, wrongChainLeaf, proof);
+    }
+
+    function test_Claimable_InvalidChainId() public {
+        // Create leaf with different chain ID than current
+        uint64 wrongChainId = 1; // Ethereum mainnet
+        IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
+            token: address(token),
+            rewardee: rewardee,
+            amount: TEST_AMOUNT,
+            rewardeeType: TEST_REWARDEE_TYPE,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: wrongChainId
+        });
+
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        // Encode data for claimable function
+        bytes memory data = abi.encode(network, wrongChainLeaf, proof);
+
+        uint256 claimableAmount = rewards.claimable(address(token), rewardee, data);
+        assertEq(claimableAmount, 0); // Should return 0 for invalid chain ID
+    }
+
+    function test_ClaimByRoot_InvalidChainId() public {
+        // Create leaf with different chain ID than current
+        uint64 wrongChainId = 1; // Ethereum mainnet
+        IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
+            token: address(token),
+            rewardee: rewardee,
+            amount: TEST_AMOUNT,
+            rewardeeType: TEST_REWARDEE_TYPE,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: wrongChainId
+        });
+
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.InvalidChainId.selector);
+        rewards.claimByRoot(network, rewardee, wrongChainLeaf, proof, merkleRoot);
+    }
+
     function test_Claim_ZeroAmount() public {
         // Create leaf with zero amount
         IRewards.CumulativeDistributionLeaf memory zeroLeaf = IRewards.CumulativeDistributionLeaf({
@@ -475,7 +576,8 @@ contract RewardsTest is Test {
             rewardee: rewardee,
             amount: 0,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
+            chainId: TEST_CHAIN_ID
         });
 
         // Create proof for zero leaf
@@ -507,7 +609,11 @@ contract RewardsTest is Test {
         // Create the leaf hash - the contract does a double hash!
         bytes32 leafHash = keccak256(
             bytes.concat(
-                keccak256(abi.encode(leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash))
+                keccak256(
+                    abi.encode(
+                        leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash, leaf.chainId
+                    )
+                )
             )
         );
 
