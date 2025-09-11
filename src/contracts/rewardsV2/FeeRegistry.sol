@@ -40,18 +40,25 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address vault,
         address network,
         uint48 timestamp,
-        bytes memory hint
-    ) public view returns (uint256 fee) {
-        (bool isEnabled, uint256 feeValue) = getOperatorVaultNetworkFeeAt(operator, vault, network, timestamp, hint);
+        bytes memory hints
+    ) public view returns (uint256) {
+        OperatorFeeHints memory operatorFeeHints;
+        if (hints.length > 0) {
+            operatorFeeHints = abi.decode(hints, (OperatorFeeHints));
+        }
+        (bool isEnabled, uint256 feeValue) = getOperatorVaultNetworkFeeAt(
+            operator, vault, network, timestamp, operatorFeeHints.operatorVaultNetworkFeeHint
+        );
         if (isEnabled) return feeValue;
 
-        (isEnabled, feeValue) = getOperatorNetworkFeeAt(operator, network, timestamp, hint);
+        (isEnabled, feeValue) =
+            getOperatorNetworkFeeAt(operator, network, timestamp, operatorFeeHints.operatorNetworkFeeHint);
         if (isEnabled) return feeValue;
 
-        (isEnabled, feeValue) = getOperatorVaultFeeAt(operator, vault, timestamp, hint);
+        (isEnabled, feeValue) = getOperatorVaultFeeAt(operator, vault, timestamp, operatorFeeHints.operatorVaultFeeHint);
         if (isEnabled) return feeValue;
 
-        (isEnabled, feeValue) = getOperatorGlobalFeeAt(operator, timestamp, hint);
+        (isEnabled, feeValue) = getOperatorGlobalFeeAt(operator, timestamp, operatorFeeHints.operatorGlobalFeeHint);
         if (isEnabled) return feeValue;
 
         return DEFAULT_OPERATOR_FEE;
@@ -60,7 +67,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getOperatorFee(address operator, address vault, address network) public view returns (uint256 fee) {
+    function getOperatorFee(address operator, address vault, address network) public view returns (uint256) {
         (bool isEnabled, uint256 feeValue) = getOperatorVaultNetworkFee(operator, vault, network);
         if (isEnabled) return feeValue;
 
@@ -83,7 +90,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address operator,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorGlobalFee[operator].upperLookupRecent(timestamp, hint));
     }
 
@@ -92,7 +99,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
      */
     function getOperatorGlobalFee(
         address operator
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorGlobalFee[operator].latest());
     }
 
@@ -104,14 +111,14 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address vault,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorVaultFee[operator][vault].upperLookupRecent(timestamp, hint));
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getOperatorVaultFee(address operator, address vault) public view returns (bool isEnabled, uint256 fee) {
+    function getOperatorVaultFee(address operator, address vault) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorVaultFee[operator][vault].latest());
     }
 
@@ -123,17 +130,14 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address network,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorNetworkFee[operator][network].upperLookupRecent(timestamp, hint));
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getOperatorNetworkFee(
-        address operator,
-        address network
-    ) public view returns (bool isEnabled, uint256 fee) {
+    function getOperatorNetworkFee(address operator, address network) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorNetworkFee[operator][network].latest());
     }
 
@@ -146,7 +150,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address network,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return
             _deserializeFeeData(_operatorVaultNetworkFee[operator][vault][network].upperLookupRecent(timestamp, hint));
     }
@@ -158,7 +162,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address operator,
         address vault,
         address network
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_operatorVaultNetworkFee[operator][vault][network].latest());
     }
 
@@ -169,12 +173,17 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address curator,
         address vault,
         uint48 timestamp,
-        bytes memory hint
-    ) public view returns (uint256 fee) {
-        (bool isEnabled, uint256 feeValue) = getCuratorVaultFeeAt(curator, vault, timestamp, hint);
+        bytes memory hints
+    ) public view returns (uint256) {
+        CuratorFeeHints memory curatorFeeHints;
+        if (hints.length > 0) {
+            curatorFeeHints = abi.decode(hints, (CuratorFeeHints));
+        }
+        (bool isEnabled, uint256 feeValue) =
+            getCuratorVaultFeeAt(curator, vault, timestamp, curatorFeeHints.curatorVaultFeeHint);
         if (isEnabled) return feeValue;
 
-        (isEnabled, feeValue) = getCuratorGlobalFeeAt(curator, timestamp, hint);
+        (isEnabled, feeValue) = getCuratorGlobalFeeAt(curator, timestamp, curatorFeeHints.curatorGlobalFeeHint);
         if (isEnabled) return feeValue;
 
         return DEFAULT_CURATOR_FEE;
@@ -183,7 +192,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getCuratorFee(address curator, address vault) public view returns (uint256 fee) {
+    function getCuratorFee(address curator, address vault) public view returns (uint256) {
         (bool isEnabled, uint256 feeValue) = getCuratorVaultFee(curator, vault);
         if (isEnabled) return feeValue;
 
@@ -200,7 +209,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address curator,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_curatorGlobalFee[curator].upperLookupRecent(timestamp, hint));
     }
 
@@ -209,7 +218,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
      */
     function getCuratorGlobalFee(
         address curator
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_curatorGlobalFee[curator].latest());
     }
 
@@ -221,14 +230,14 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
         address vault,
         uint48 timestamp,
         bytes memory hint
-    ) public view returns (bool isEnabled, uint256 fee) {
+    ) public view returns (bool, uint256) {
         return _deserializeFeeData(_curatorVaultFee[curator][vault].upperLookupRecent(timestamp, hint));
     }
     /**
      * @inheritdoc IFeeRegistry
      */
 
-    function getCuratorVaultFee(address curator, address vault) public view returns (bool isEnabled, uint256 fee) {
+    function getCuratorVaultFee(address curator, address vault) public view returns (bool, uint256) {
         return _deserializeFeeData(_curatorVaultFee[curator][vault].latest());
     }
 
@@ -306,7 +315,7 @@ contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
      */
     function _deserializeFeeData(
         uint208 packedData
-    ) internal pure returns (bool isEnabled, uint256 fee) {
+    ) internal pure returns (bool, uint256) {
         return (packedData & 1 > 0, uint256(packedData >> 1));
     }
 }

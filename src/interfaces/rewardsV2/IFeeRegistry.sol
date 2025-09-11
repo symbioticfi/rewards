@@ -70,6 +70,32 @@ interface IFeeRegistry {
 
     error FeeTooHigh();
 
+    /* STRUCTS */
+
+    /**
+     * @notice Represents the hints for operator fees
+     * @param operatorVaultNetworkFeeHint The hint for the operator vault network fee
+     * @param operatorNetworkFeeHint The hint for the operator network fee
+     * @param operatorVaultFeeHint The hint for the operator vault fee
+     * @param operatorGlobalFeeHint The hint for the operator global fee
+     */
+    struct OperatorFeeHints {
+        bytes operatorVaultNetworkFeeHint;
+        bytes operatorNetworkFeeHint;
+        bytes operatorVaultFeeHint;
+        bytes operatorGlobalFeeHint;
+    }
+
+    /**
+     * @notice Represents the hints for curator fees
+     * @param curatorVaultFeeHint The hint for the curator vault fee
+     * @param curatorGlobalFeeHint The hint for the curator global fee
+     */
+    struct CuratorFeeHints {
+        bytes curatorVaultFeeHint;
+        bytes curatorGlobalFeeHint;
+    }
+
     /* FUNCTIONS */
 
     /**

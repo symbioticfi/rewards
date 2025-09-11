@@ -7,7 +7,7 @@ import {CuratorRegistryScript} from "./CuratorRegistry.s.sol";
 import {RewardsScript} from "./Rewards.s.sol";
 import {FeeRegistryScript} from "./FeeRegistry.s.sol";
 
-contract DeployAllRewardsV2Script is Script {
+contract RewardsV2Script is Script {
     function run() external {
         CuratorRegistryScript curatorRegistryScript = new CuratorRegistryScript();
         curatorRegistryScript.run();

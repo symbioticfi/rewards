@@ -2,9 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IRewards} from "../../interfaces/rewardsV2/IRewards.sol";
-import {IStakerRewards} from "../../interfaces/stakerRewards/IStakerRewards.sol";
-
-import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
+import {IStakerRewardsClaim} from "../../interfaces/stakerRewards/IStakerRewardsClaim.sol";
 
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
@@ -19,7 +17,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Manages reward distribution and claiming for networks using Merkle proofs
  * @dev This contract handles cumulative distributions, balance tracking, and reward claiming
  */
-contract Rewards is Multicall, IRewards, StaticDelegateCallable {
+contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     using EnumerableMap for EnumerableMap.AddressToBytes32Map;
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -85,12 +83,12 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
                     bytes.concat(
                         keccak256(
                             abi.encode(
+                                leaf.chainId,
                                 leaf.token,
                                 leaf.rewardee,
-                                leaf.amount,
                                 leaf.rewardeeType,
-                                leaf.rewardeeDataHash,
-                                leaf.chainId
+                                leaf.amount,
+                                leaf.rewardeeDataHash
                             )
                         )
                     )
@@ -116,7 +114,6 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         EnumerableMap.AddressToBytes32Map storage networkDistributionData = _distributionData[network];
         uint256 length = networkDistributionData.length();
         result = new DistributionData[](length);
-
         for (uint256 i; i < length; ++i) {
             (address token, bytes32 data) = networkDistributionData.at(i);
             result[i] = DistributionData({token: token, data: data});
@@ -137,9 +134,9 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
      * @inheritdoc IRewards
      */
     function topUpBalance(address network, TopUp memory topUp) public {
-        IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
-        balances[network][topUp.token] += topUp.amount;
-        emit TopUpBalance(network, topUp.token, topUp.amount);
+        uint256 actualAmount = _transferFrom(topUp.token, msg.sender, address(this), topUp.amount);
+        balances[network][topUp.token] += actualAmount;
+        emit TopUpBalance(network, topUp.token, actualAmount);
     }
 
     /**
@@ -147,7 +144,6 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
      */
     function claimByRoot(
         address network,
-        address rewardee,
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof,
         bytes32 merkleRoot
@@ -155,19 +151,23 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         if (!isCumulativeDistributionRoot[network][merkleRoot]) {
             revert RootNotSet();
         }
-        _claimRewards(network, rewardee, leaf, proof, merkleRoot);
+        _claimRewardsCalldata(network, leaf, proof, merkleRoot);
     }
 
     /**
      * @inheritdoc IRewards
      */
-    function claim(
-        address network,
-        address rewardee,
-        CumulativeDistributionLeaf calldata leaf,
-        bytes32[] calldata proof
-    ) public {
-        _claimRewards(network, rewardee, leaf, proof, cumulativeDistributions[network].merkleRoot);
+    function claim(address network, CumulativeDistributionLeaf calldata leaf, bytes32[] calldata proof) public {
+        _claimRewardsCalldata(network, leaf, proof, cumulativeDistributions[network].merkleRoot);
+    }
+
+    /**
+     * @inheritdoc IStakerRewardsClaim
+     */
+    function claimRewards(address, address, bytes calldata data) external override {
+        (address network, CumulativeDistributionLeaf memory leaf, bytes32[] memory proof) =
+            abi.decode(data, (address, CumulativeDistributionLeaf, bytes32[]));
+        _claimRewardsMemory(network, leaf, proof, cumulativeDistributions[network].merkleRoot);
     }
 
     /**
@@ -175,6 +175,7 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
      */
     function addDistributionData(address token, bytes32 data) public {
         _distributionData[msg.sender].set(token, data);
+        emit AddDistributionData(msg.sender, token, data);
     }
 
     /**
@@ -184,6 +185,7 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         address token
     ) public {
         _distributionData[msg.sender].remove(token);
+        emit RemoveDistributionData(msg.sender, token);
     }
 
     /**
@@ -193,6 +195,7 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         address newRewarder
     ) public {
         rewarder[msg.sender] = newRewarder;
+        emit SetRewarder(msg.sender, newRewarder);
     }
 
     /**
@@ -211,22 +214,49 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
             revert InvalidTimestamp();
         }
 
+        for (uint256 i; i < topUps.length; ++i) {
+            for (uint256 j = i + 1; j < topUps.length; ++j) {
+                if (topUps[i].token == topUps[j].token) {
+                    revert DuplicateTopUp();
+                }
+            }
+            TopUp memory topUp = topUps[i];
+            uint256 actualAmount = _transferFrom(topUp.token, msg.sender, address(this), topUp.amount);
+            balances[network][topUp.token] += actualAmount;
+        }
+
         cumulativeDistributions[network] = cumulativeDistribution;
         isCumulativeDistributionRoot[network][cumulativeDistribution.merkleRoot] = true;
         cumulativeDistributionDaData[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution.daData;
 
-        for (uint256 i; i < topUps.length; ++i) {
-            TopUp memory topUp = topUps[i];
-            IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
-            balances[network][topUp.token] += topUp.amount;
-        }
+        emit UpdateCumulativeDistribution(network, cumulativeDistribution);
     }
 
     /* INTERNAL FUNCTIONS */
 
-    function _claimRewards(
+    /**
+     * @notice Helper function to safely transfer tokens and return the actual amount received
+     * @dev This function handles fee-on-transfer tokens by measuring the actual balance change
+     * @param token The token to transfer
+     * @param from The address to transfer from
+     * @param to The address to transfer to
+     * @param amount The amount to transfer
+     * @return actualAmount The actual amount received after the transfer
+     */
+    function _transferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal returns (uint256 actualAmount) {
+        uint256 balanceBefore = IERC20(token).balanceOf(to);
+        IERC20(token).safeTransferFrom(from, to, amount);
+        uint256 balanceAfter = IERC20(token).balanceOf(to);
+        return balanceAfter - balanceBefore;
+    }
+
+    function _claimRewardsCalldata(
         address network,
-        address rewardee,
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof,
         bytes32 root
@@ -234,12 +264,6 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         if (root == bytes32(0)) {
             revert RootNotSet();
         }
-
-        // Check that current chain ID matches the leaf chain ID
-        if (block.chainid != leaf.chainId) {
-            revert InvalidChainId();
-        }
-
         if (
             !MerkleProof.verifyCalldata(
                 proof,
@@ -248,12 +272,12 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
                     bytes.concat(
                         keccak256(
                             abi.encode(
+                                leaf.chainId,
                                 leaf.token,
                                 leaf.rewardee,
-                                leaf.amount,
                                 leaf.rewardeeType,
-                                leaf.rewardeeDataHash,
-                                leaf.chainId
+                                leaf.amount,
+                                leaf.rewardeeDataHash
                             )
                         )
                     )
@@ -262,23 +286,59 @@ contract Rewards is Multicall, IRewards, StaticDelegateCallable {
         ) {
             revert InvalidProof();
         }
+        _claimUnprotected(network, leaf);
+    }
 
-        uint256 claimedAmount = claimed[network][leaf.token][msg.sender][leaf.rewardeeType];
+    function _claimRewardsMemory(
+        address network,
+        CumulativeDistributionLeaf memory leaf,
+        bytes32[] memory proof,
+        bytes32 root
+    ) internal {
+        if (root == bytes32(0)) {
+            revert RootNotSet();
+        }
+        if (
+            !MerkleProof.verify(
+                proof,
+                root,
+                keccak256(
+                    bytes.concat(
+                        keccak256(
+                            abi.encode(
+                                leaf.chainId,
+                                leaf.token,
+                                leaf.rewardee,
+                                leaf.rewardeeType,
+                                leaf.amount,
+                                leaf.rewardeeDataHash
+                            )
+                        )
+                    )
+                )
+            )
+        ) {
+            revert InvalidProof();
+        }
+        _claimUnprotected(network, leaf);
+    }
+
+    function _claimUnprotected(address network, CumulativeDistributionLeaf memory leaf) internal {
+        // Check that current chain ID matches the leaf chain ID
+        if (block.chainid != leaf.chainId) {
+            revert InvalidChainId();
+        }
+
+        uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee][leaf.rewardeeType];
         uint256 claimableAmount = leaf.amount.saturatingSub(claimedAmount);
         if (claimableAmount == 0) {
             revert InsufficientClaimableAmount();
         }
 
-        uint256 networkBalance = balances[network][leaf.token];
+        balances[network][leaf.token] -= claimableAmount;
+        claimed[network][leaf.token][leaf.rewardee][leaf.rewardeeType] = leaf.amount;
 
-        if (claimableAmount > networkBalance) {
-            revert InsufficientBalance();
-        }
-
-        claimed[network][leaf.token][msg.sender][leaf.rewardeeType] = leaf.amount;
-        balances[network][leaf.token] = networkBalance - claimableAmount;
-
-        IERC20(leaf.token).safeTransfer(rewardee, claimableAmount);
-        emit ClaimRewards(network, leaf.token, msg.sender, rewardee, claimableAmount);
+        IERC20(leaf.token).safeTransfer(leaf.rewardee, claimableAmount);
+        emit ClaimRewards(network, leaf.token, msg.sender, leaf.rewardee, claimableAmount);
     }
 }

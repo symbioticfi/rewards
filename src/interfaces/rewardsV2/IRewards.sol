@@ -43,6 +43,9 @@ interface IRewards {
     /// @notice Error thrown when the chain ID in the leaf doesn't match the current chain ID
     error InvalidChainId();
 
+    /// @notice Error thrown when the provided top-up is a duplicate
+    error DuplicateTopUp();
+
     /* EVENTS */
 
     /**
@@ -64,6 +67,35 @@ interface IRewards {
      * @param amount The amount added to the balance
      */
     event TopUpBalance(address indexed network, address indexed token, uint256 amount);
+
+    /**
+     * @notice Emitted when distribution data is added for a specific token
+     * @param network The address of the network
+     * @param token The address of the token
+     * @param data The distribution data
+     */
+    event AddDistributionData(address indexed network, address indexed token, bytes32 data);
+
+    /**
+     * @notice Emitted when distribution data is removed for a specific token
+     * @param network The address of the network
+     * @param token The address of the token
+     */
+    event RemoveDistributionData(address indexed network, address indexed token);
+
+    /**
+     * @notice Emitted when the rewarder address is set
+     * @param network The address of the network
+     * @param rewarder The address of the rewarder
+     */
+    event SetRewarder(address indexed network, address indexed rewarder);
+
+    /**
+     * @notice Emitted when the cumulative distribution is updated
+     * @param network The address of the network
+     * @param cumulativeDistribution The cumulative distribution data
+     */
+    event UpdateCumulativeDistribution(address indexed network, CumulativeDistribution cumulativeDistribution);
 
     /* STRUCTS */
 
@@ -89,12 +121,12 @@ interface IRewards {
      * @param chainId The chain ID of the network
      */
     struct CumulativeDistributionLeaf {
+        uint64 chainId;
         address token;
         address rewardee;
-        uint256 amount;
         uint256 rewardeeType;
+        uint256 amount;
         bytes32 rewardeeDataHash;
-        uint64 chainId;
     }
 
     /**
@@ -230,7 +262,6 @@ interface IRewards {
     /**
      * @notice Claim rewards using a specific Merkle root and proof
      * @param network The address of the network to claim from
-     * @param rewardee The address of the account claiming rewards
      * @param leaf The leaf data containing the reward information
      * @param proof The Merkle proof to verify the leaf
      * @param merkleRoot The Merkle root to verify against
@@ -238,7 +269,6 @@ interface IRewards {
      */
     function claimByRoot(
         address network,
-        address rewardee,
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof,
         bytes32 merkleRoot
@@ -247,17 +277,11 @@ interface IRewards {
     /**
      * @notice Claim rewards using the current cumulative distribution
      * @param network The address of the network to claim from
-     * @param rewardee The address of the account claiming rewards
      * @param leaf The leaf data containing the reward information
      * @param proof The Merkle proof to verify the leaf
      * @dev This function claims against the most recent cumulative distribution
      */
-    function claim(
-        address network,
-        address rewardee,
-        CumulativeDistributionLeaf calldata leaf,
-        bytes32[] calldata proof
-    ) external;
+    function claim(address network, CumulativeDistributionLeaf calldata leaf, bytes32[] calldata proof) external;
 
     /**
      * @notice Add distribution data for a specific token

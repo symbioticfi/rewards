@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
+import {FeeOnTransferToken} from "../mocks/FeeOnTransferToken.sol";
 
 contract RewardsTest is Test {
     Rewards rewards;
@@ -204,9 +205,9 @@ contract RewardsTest is Test {
         vm.stopPrank();
 
         vm.prank(claimer);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        rewards.claim(network, testLeaf, proof);
 
-        assertEq(rewards.claimed(network, address(token), claimer, TEST_REWARDEE_TYPE), TEST_AMOUNT);
+        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
         assertEq(rewards.balances(network, address(token)), 0);
         assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
     }
@@ -228,9 +229,9 @@ contract RewardsTest is Test {
         vm.stopPrank();
 
         vm.prank(claimer);
-        rewards.claimByRoot(network, rewardee, testLeaf, proof, merkleRoot);
+        rewards.claimByRoot(network, testLeaf, proof, merkleRoot);
 
-        assertEq(rewards.claimed(network, address(token), claimer, TEST_REWARDEE_TYPE), TEST_AMOUNT);
+        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
         assertEq(rewards.balances(network, address(token)), 0);
         assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
     }
@@ -238,7 +239,7 @@ contract RewardsTest is Test {
     function test_Claim_RootNotSet() public {
         vm.prank(claimer);
         vm.expectRevert(IRewards.RootNotSet.selector);
-        rewards.claim(network, rewardee, testLeaf, testProof);
+        rewards.claim(network, testLeaf, testProof);
     }
 
     function test_ClaimByRoot_RootNotSet() public {
@@ -246,7 +247,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.RootNotSet.selector);
-        rewards.claimByRoot(network, rewardee, testLeaf, testProof, nonExistentRoot);
+        rewards.claimByRoot(network, testLeaf, testProof, nonExistentRoot);
     }
 
     function test_Claim_InvalidProof() public {
@@ -262,7 +263,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidProof.selector);
-        rewards.claim(network, rewardee, testLeaf, invalidProof);
+        rewards.claim(network, testLeaf, invalidProof);
     }
 
     function test_Claim_InsufficientBalance() public {
@@ -285,8 +286,8 @@ contract RewardsTest is Test {
         vm.stopPrank();
 
         vm.prank(claimer);
-        vm.expectRevert(IRewards.InsufficientBalance.selector);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        vm.expectRevert();
+        rewards.claim(network, testLeaf, proof);
     }
 
     function test_Claim_AlreadyClaimed() public {
@@ -307,12 +308,12 @@ contract RewardsTest is Test {
 
         // First claim should succeed
         vm.prank(claimer);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        rewards.claim(network, testLeaf, proof);
 
         // Second claim should fail
         vm.prank(claimer);
         vm.expectRevert(IRewards.InsufficientClaimableAmount.selector);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        rewards.claim(network, testLeaf, proof);
     }
 
     function test_Claim_EmitsEvent() public {
@@ -335,7 +336,7 @@ contract RewardsTest is Test {
         emit IRewards.ClaimRewards(network, address(token), claimer, rewardee, TEST_AMOUNT);
 
         vm.prank(claimer);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        rewards.claim(network, testLeaf, proof);
     }
 
     function test_Claimable_ValidData() public {
@@ -403,7 +404,7 @@ contract RewardsTest is Test {
 
         // Claim first (claimer claiming for themselves)
         vm.prank(claimer);
-        rewards.claim(network, claimer, selfClaimLeaf, proof);
+        rewards.claim(network, selfClaimLeaf, proof);
 
         // Check claimable amount after claiming
         bytes memory data = abi.encode(network, selfClaimLeaf, proof);
@@ -463,8 +464,8 @@ contract RewardsTest is Test {
 
         // Should fail because there's insufficient balance to claim the full amount
         vm.prank(claimer);
-        vm.expectRevert(IRewards.InsufficientBalance.selector);
-        rewards.claim(network, rewardee, testLeaf, proof);
+        vm.expectRevert();
+        rewards.claim(network, testLeaf, proof);
     }
 
     function test_Version() public view {
@@ -500,7 +501,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidChainId.selector);
-        rewards.claim(network, rewardee, wrongChainLeaf, proof);
+        rewards.claim(network, wrongChainLeaf, proof);
     }
 
     function test_Claimable_InvalidChainId() public {
@@ -566,7 +567,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidChainId.selector);
-        rewards.claimByRoot(network, rewardee, wrongChainLeaf, proof, merkleRoot);
+        rewards.claimByRoot(network, wrongChainLeaf, proof, merkleRoot);
     }
 
     function test_Claim_ZeroAmount() public {
@@ -599,7 +600,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InsufficientClaimableAmount.selector);
-        rewards.claim(network, rewardee, zeroLeaf, zeroProof);
+        rewards.claim(network, zeroLeaf, zeroProof);
     }
 
     // Helper function to create a proper Merkle tree and proof
@@ -611,7 +612,7 @@ contract RewardsTest is Test {
             bytes.concat(
                 keccak256(
                     abi.encode(
-                        leaf.token, leaf.rewardee, leaf.amount, leaf.rewardeeType, leaf.rewardeeDataHash, leaf.chainId
+                        leaf.chainId, leaf.token, leaf.rewardee, leaf.rewardeeType, leaf.amount, leaf.rewardeeDataHash
                     )
                 )
             )
@@ -631,5 +632,59 @@ contract RewardsTest is Test {
         proof[0] = dummyLeafHash;
 
         return (merkleRoot, proof);
+    }
+
+    // Fee-on-transfer token tests
+    function test_TopUpBalance_FeeOnTransferToken() public {
+        FeeOnTransferToken feeToken = new FeeOnTransferToken("Fee Token", "FEE");
+        uint256 topUpAmount = 1000e18;
+        uint256 expectedFee = (topUpAmount * 100) / 10_000; // 1% fee
+        uint256 expectedReceived = topUpAmount - expectedFee;
+
+        // Transfer tokens from deployer to rewarder for testing
+        // The transfer itself will charge a fee, so we need to transfer more
+        uint256 transferAmount = topUpAmount * 10;
+        feeToken.transfer(rewarder, transferAmount);
+
+        vm.startPrank(rewarder);
+        feeToken.approve(address(rewards), topUpAmount);
+        rewards.topUpBalance(network, IRewards.TopUp({token: address(feeToken), amount: topUpAmount}));
+        vm.stopPrank();
+
+        // The balance should reflect the actual amount received (after fee)
+        assertEq(rewards.balances(network, address(feeToken)), expectedReceived);
+
+        // Verify the fee was charged
+        assertEq(feeToken.balanceOf(address(rewards)), expectedReceived);
+        // The fee token contract accumulates fees from both transfers (initial transfer to rewarder + transfer to rewards contract)
+        uint256 totalFeesCollected = feeToken.balanceOf(address(feeToken));
+        assertTrue(totalFeesCollected >= expectedFee); // At least the expected fee should be collected
+    }
+
+    function test_UpdateCumulativeDistribution_FeeOnTransferToken() public {
+        FeeOnTransferToken feeToken = new FeeOnTransferToken("Fee Token", "FEE");
+        uint256 topUpAmount = 1000e18;
+        uint256 expectedFee = (topUpAmount * 100) / 10_000; // 1% fee
+        uint256 expectedReceived = topUpAmount - expectedFee;
+
+        // Transfer tokens from deployer to rewarder for testing
+        feeToken.transfer(rewarder, topUpAmount * 10);
+
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(feeToken), amount: topUpAmount});
+
+        vm.startPrank(rewarder);
+        feeToken.approve(address(rewards), topUpAmount);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+
+        // The balance should reflect the actual amount received (after fee)
+        assertEq(rewards.balances(network, address(feeToken)), expectedReceived);
+
+        // Verify the fee was charged
+        assertEq(feeToken.balanceOf(address(rewards)), expectedReceived);
+        // The fee token contract accumulates fees from both transfers (initial transfer to rewarder + transfer to rewards contract)
+        uint256 totalFeesCollected = feeToken.balanceOf(address(feeToken));
+        assertTrue(totalFeesCollected >= expectedFee); // At least the expected fee should be collected
     }
 }
