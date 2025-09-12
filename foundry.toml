@@ -10,10 +10,14 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 gas_reports = ["*"]
 gas_limit = "18446744073709551615"
+dynamic_test_linking = true
+ignored_warnings_from = ["test/","script/"]
 
 [rpc_endpoints]
 mainnet = "${ETH_RPC_URL}"
+hoodi = "${ETH_RPC_URL_HOODI}"
 holesky = "${ETH_RPC_URL_HOLESKY}"
+sepolia = "${ETH_RPC_URL_SEPOLIA}"
 
 [fmt]
 bracket_spacing = false
@@ -28,5 +32,9 @@ tab_width = 4
 runs = 4096
 max_test_rejects = 262144
 
+[lint]
+lint_on_build = false
+exclude_lints = ["asm-keccak256","mixed-case-function","mixed-case-variable","pascal-case-struct","screaming-snake-case-const"]
+ignore = ["test/**/*.sol","script/**/*.sol","src/interfaces/**/*.sol"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

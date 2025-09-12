@@ -5,7 +5,6 @@ import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol"
 
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
 import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
-import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
