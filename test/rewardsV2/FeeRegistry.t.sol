@@ -351,4 +351,367 @@ contract FeeRegistryTest is Test {
 
         vm.stopPrank();
     }
+
+    function test_GetOperatorFeeAt_WithHints() public {
+        vm.startPrank(operator);
+
+        // Set up fees
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+        feeRegistry.setOperatorVaultFee(vault, true, 1500);
+        feeRegistry.setOperatorNetworkFee(network, true, 1200);
+        feeRegistry.setOperatorVaultNetworkFee(vault, network, true, 2000);
+
+        // Create hints to test hint functionality
+        IFeeRegistry.OperatorFeeHints memory hints = IFeeRegistry.OperatorFeeHints({
+            operatorVaultNetworkFeeHint: "",
+            operatorNetworkFeeHint: "",
+            operatorVaultFeeHint: "",
+            operatorGlobalFeeHint: ""
+        });
+        bytes memory hintsBytes = abi.encode(hints);
+
+        // Test with hints
+        uint256 fee = feeRegistry.getOperatorFeeAt(operator, vault, network, uint48(block.timestamp), hintsBytes);
+        assertEq(fee, 2000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorFeeAt_WithoutHints() public {
+        vm.startPrank(operator);
+
+        // Set up fees
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+
+        // Test without hints (empty bytes)
+        uint256 fee = feeRegistry.getOperatorFeeAt(operator, vault, network, uint48(block.timestamp), "");
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorFeeAt_HistoricalWithHints() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setOperatorGlobalFee(true, 2000);
+
+        // Create hints
+        IFeeRegistry.OperatorFeeHints memory hints = IFeeRegistry.OperatorFeeHints({
+            operatorVaultNetworkFeeHint: "",
+            operatorNetworkFeeHint: "",
+            operatorVaultFeeHint: "",
+            operatorGlobalFeeHint: ""
+        });
+        bytes memory hintsBytes = abi.encode(hints);
+
+        // Query at timestamp 150 (should return fee from timestamp 100)
+        uint256 fee = feeRegistry.getOperatorFeeAt(operator, vault, network, uint48(150), hintsBytes);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetCuratorFeeAt_WithHints() public {
+        vm.startPrank(curator);
+
+        // Set up fees
+        feeRegistry.setCuratorGlobalFee(true, 800);
+        feeRegistry.setCuratorVaultFee(vault, true, 900);
+
+        // Create hints
+        IFeeRegistry.CuratorFeeHints memory hints =
+            IFeeRegistry.CuratorFeeHints({curatorVaultFeeHint: "", curatorGlobalFeeHint: ""});
+        bytes memory hintsBytes = abi.encode(hints);
+
+        // Test with hints
+        uint256 fee = feeRegistry.getCuratorFeeAt(curator, vault, uint48(block.timestamp), hintsBytes);
+        assertEq(fee, 900);
+
+        vm.stopPrank();
+    }
+
+    function test_GetCuratorFeeAt_WithoutHints() public {
+        vm.startPrank(curator);
+
+        // Set up fees
+        feeRegistry.setCuratorGlobalFee(true, 800);
+
+        // Test without hints (empty bytes)
+        uint256 fee = feeRegistry.getCuratorFeeAt(curator, vault, uint48(block.timestamp), "");
+        assertEq(fee, 800);
+
+        vm.stopPrank();
+    }
+
+    function test_GetCuratorFeeAt_HistoricalWithHints() public {
+        vm.startPrank(curator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setCuratorGlobalFee(true, 800);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setCuratorGlobalFee(true, 1000);
+
+        // Create hints
+        IFeeRegistry.CuratorFeeHints memory hints =
+            IFeeRegistry.CuratorFeeHints({curatorVaultFeeHint: "", curatorGlobalFeeHint: ""});
+        bytes memory hintsBytes = abi.encode(hints);
+
+        // Query at timestamp 150 (should return fee from timestamp 100)
+        uint256 fee = feeRegistry.getCuratorFeeAt(curator, vault, uint48(150), hintsBytes);
+        assertEq(fee, 800);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorGlobalFeeAt_WithHint() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setOperatorGlobalFee(true, 2000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorGlobalFeeAt(operator, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorVaultFeeAt_WithHint() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorVaultFee(vault, true, 1000);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setOperatorVaultFee(vault, true, 2000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorVaultFeeAt(operator, vault, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorNetworkFeeAt_WithHint() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorNetworkFee(network, true, 1000);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setOperatorNetworkFee(network, true, 2000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorNetworkFeeAt(operator, network, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetOperatorVaultNetworkFeeAt_WithHint() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorVaultNetworkFee(vault, network, true, 1000);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setOperatorVaultNetworkFee(vault, network, true, 2000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) =
+            feeRegistry.getOperatorVaultNetworkFeeAt(operator, vault, network, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_GetCuratorGlobalFeeAt_WithHint() public {
+        vm.startPrank(curator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setCuratorGlobalFee(true, 800);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setCuratorGlobalFee(true, 1000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) = feeRegistry.getCuratorGlobalFeeAt(curator, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 800);
+
+        vm.stopPrank();
+    }
+
+    function test_GetCuratorVaultFeeAt_WithHint() public {
+        vm.startPrank(curator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setCuratorVaultFee(vault, true, 800);
+
+        // Set fee at timestamp 200
+        vm.warp(200);
+        feeRegistry.setCuratorVaultFee(vault, true, 1000);
+
+        // Test with hint
+        (bool isEnabled, uint256 fee) = feeRegistry.getCuratorVaultFeeAt(curator, vault, uint48(150), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 800);
+
+        vm.stopPrank();
+    }
+
+    function test_OperatorFeeHierarchy_DisabledFees() public {
+        vm.startPrank(operator);
+
+        // Set fees but disable them
+        feeRegistry.setOperatorGlobalFee(false, 1000);
+        feeRegistry.setOperatorVaultFee(vault, false, 1500);
+        feeRegistry.setOperatorNetworkFee(network, false, 1200);
+        feeRegistry.setOperatorVaultNetworkFee(vault, network, false, 2000);
+
+        // Should fall back to default since all are disabled
+        uint256 fee = feeRegistry.getOperatorFee(operator, vault, network);
+        assertEq(fee, DEFAULT_OPERATOR_FEE);
+
+        vm.stopPrank();
+    }
+
+    function test_CuratorFeeHierarchy_DisabledFees() public {
+        vm.startPrank(curator);
+
+        // Set fees but disable them
+        feeRegistry.setCuratorGlobalFee(false, 800);
+        feeRegistry.setCuratorVaultFee(vault, false, 900);
+
+        // Should fall back to default since all are disabled
+        uint256 fee = feeRegistry.getCuratorFee(curator, vault);
+        assertEq(fee, DEFAULT_CURATOR_FEE);
+
+        vm.stopPrank();
+    }
+
+    function test_OperatorFeeHierarchy_PartialDisable() public {
+        vm.startPrank(operator);
+
+        // Set global fee but disable it, set vault fee as enabled
+        feeRegistry.setOperatorGlobalFee(false, 1000);
+        feeRegistry.setOperatorVaultFee(vault, true, 1500);
+
+        // Should use vault fee since global is disabled
+        uint256 fee = feeRegistry.getOperatorFee(operator, vault, network);
+        assertEq(fee, 1500);
+
+        vm.stopPrank();
+    }
+
+    function test_CuratorFeeHierarchy_PartialDisable() public {
+        vm.startPrank(curator);
+
+        // Set global fee but disable it, set vault fee as enabled
+        feeRegistry.setCuratorGlobalFee(false, 800);
+        feeRegistry.setCuratorVaultFee(vault, true, 900);
+
+        // Should use vault fee since global is disabled
+        uint256 fee = feeRegistry.getCuratorFee(curator, vault);
+        assertEq(fee, 900);
+
+        vm.stopPrank();
+    }
+
+    function test_HistoricalQuery_NoFeesAtTimestamp() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+
+        // Query at timestamp 50 (before any fees were set)
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorGlobalFeeAt(operator, uint48(50), "");
+        assertFalse(isEnabled);
+        assertEq(fee, 0);
+
+        vm.stopPrank();
+    }
+
+    function test_HistoricalQuery_ExactTimestamp() public {
+        vm.startPrank(operator);
+
+        // Set fee at timestamp 100
+        vm.warp(100);
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+
+        // Query at exact timestamp 100
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorGlobalFeeAt(operator, uint48(100), "");
+        assertTrue(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_SerializationDeserialization_EdgeCases() public {
+        vm.startPrank(operator);
+
+        // Test maximum fee
+        feeRegistry.setOperatorGlobalFee(true, MAX_FEE);
+        (bool isEnabled, uint256 fee) = feeRegistry.getOperatorGlobalFee(operator);
+        assertTrue(isEnabled);
+        assertEq(fee, MAX_FEE);
+
+        // Test zero fee
+        feeRegistry.setOperatorGlobalFee(true, 0);
+        (isEnabled, fee) = feeRegistry.getOperatorGlobalFee(operator);
+        assertTrue(isEnabled);
+        assertEq(fee, 0);
+
+        // Test disabled fee
+        feeRegistry.setOperatorGlobalFee(false, 1000);
+        (isEnabled, fee) = feeRegistry.getOperatorGlobalFee(operator);
+        assertFalse(isEnabled);
+        assertEq(fee, 1000);
+
+        vm.stopPrank();
+    }
+
+    function test_ComplexHierarchy() public {
+        vm.startPrank(operator);
+
+        // Set up a complex hierarchy
+        feeRegistry.setOperatorGlobalFee(true, 1000);
+        feeRegistry.setOperatorVaultFee(vault, false, 1500); // Disabled
+        feeRegistry.setOperatorNetworkFee(network, true, 1200);
+        feeRegistry.setOperatorVaultNetworkFee(vault, network, false, 2000); // Disabled
+
+        // Should use network fee since vault-network is disabled
+        uint256 fee = feeRegistry.getOperatorFee(operator, vault, network);
+        assertEq(fee, 1200);
+
+        vm.stopPrank();
+    }
 }
