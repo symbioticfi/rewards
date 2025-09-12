@@ -339,79 +339,6 @@ contract RewardsTest is Test {
         rewards.claim(network, testLeaf, proof);
     }
 
-    function test_Claimable_ValidData() public {
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        // Encode data for claimable function
-        bytes memory data = abi.encode(network, testLeaf, proof);
-
-        uint256 claimableAmount = rewards.claimable(address(token), rewardee, data);
-        assertEq(claimableAmount, TEST_AMOUNT);
-    }
-
-    function test_Claimable_InvalidProof() public {
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](0);
-        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
-        vm.stopPrank();
-
-        // Encode data with invalid proof
-        bytes32[] memory invalidProof = new bytes32[](1);
-        invalidProof[0] = keccak256("invalid proof");
-        bytes memory data = abi.encode(network, testLeaf, invalidProof);
-
-        uint256 claimableAmount = rewards.claimable(address(token), rewardee, data);
-        assertEq(claimableAmount, 0);
-    }
-
-    function test_Claimable_AlreadyClaimed() public {
-        IRewards.CumulativeDistributionLeaf memory selfClaimLeaf = IRewards.CumulativeDistributionLeaf({
-            token: address(token),
-            rewardee: claimer,
-            amount: TEST_AMOUNT,
-            rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: TEST_CHAIN_ID
-        });
-
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(selfClaimLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        // Claim first (claimer claiming for themselves)
-        vm.prank(claimer);
-        rewards.claim(network, selfClaimLeaf, proof);
-
-        // Check claimable amount after claiming
-        bytes memory data = abi.encode(network, selfClaimLeaf, proof);
-        uint256 claimableAmount = rewards.claimable(address(token), claimer, data);
-        assertEq(claimableAmount, 0);
-    }
-
     function test_GetDistributionData() public {
         bytes32 testData1 = keccak256("test data 1");
         bytes32 testData2 = keccak256("test data 2");
@@ -502,40 +429,6 @@ contract RewardsTest is Test {
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidChainId.selector);
         rewards.claim(network, wrongChainLeaf, proof);
-    }
-
-    function test_Claimable_InvalidChainId() public {
-        // Create leaf with different chain ID than current
-        uint64 wrongChainId = 1; // Ethereum mainnet
-        IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
-            token: address(token),
-            rewardee: rewardee,
-            amount: TEST_AMOUNT,
-            rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: wrongChainId
-        });
-
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        // Encode data for claimable function
-        bytes memory data = abi.encode(network, wrongChainLeaf, proof);
-
-        uint256 claimableAmount = rewards.claimable(address(token), rewardee, data);
-        assertEq(claimableAmount, 0); // Should return 0 for invalid chain ID
     }
 
     function test_ClaimByRoot_InvalidChainId() public {

@@ -211,15 +211,6 @@ interface IRewards {
     ) external view returns (address);
 
     /**
-     * @notice Calculate the claimable amount for a specific token and rewardee
-     * @param token The address of the token to check
-     * @param rewardee The address of the account to check claimable amount for
-     * @param data Additional data needed for the calculation
-     * @return The amount of tokens that can be claimed
-     */
-    function claimable(address token, address rewardee, bytes calldata data) external view returns (uint256);
-
-    /**
      * @notice Get the distribution data for a specific network
      * @param network The address of the network
      * @return Array of distribution data for all tokens in the network

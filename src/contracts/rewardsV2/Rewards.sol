@@ -66,48 +66,6 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     /**
      * @inheritdoc IRewards
      */
-    function claimable(address token, address rewardee, bytes calldata data) public view returns (uint256) {
-        (address network, CumulativeDistributionLeaf memory leaf, bytes32[] memory proof) =
-            abi.decode(data, (address, CumulativeDistributionLeaf, bytes32[]));
-
-        // Check that current chain ID matches the leaf chain ID
-        if (block.chainid != leaf.chainId) {
-            return 0;
-        }
-
-        if (
-            !MerkleProof.verify(
-                proof,
-                cumulativeDistributions[network].merkleRoot,
-                keccak256(
-                    bytes.concat(
-                        keccak256(
-                            abi.encode(
-                                leaf.chainId,
-                                leaf.token,
-                                leaf.rewardee,
-                                leaf.rewardeeType,
-                                leaf.amount,
-                                leaf.rewardeeDataHash
-                            )
-                        )
-                    )
-                )
-            )
-        ) {
-            return 0;
-        }
-
-        uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee][leaf.rewardeeType];
-        if (leaf.amount <= claimedAmount) {
-            return 0;
-        }
-        return leaf.amount - claimedAmount;
-    }
-
-    /**
-     * @inheritdoc IRewards
-     */
     function getDistributionData(
         address network
     ) public view returns (DistributionData[] memory result) {
@@ -151,23 +109,35 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         if (!isCumulativeDistributionRoot[network][merkleRoot]) {
             revert RootNotSet();
         }
-        _claimRewardsCalldata(network, leaf, proof, merkleRoot);
+        _claimRewards(network, leaf, proof, merkleRoot);
     }
 
     /**
      * @inheritdoc IRewards
      */
     function claim(address network, CumulativeDistributionLeaf calldata leaf, bytes32[] calldata proof) public {
-        _claimRewardsCalldata(network, leaf, proof, cumulativeDistributions[network].merkleRoot);
+        _claimRewards(network, leaf, proof, cumulativeDistributions[network].merkleRoot);
     }
 
     /**
      * @inheritdoc IStakerRewardsClaim
      */
-    function claimRewards(address, address, bytes calldata data) external override {
-        (address network, CumulativeDistributionLeaf memory leaf, bytes32[] memory proof) =
-            abi.decode(data, (address, CumulativeDistributionLeaf, bytes32[]));
-        _claimRewardsMemory(network, leaf, proof, cumulativeDistributions[network].merkleRoot);
+    function claimRewards(address recipient, address token, bytes calldata data) external override {
+        address network;
+        bytes32 merkleRoot;
+        CumulativeDistributionLeaf calldata leaf;
+        bytes32[] calldata proof;
+        assembly {
+            network := calldataload(data.offset)
+            merkleRoot := calldataload(add(data.offset, 0x20))
+            leaf := add(data.offset, 0x40)
+            proof.length := calldataload(add(data.offset, 0x120))
+            proof.offset := add(data.offset, 0x140)
+        }
+        if (recipient != leaf.rewardee || token != leaf.token) {
+            revert();
+        }
+        claimByRoot(network, leaf, proof, merkleRoot);
     }
 
     /**
@@ -255,7 +225,7 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         return balanceAfter - balanceBefore;
     }
 
-    function _claimRewardsCalldata(
+    function _claimRewards(
         address network,
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof,
@@ -264,6 +234,12 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         if (root == bytes32(0)) {
             revert RootNotSet();
         }
+
+        // Check that current chain ID matches the leaf chain ID
+        if (block.chainid != leaf.chainId) {
+            revert InvalidChainId();
+        }
+
         if (
             !MerkleProof.verifyCalldata(
                 proof,
@@ -285,48 +261,6 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
             )
         ) {
             revert InvalidProof();
-        }
-        _claimUnprotected(network, leaf);
-    }
-
-    function _claimRewardsMemory(
-        address network,
-        CumulativeDistributionLeaf memory leaf,
-        bytes32[] memory proof,
-        bytes32 root
-    ) internal {
-        if (root == bytes32(0)) {
-            revert RootNotSet();
-        }
-        if (
-            !MerkleProof.verify(
-                proof,
-                root,
-                keccak256(
-                    bytes.concat(
-                        keccak256(
-                            abi.encode(
-                                leaf.chainId,
-                                leaf.token,
-                                leaf.rewardee,
-                                leaf.rewardeeType,
-                                leaf.amount,
-                                leaf.rewardeeDataHash
-                            )
-                        )
-                    )
-                )
-            )
-        ) {
-            revert InvalidProof();
-        }
-        _claimUnprotected(network, leaf);
-    }
-
-    function _claimUnprotected(address network, CumulativeDistributionLeaf memory leaf) internal {
-        // Check that current chain ID matches the leaf chain ID
-        if (block.chainid != leaf.chainId) {
-            revert InvalidChainId();
         }
 
         uint256 claimedAmount = claimed[network][leaf.token][leaf.rewardee][leaf.rewardeeType];
