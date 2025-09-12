@@ -92,7 +92,10 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
      * @inheritdoc IRewards
      */
     function topUpBalance(address network, TopUp memory topUp) public {
-        uint256 actualAmount = _transferFrom(topUp.token, msg.sender, address(this), topUp.amount);
+        uint256 balanceBefore = IERC20(topUp.token).balanceOf(address(this));
+        IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
+        uint256 balanceAfter = IERC20(topUp.token).balanceOf(address(this));
+        uint256 actualAmount = balanceAfter - balanceBefore;
         balances[network][topUp.token] += actualAmount;
         emit TopUpBalance(network, topUp.token, actualAmount);
     }
@@ -135,7 +138,7 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
             proof.offset := add(data.offset, 0x140)
         }
         if (recipient != leaf.rewardee || token != leaf.token) {
-            revert();
+            revert IvalidClaimParams();
         }
         claimByRoot(network, leaf, proof, merkleRoot);
     }
@@ -185,14 +188,11 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         }
 
         for (uint256 i; i < topUps.length; ++i) {
-            for (uint256 j = i + 1; j < topUps.length; ++j) {
-                if (topUps[i].token == topUps[j].token) {
-                    revert DuplicateTopUp();
-                }
+            if (i > 0 && topUps[i].token <= topUps[i - 1].token) {
+                revert DuplicatedOrUnsortedTopUp();
             }
             TopUp memory topUp = topUps[i];
-            uint256 actualAmount = _transferFrom(topUp.token, msg.sender, address(this), topUp.amount);
-            balances[network][topUp.token] += actualAmount;
+            topUpBalance(network, topUp);
         }
 
         cumulativeDistributions[network] = cumulativeDistribution;
@@ -203,27 +203,6 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     }
 
     /* INTERNAL FUNCTIONS */
-
-    /**
-     * @notice Helper function to safely transfer tokens and return the actual amount received
-     * @dev This function handles fee-on-transfer tokens by measuring the actual balance change
-     * @param token The token to transfer
-     * @param from The address to transfer from
-     * @param to The address to transfer to
-     * @param amount The amount to transfer
-     * @return actualAmount The actual amount received after the transfer
-     */
-    function _transferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256 actualAmount) {
-        uint256 balanceBefore = IERC20(token).balanceOf(to);
-        IERC20(token).safeTransferFrom(from, to, amount);
-        uint256 balanceAfter = IERC20(token).balanceOf(to);
-        return balanceAfter - balanceBefore;
-    }
 
     function _claimRewards(
         address network,

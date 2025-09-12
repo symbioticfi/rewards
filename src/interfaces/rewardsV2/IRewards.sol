@@ -43,8 +43,11 @@ interface IRewards {
     /// @notice Error thrown when the chain ID in the leaf doesn't match the current chain ID
     error InvalidChainId();
 
-    /// @notice Error thrown when the provided top-up is a duplicate
-    error DuplicateTopUp();
+    /// @notice Error thrown when the provided top-up is duplicated or unsorted
+    error DuplicatedOrUnsortedTopUp();
+
+    /// @notice Error thrown when the provided claim parameters are invalid
+    error IvalidClaimParams();
 
     /* EVENTS */
 
@@ -223,7 +226,7 @@ interface IRewards {
      * @notice Update the cumulative distribution for a network
      * @param network The address of the network to update
      * @param cumulativeDistribution The new cumulative distribution data
-     * @param topUps Array of top-up operations to perform
+     * @param topUps Array of top-up operations to perform. Must be sorted by token address.
      * @dev This function should only be callable by authorized network rewarders
      */
     function updateCumulativeDistribution(

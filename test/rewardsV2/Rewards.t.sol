@@ -179,6 +179,41 @@ contract RewardsTest is Test {
         vm.stopPrank();
     }
 
+    function test_UpdateCumulativeDistribution_DuplicatedOrUnsortedTopUp() public {
+        // Create a second token for testing
+        Token token2 = new Token("Mock Token 2");
+        token2.transfer(rewarder, TEST_AMOUNT * 10);
+
+        // Create top-ups array with duplicate token addresses
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](2);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        topUps[1] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT}); // Same token as first
+
+        vm.startPrank(rewarder);
+        token.approve(address(rewards), TEST_AMOUNT * 2);
+        vm.expectRevert(IRewards.DuplicatedOrUnsortedTopUp.selector);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+    }
+
+    function test_UpdateCumulativeDistribution_DuplicatedOrUnsortedTopUp_Unsorted() public {
+        // Create a second token for testing
+        Token token2 = new Token("Mock Token 2");
+        token2.transfer(rewarder, TEST_AMOUNT * 10);
+
+        // Create top-ups array with tokens in descending order (should trigger DuplicatedOrUnsortedTopUp)
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](2);
+        topUps[0] = IRewards.TopUp({token: address(token2), amount: TEST_AMOUNT}); // Higher address
+        topUps[1] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT}); // Lower address
+
+        vm.startPrank(rewarder);
+        token.approve(address(rewards), TEST_AMOUNT);
+        token2.approve(address(rewards), TEST_AMOUNT);
+        vm.expectRevert(IRewards.DuplicatedOrUnsortedTopUp.selector);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+    }
+
     function test_DistributeRewards() public {
         vm.startPrank(rewarder);
         token.approve(address(rewards), TEST_AMOUNT);
@@ -579,5 +614,144 @@ contract RewardsTest is Test {
         // The fee token contract accumulates fees from both transfers (initial transfer to rewarder + transfer to rewards contract)
         uint256 totalFeesCollected = feeToken.balanceOf(address(feeToken));
         assertTrue(totalFeesCollected >= expectedFee); // At least the expected fee should be collected
+    }
+
+    // ========== claimRewards Function Tests ==========
+
+    function test_ClaimRewards_ValidClaim() public {
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        // Prepare data for claimRewards function
+        bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
+
+        vm.prank(claimer);
+        rewards.claimRewards(rewardee, address(token), claimData);
+
+        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
+        assertEq(rewards.balances(network, address(token)), 0);
+        assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
+    }
+
+    function test_ClaimRewards_InvalidRecipient() public {
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        // Prepare data with wrong recipient
+        address wrongRecipient = makeAddr("wrongRecipient");
+        bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.IvalidClaimParams.selector);
+        rewards.claimRewards(wrongRecipient, address(token), claimData);
+    }
+
+    function test_ClaimRewards_InvalidToken() public {
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        // Prepare data with wrong token
+        address wrongToken = makeAddr("wrongToken");
+        bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.IvalidClaimParams.selector);
+        rewards.claimRewards(rewardee, wrongToken, claimData);
+    }
+
+    function test_ClaimRewards_RootNotSet() public {
+        bytes32 nonExistentRoot = keccak256("non-existent root");
+        bytes memory claimData = abi.encode(network, nonExistentRoot, testLeaf, testProof);
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.RootNotSet.selector);
+        rewards.claimRewards(rewardee, address(token), claimData);
+    }
+
+    function test_ClaimRewards_InvalidProof() public {
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+
+        bytes32[] memory invalidProof = new bytes32[](1);
+        invalidProof[0] = keccak256("invalid proof");
+        bytes memory claimData = abi.encode(network, testMerkleRoot, testLeaf, invalidProof);
+
+        vm.prank(claimer);
+        vm.expectRevert(IRewards.InvalidProof.selector);
+        rewards.claimRewards(rewardee, address(token), claimData);
+    }
+
+    function test_ClaimRewards_EmitsEvent() public {
+        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
+
+        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
+            timestamp: uint48(block.timestamp),
+            merkleRoot: merkleRoot,
+            daData: "valid da data"
+        });
+
+        vm.startPrank(rewarder);
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
+        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
+        token.approve(address(rewards), TEST_AMOUNT);
+        rewards.updateCumulativeDistribution(network, distribution, topUps);
+        vm.stopPrank();
+
+        bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
+
+        vm.expectEmit(true, true, true, true);
+        emit IRewards.ClaimRewards(network, address(token), claimer, rewardee, TEST_AMOUNT);
+
+        vm.prank(claimer);
+        rewards.claimRewards(rewardee, address(token), claimData);
+    }
+
+    function test_ClaimRewards_InsufficientData() public {
+        // Test with insufficient data - only encode network and merkleRoot (missing leaf and proof)
+        bytes memory insufficientData = abi.encode(network, testMerkleRoot);
+
+        vm.prank(claimer);
+        vm.expectRevert(); // Should revert due to insufficient data for assembly operations
+        rewards.claimRewards(rewardee, address(token), insufficientData);
     }
 }
