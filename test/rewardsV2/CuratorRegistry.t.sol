@@ -13,7 +13,6 @@ contract CuratorRegistryTest is Test {
     CuratorRegistry curatorRegistry;
     MockVault mockVault;
 
-    address symbioticAdmin;
     address vaultOwner;
     address curator1;
     address curator2;
@@ -26,20 +25,20 @@ contract CuratorRegistryTest is Test {
     uint256 unauthorizedUserPrivateKey;
 
     function setUp() public {
-        (symbioticAdmin,) = makeAddrAndKey("symbioticAdmin");
         (vaultOwner, vaultOwnerPrivateKey) = makeAddrAndKey("vaultOwner");
         (curator1, curator1PrivateKey) = makeAddrAndKey("curator1");
         (curator2, curator2PrivateKey) = makeAddrAndKey("curator2");
         (unauthorizedUser, unauthorizedUserPrivateKey) = makeAddrAndKey("unauthorizedUser");
 
-        curatorRegistry = new CuratorRegistry(symbioticAdmin);
+        curatorRegistry = new CuratorRegistry();
         mockVault = new MockVault(vaultOwner);
     }
 
     /* CONSTRUCTOR TESTS */
 
     function test_Constructor() public view {
-        assertEq(curatorRegistry.SYMBIOTIC_ADMIN(), symbioticAdmin);
+        // CuratorRegistry has no constructor parameters, just verify it was deployed
+        assertTrue(address(curatorRegistry) != address(0));
     }
 
     /* SET CURATOR TESTS */
@@ -55,17 +54,16 @@ contract CuratorRegistryTest is Test {
         vm.stopPrank();
     }
 
-    function test_SetCuratorBySymbioticAdmin() public {
+    function test_SetCuratorByVaultOwnerWithZeroOwner() public {
         // Create a mock vault that returns zero address for owner
         address mockVaultWithZeroOwner = makeAddr("vaultWithZeroOwner");
         vm.mockCall(mockVaultWithZeroOwner, abi.encodeWithSelector(Ownable.owner.selector), abi.encode(zeroAddress));
 
-        vm.startPrank(symbioticAdmin);
+        // This should fail because the contract requires either current curator or vault owner
+        vm.startPrank(vaultOwner);
 
-        curatorRegistry.setCurator(mockVaultWithZeroOwner, symbioticAdmin); // symbioticAdmin sets themselves as curator
-
-        address retrievedCurator = curatorRegistry.getCurator(mockVaultWithZeroOwner);
-        assertEq(retrievedCurator, symbioticAdmin);
+        vm.expectRevert(ICuratorRegistry.NotAuthorized.selector);
+        curatorRegistry.setCurator(mockVaultWithZeroOwner, vaultOwner);
 
         vm.stopPrank();
     }
@@ -121,19 +119,17 @@ contract CuratorRegistryTest is Test {
         vm.stopPrank();
     }
 
-    function test_SetCuratorBySymbioticAdminWhenNoOwner() public {
+    function test_SetCuratorFailsWhenNoOwnerAndNoCurrentCurator() public {
         // Create a mock vault that returns zero address for owner
         address mockVaultWithZeroOwner = makeAddr("vaultWithZeroOwner");
 
         // Mock the owner() call to return zero address
         vm.mockCall(mockVaultWithZeroOwner, abi.encodeWithSelector(Ownable.owner.selector), abi.encode(zeroAddress));
 
-        vm.startPrank(symbioticAdmin);
+        vm.startPrank(curator1);
 
+        vm.expectRevert(ICuratorRegistry.NotAuthorized.selector);
         curatorRegistry.setCurator(mockVaultWithZeroOwner, curator1);
-
-        address retrievedCurator = curatorRegistry.getCurator(mockVaultWithZeroOwner);
-        assertEq(retrievedCurator, curator1);
 
         vm.stopPrank();
     }
@@ -162,11 +158,11 @@ contract CuratorRegistryTest is Test {
         vm.stopPrank();
     }
 
-    function test_RevertWhenSymbioticAdminTriesToSetDifferentCurator() public {
-        vm.startPrank(symbioticAdmin);
+    function test_RevertWhenUnauthorizedUserTriesToSetCurator() public {
+        vm.startPrank(unauthorizedUser);
 
         vm.expectRevert(ICuratorRegistry.NotAuthorized.selector);
-        curatorRegistry.setCurator(address(mockVault), curator1); // symbioticAdmin != curator1
+        curatorRegistry.setCurator(address(mockVault), curator1); // unauthorizedUser != curator1
 
         vm.stopPrank();
     }

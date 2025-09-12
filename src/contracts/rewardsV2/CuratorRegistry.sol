@@ -18,19 +18,9 @@ import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall {
     using Checkpoints for Checkpoints.Trace208;
 
-    /* IMMUTABLES */
-
-    address public immutable SYMBIOTIC_ADMIN;
-
     /* STATE VARIABLES */
 
     mapping(address vault => Checkpoints.Trace208) internal _curators;
-
-    constructor(
-        address symbioticAdmin
-    ) {
-        SYMBIOTIC_ADMIN = symbioticAdmin;
-    }
 
     /* PUBLIC FUNCTIONS */
 
@@ -66,9 +56,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
                 revert NotAuthorized();
             }
         } else {
-            if (SYMBIOTIC_ADMIN != msg.sender) {
-                revert NotAuthorized();
-            }
+            revert NotAuthorized();
         }
 
         _curators[vault].push(uint48(block.timestamp), uint208(uint160(curator)));
