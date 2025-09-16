@@ -9,6 +9,7 @@ import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProo
 
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
 import {FeeOnTransferToken} from "../mocks/FeeOnTransferToken.sol";
+import {console} from "forge-std/console.sol";
 
 contract RewardsTest is Test {
     Rewards rewards;
@@ -58,12 +59,11 @@ contract RewardsTest is Test {
 
         // Setup test leaf
         testLeaf = IRewards.CumulativeDistributionLeaf({
+            chainId: TEST_CHAIN_ID,
             token: address(token),
-            rewardee: rewardee,
-            amount: TEST_AMOUNT,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: TEST_CHAIN_ID
+            amount: TEST_AMOUNT,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
         });
 
         // Setup test proof (simplified for testing)
@@ -214,15 +214,6 @@ contract RewardsTest is Test {
         vm.stopPrank();
     }
 
-    function test_DistributeRewards() public {
-        vm.startPrank(rewarder);
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.distributeRewards(network, address(token), TEST_AMOUNT, abi.encode(testDistribution));
-        vm.stopPrank();
-
-        assertEq(rewards.balances(network, address(token)), TEST_AMOUNT);
-    }
-
     function test_Claim_ValidProof() public {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
@@ -240,33 +231,9 @@ contract RewardsTest is Test {
         vm.stopPrank();
 
         vm.prank(claimer);
-        rewards.claim(network, testLeaf, proof);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
 
-        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
-        assertEq(rewards.balances(network, address(token)), 0);
-        assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
-    }
-
-    function test_ClaimByRoot_ValidProof() public {
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        vm.prank(claimer);
-        rewards.claimByRoot(network, testLeaf, proof, merkleRoot);
-
-        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
+        assertEq(rewards.claimed(network, address(token), claimer, TEST_REWARDEE_TYPE), TEST_AMOUNT);
         assertEq(rewards.balances(network, address(token)), 0);
         assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
     }
@@ -274,15 +241,7 @@ contract RewardsTest is Test {
     function test_Claim_RootNotSet() public {
         vm.prank(claimer);
         vm.expectRevert(IRewards.RootNotSet.selector);
-        rewards.claim(network, testLeaf, testProof);
-    }
-
-    function test_ClaimByRoot_RootNotSet() public {
-        bytes32 nonExistentRoot = keccak256("non-existent root");
-
-        vm.prank(claimer);
-        vm.expectRevert(IRewards.RootNotSet.selector);
-        rewards.claimByRoot(network, testLeaf, testProof, nonExistentRoot);
+        rewards.claim(rewardee, network, testLeaf, testProof, testMerkleRoot);
     }
 
     function test_Claim_InvalidProof() public {
@@ -298,7 +257,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidProof.selector);
-        rewards.claim(network, testLeaf, invalidProof);
+        rewards.claim(rewardee, network, testLeaf, invalidProof, testMerkleRoot);
     }
 
     function test_Claim_InsufficientBalance() public {
@@ -322,7 +281,7 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert();
-        rewards.claim(network, testLeaf, proof);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
     }
 
     function test_Claim_AlreadyClaimed() public {
@@ -343,12 +302,12 @@ contract RewardsTest is Test {
 
         // First claim should succeed
         vm.prank(claimer);
-        rewards.claim(network, testLeaf, proof);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
 
         // Second claim should fail
         vm.prank(claimer);
         vm.expectRevert(IRewards.InsufficientClaimableAmount.selector);
-        rewards.claim(network, testLeaf, proof);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
     }
 
     function test_Claim_EmitsEvent() public {
@@ -371,7 +330,7 @@ contract RewardsTest is Test {
         emit IRewards.ClaimRewards(network, address(token), claimer, rewardee, TEST_AMOUNT);
 
         vm.prank(claimer);
-        rewards.claim(network, testLeaf, proof);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
     }
 
     function test_GetDistributionData() public {
@@ -427,23 +386,18 @@ contract RewardsTest is Test {
         // Should fail because there's insufficient balance to claim the full amount
         vm.prank(claimer);
         vm.expectRevert();
-        rewards.claim(network, testLeaf, proof);
-    }
-
-    function test_Version() public view {
-        assertEq(rewards.version(), 2);
+        rewards.claim(rewardee, network, testLeaf, proof, merkleRoot);
     }
 
     function test_Claim_InvalidChainId() public {
         // Create leaf with different chain ID than current
         uint64 wrongChainId = 1; // Ethereum mainnet
         IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
+            chainId: wrongChainId,
             token: address(token),
-            rewardee: rewardee,
-            amount: TEST_AMOUNT,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: wrongChainId
+            amount: TEST_AMOUNT,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
         });
 
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
@@ -463,50 +417,17 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InvalidChainId.selector);
-        rewards.claim(network, wrongChainLeaf, proof);
-    }
-
-    function test_ClaimByRoot_InvalidChainId() public {
-        // Create leaf with different chain ID than current
-        uint64 wrongChainId = 1; // Ethereum mainnet
-        IRewards.CumulativeDistributionLeaf memory wrongChainLeaf = IRewards.CumulativeDistributionLeaf({
-            token: address(token),
-            rewardee: rewardee,
-            amount: TEST_AMOUNT,
-            rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: wrongChainId
-        });
-
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        vm.prank(claimer);
-        vm.expectRevert(IRewards.InvalidChainId.selector);
-        rewards.claimByRoot(network, wrongChainLeaf, proof, merkleRoot);
+        rewards.claim(rewardee, network, wrongChainLeaf, proof, merkleRoot);
     }
 
     function test_Claim_ZeroAmount() public {
         // Create leaf with zero amount
         IRewards.CumulativeDistributionLeaf memory zeroLeaf = IRewards.CumulativeDistributionLeaf({
+            chainId: TEST_CHAIN_ID,
             token: address(token),
-            rewardee: rewardee,
-            amount: 0,
             rewardeeType: TEST_REWARDEE_TYPE,
-            rewardeeDataHash: TEST_REWARDEE_DATA_HASH,
-            chainId: TEST_CHAIN_ID
+            amount: 0,
+            rewardeeDataHash: TEST_REWARDEE_DATA_HASH
         });
 
         // Create proof for zero leaf
@@ -528,23 +449,17 @@ contract RewardsTest is Test {
 
         vm.prank(claimer);
         vm.expectRevert(IRewards.InsufficientClaimableAmount.selector);
-        rewards.claim(network, zeroLeaf, zeroProof);
+        rewards.claim(rewardee, network, zeroLeaf, zeroProof, zeroRoot);
     }
 
     // Helper function to create a proper Merkle tree and proof
     function _createMerkleTreeAndProof(
         IRewards.CumulativeDistributionLeaf memory leaf
-    ) internal pure returns (bytes32 merkleRoot, bytes32[] memory proof) {
+    ) internal view returns (bytes32 merkleRoot, bytes32[] memory proof) {
         // Create the leaf hash - the contract does a double hash!
-        bytes32 leafHash = keccak256(
-            bytes.concat(
-                keccak256(
-                    abi.encode(
-                        leaf.chainId, leaf.token, leaf.rewardee, leaf.rewardeeType, leaf.amount, leaf.rewardeeDataHash
-                    )
-                )
-            )
-        );
+        // The contract encodes as: keccak256(bytes.concat(keccak256(abi.encode(msg.sender, leaf))))
+        // We need to use the claimer address as msg.sender in our test
+        bytes32 leafHash = keccak256(bytes.concat(keccak256(abi.encode(claimer, leaf))));
 
         // Create a dummy second leaf hash for testing
         bytes32 dummyLeafHash = keccak256(bytes("dummy leaf for testing"));
@@ -620,6 +535,7 @@ contract RewardsTest is Test {
 
     function test_ClaimRewards_ValidClaim() public {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
+        console.log("proof length", proof.length);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
             timestamp: uint48(block.timestamp),
@@ -640,34 +556,9 @@ contract RewardsTest is Test {
         vm.prank(claimer);
         rewards.claimRewards(rewardee, address(token), claimData);
 
-        assertEq(rewards.claimed(network, address(token), rewardee, TEST_REWARDEE_TYPE), TEST_AMOUNT);
+        assertEq(rewards.claimed(network, address(token), claimer, TEST_REWARDEE_TYPE), TEST_AMOUNT);
         assertEq(rewards.balances(network, address(token)), 0);
         assertEq(token.balanceOf(rewardee), TEST_AMOUNT);
-    }
-
-    function test_ClaimRewards_InvalidRecipient() public {
-        (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
-
-        IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
-        });
-
-        vm.startPrank(rewarder);
-        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
-        topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
-        token.approve(address(rewards), TEST_AMOUNT);
-        rewards.updateCumulativeDistribution(network, distribution, topUps);
-        vm.stopPrank();
-
-        // Prepare data with wrong recipient
-        address wrongRecipient = makeAddr("wrongRecipient");
-        bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
-
-        vm.prank(claimer);
-        vm.expectRevert(IRewards.IvalidClaimParams.selector);
-        rewards.claimRewards(wrongRecipient, address(token), claimData);
     }
 
     function test_ClaimRewards_InvalidToken() public {

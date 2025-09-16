@@ -117,7 +117,6 @@ interface IRewards {
     /**
      * @notice Represents a leaf in the reward distribution Merkle tree
      * @param token The address of the token being distributed
-     * @param rewardee The address of the account eligible for rewards
      * @param amount The amount of rewards allocated to this account
      * @param rewardeeType The type of rewardee
      * @param rewardeeDataHash The hash of the rewardee data
@@ -126,7 +125,6 @@ interface IRewards {
     struct CumulativeDistributionLeaf {
         uint64 chainId;
         address token;
-        address rewardee;
         uint256 rewardeeType;
         uint256 amount;
         bytes32 rewardeeDataHash;
@@ -236,16 +234,6 @@ interface IRewards {
     ) external;
 
     /**
-     * @notice Distribute rewards to a network for a specific token
-     * @param network The address of the network to distribute rewards to
-     * @param token The address of the token being distributed
-     * @param amount The amount of tokens to distribute
-     * @param data Additional data for the distribution
-     * @dev This function should only be callable by authorized network rewarders
-     */
-    function distributeRewards(address network, address token, uint256 amount, bytes calldata data) external;
-
-    /**
      * @notice Top up the balance for a network-token pair
      * @param network The address of the network
      * @param topUp The top-up operation details
@@ -255,27 +243,20 @@ interface IRewards {
 
     /**
      * @notice Claim rewards using a specific Merkle root and proof
+     * @param recipient The address of the recipient of the rewards
      * @param network The address of the network to claim from
      * @param leaf The leaf data containing the reward information
      * @param proof The Merkle proof to verify the leaf
      * @param merkleRoot The Merkle root to verify against
      * @dev This function allows claiming against a specific root, useful for historical claims
      */
-    function claimByRoot(
+    function claim(
+        address recipient,
         address network,
         CumulativeDistributionLeaf calldata leaf,
         bytes32[] calldata proof,
         bytes32 merkleRoot
     ) external;
-
-    /**
-     * @notice Claim rewards using the current cumulative distribution
-     * @param network The address of the network to claim from
-     * @param leaf The leaf data containing the reward information
-     * @param proof The Merkle proof to verify the leaf
-     * @dev This function claims against the most recent cumulative distribution
-     */
-    function claim(address network, CumulativeDistributionLeaf calldata leaf, bytes32[] calldata proof) external;
 
     /**
      * @notice Add distribution data for a specific token
@@ -302,10 +283,4 @@ interface IRewards {
     function setRewarder(
         address rewarder_
     ) external;
-
-    /**
-     * @notice Get the version of this rewards interface
-     * @return The version number as a uint64
-     */
-    function version() external view returns (uint64);
 }

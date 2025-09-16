@@ -47,11 +47,11 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
         address vaultOwner = Ownable(vault).owner();
 
         if (currentCurator != address(0)) {
-            if (currentCurator != curator) {
+            if (currentCurator != msg.sender) {
                 revert NotAuthorized();
             }
         } else if (vaultOwner != address(0)) {
-            if (vaultOwner != curator) {
+            if (vaultOwner != msg.sender) {
                 revert NotAuthorized();
             }
         } else {
