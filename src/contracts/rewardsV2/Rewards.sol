@@ -89,7 +89,10 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         if (cumulativeDistribution.merkleRoot == bytes32(0)) {
             revert InvalidMerkleRoot();
         }
-        if (cumulativeDistribution.timestamp < cumulativeDistributions[network].timestamp) {
+        if (
+            cumulativeDistribution.timestamp >= block.timestamp
+                || cumulativeDistribution.timestamp < cumulativeDistributions[network].timestamp
+        ) {
             revert InvalidTimestamp();
         }
 

@@ -49,6 +49,8 @@ contract RewardsTest is Test {
         // Transfer tokens from deployer to rewarder for testing
         token.transfer(rewarder, TEST_AMOUNT * 10);
 
+        vm.warp(TEST_TIMESTAMP + 1);
+
         // Setup test distribution
         testMerkleRoot = keccak256("test merkle root");
         testDistribution = IRewards.CumulativeDistribution({
@@ -134,6 +136,8 @@ contract RewardsTest is Test {
     }
 
     function test_UpdateCumulativeDistribution() public {
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
         topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
 
@@ -170,6 +174,15 @@ contract RewardsTest is Test {
     }
 
     function test_UpdateCumulativeDistribution_InvalidTimestamp() public {
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](0);
+        testDistribution.timestamp = uint48(vm.getBlockTimestamp()) + 1;
+        vm.startPrank(rewarder);
+        vm.expectRevert(IRewards.InvalidTimestamp.selector);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+    }
+
+    function test_UpdateCumulativeDistribution_InvalidTimestamp2() public {
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory emptyTopUps = new IRewards.TopUp[](0);
         rewards.updateCumulativeDistribution(network, testDistribution, emptyTopUps);
@@ -177,7 +190,7 @@ contract RewardsTest is Test {
 
         // Try to update with older timestamp
         IRewards.CumulativeDistribution memory oldDistribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp) - 1,
+            timestamp: TEST_TIMESTAMP - 1,
             merkleRoot: keccak256("old root"),
             daData: "old data"
         });
@@ -189,6 +202,8 @@ contract RewardsTest is Test {
     }
 
     function test_UpdateCumulativeDistribution_DuplicatedOrUnsortedTopUp() public {
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         // Create a second token for testing
         Token token2 = new Token("Mock Token 2");
         token2.transfer(rewarder, TEST_AMOUNT * 10);
@@ -206,6 +221,8 @@ contract RewardsTest is Test {
     }
 
     function test_UpdateCumulativeDistribution_DuplicatedOrUnsortedTopUp_Unsorted() public {
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         // Create a second token for testing
         Token token2 = new Token("Mock Token 2");
         token2.transfer(rewarder, TEST_AMOUNT * 10);
@@ -227,10 +244,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -261,6 +280,8 @@ contract RewardsTest is Test {
         rewards.updateCumulativeDistribution(network, testDistribution, topUps);
         vm.stopPrank();
 
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         bytes32[] memory invalidProof = new bytes32[](1);
         invalidProof[0] = keccak256("invalid proof");
 
@@ -273,10 +294,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -297,10 +320,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -323,10 +348,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -378,10 +405,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         uint256 partialAmount = TEST_AMOUNT / 2;
 
@@ -412,10 +441,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -444,10 +475,12 @@ contract RewardsTest is Test {
 
         // Setup distribution
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: zeroRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -514,6 +547,8 @@ contract RewardsTest is Test {
     }
 
     function test_UpdateCumulativeDistribution_FeeOnTransferToken() public {
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         FeeOnTransferToken feeToken = new FeeOnTransferToken("Fee Token", "FEE");
         uint256 topUpAmount = 1000e18;
         uint256 expectedFee = (topUpAmount * 100) / 10_000; // 1% fee
@@ -547,10 +582,12 @@ contract RewardsTest is Test {
         console.log("proof length", proof.length);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -574,10 +611,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
@@ -605,6 +644,8 @@ contract RewardsTest is Test {
     }
 
     function test_ClaimRewards_InvalidProof() public {
+        vm.warp(vm.getBlockTimestamp() + 1);
+
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
         topUps[0] = IRewards.TopUp({token: address(token), amount: TEST_AMOUNT});
@@ -625,10 +666,12 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(block.timestamp),
+            timestamp: uint48(vm.getBlockTimestamp()),
             merkleRoot: merkleRoot,
             daData: "valid da data"
         });
+
+        vm.warp(vm.getBlockTimestamp() + 1);
 
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory topUps = new IRewards.TopUp[](1);
