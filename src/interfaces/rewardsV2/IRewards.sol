@@ -34,6 +34,9 @@ interface IRewards {
     /// @notice Error thrown when the caller is not authorized as a network rewarder
     error NotNetworkRewarder();
 
+    /// @notice Error thrown when attempting to use a zero Merkle root
+    error InvalidMerkleRoot();
+
     /// @notice Error thrown when attempting to use a Merkle root that hasn't been set
     error RootNotSet();
 
@@ -47,7 +50,7 @@ interface IRewards {
     error DuplicatedOrUnsortedTopUp();
 
     /// @notice Error thrown when the provided claim parameters are invalid
-    error IvalidClaimParams();
+    error InvalidClaimParams();
 
     /* EVENTS */
 
@@ -55,12 +58,12 @@ interface IRewards {
      * @notice Emitted when rewards are successfully claimed
      * @param network The address of the network for which rewards were claimed
      * @param token The address of the token being claimed
-     * @param claimer The address of the account that initiated the claim
-     * @param rewardee The address of the account receiving the rewards
+     * @param rewardee The address of the rewardee
+     * @param recipient The address of the account receiving the rewards
      * @param amount The amount of rewards claimed
      */
     event ClaimRewards(
-        address indexed network, address indexed token, address indexed claimer, address rewardee, uint256 amount
+        address indexed network, address indexed token, address indexed rewardee, address recipient, uint256 amount
     );
 
     /**

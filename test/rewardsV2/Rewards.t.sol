@@ -160,6 +160,15 @@ contract RewardsTest is Test {
         rewards.updateCumulativeDistribution(network, testDistribution, topUps);
     }
 
+    function test_UpdateCumulativeDistribution_InvalidMerkleRoot() public {
+        IRewards.TopUp[] memory topUps = new IRewards.TopUp[](0);
+        testDistribution.merkleRoot = bytes32(0);
+        vm.startPrank(rewarder);
+        vm.expectRevert(IRewards.InvalidMerkleRoot.selector);
+        rewards.updateCumulativeDistribution(network, testDistribution, topUps);
+        vm.stopPrank();
+    }
+
     function test_UpdateCumulativeDistribution_InvalidTimestamp() public {
         vm.startPrank(rewarder);
         IRewards.TopUp[] memory emptyTopUps = new IRewards.TopUp[](0);
@@ -582,7 +591,7 @@ contract RewardsTest is Test {
         bytes memory claimData = abi.encode(network, merkleRoot, testLeaf, proof);
 
         vm.prank(claimer);
-        vm.expectRevert(IRewards.IvalidClaimParams.selector);
+        vm.expectRevert(IRewards.InvalidClaimParams.selector);
         rewards.claimRewards(rewardee, wrongToken, claimData);
     }
 

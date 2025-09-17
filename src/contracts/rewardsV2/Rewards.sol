@@ -10,7 +10,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {console} from "forge-std/console.sol";
 
 /**
  * @title Rewards
@@ -67,11 +66,10 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     function getDistributionData(
         address network
     ) public view returns (DistributionData[] memory result) {
-        EnumerableMap.AddressToBytes32Map storage networkDistributionData = _distributionData[network];
-        uint256 length = networkDistributionData.length();
+        uint256 length = _distributionData[network].length();
         result = new DistributionData[](length);
         for (uint256 i; i < length; ++i) {
-            (address token, bytes32 data) = networkDistributionData.at(i);
+            (address token, bytes32 data) = _distributionData[network].at(i);
             result[i] = DistributionData({token: token, data: data});
         }
     }
@@ -79,7 +77,40 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     /**
      * @inheritdoc IRewards
      */
-    function topUpBalance(address network, TopUp memory topUp) public {
+    function updateCumulativeDistribution(
+        address network,
+        CumulativeDistribution calldata cumulativeDistribution,
+        TopUp[] calldata topUps
+    ) public {
+        if (rewarder[network] != msg.sender) {
+            revert NotNetworkRewarder();
+        }
+
+        if (cumulativeDistribution.merkleRoot == bytes32(0)) {
+            revert InvalidMerkleRoot();
+        }
+        if (cumulativeDistribution.timestamp < cumulativeDistributions[network].timestamp) {
+            revert InvalidTimestamp();
+        }
+
+        for (uint256 i; i < topUps.length; ++i) {
+            if (i > 0 && topUps[i].token <= topUps[i - 1].token) {
+                revert DuplicatedOrUnsortedTopUp();
+            }
+            topUpBalance(network, topUps[i]);
+        }
+
+        cumulativeDistributions[network] = cumulativeDistribution;
+        isCumulativeDistributionRoot[network][cumulativeDistribution.merkleRoot] = true;
+        cumulativeDistributionDaData[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution.daData;
+
+        emit UpdateCumulativeDistribution(network, cumulativeDistribution);
+    }
+
+    /**
+     * @inheritdoc IRewards
+     */
+    function topUpBalance(address network, TopUp calldata topUp) public {
         uint256 balanceBefore = IERC20(topUp.token).balanceOf(address(this));
         IERC20(topUp.token).safeTransferFrom(msg.sender, address(this), topUp.amount);
         uint256 balanceAfter = IERC20(topUp.token).balanceOf(address(this));
@@ -100,15 +131,12 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
             network := calldataload(data.offset)
             merkleRoot := calldataload(add(data.offset, 0x20))
             leaf := add(data.offset, 0x40)
-            let proofHead := calldataload(add(data.offset, 0xE0))
-            let proofTail := add(data.offset, proofHead)
-            proof.length := calldataload(proofTail)
-            proof.offset := add(proofTail, 0x20)
+            proof.length := calldataload(add(data.offset, 0x100))
+            proof.offset := add(data.offset, 0x120)
         }
         if (token != leaf.token) {
-            revert IvalidClaimParams();
+            revert InvalidClaimParams();
         }
-        console.log("proof length", proof.length);
         claim(recipient, network, leaf, proof, merkleRoot);
     }
 
@@ -123,9 +151,6 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
         bytes32 merkleRoot
     ) public {
         if (!isCumulativeDistributionRoot[network][merkleRoot]) {
-            revert RootNotSet();
-        }
-        if (merkleRoot == bytes32(0)) {
             revert RootNotSet();
         }
 
@@ -180,35 +205,5 @@ contract Rewards is Multicall, IRewards, IStakerRewardsClaim {
     ) public {
         rewarder[msg.sender] = newRewarder;
         emit SetRewarder(msg.sender, newRewarder);
-    }
-
-    /**
-     * @inheritdoc IRewards
-     */
-    function updateCumulativeDistribution(
-        address network,
-        CumulativeDistribution memory cumulativeDistribution,
-        TopUp[] memory topUps
-    ) public {
-        if (rewarder[network] != msg.sender) {
-            revert NotNetworkRewarder();
-        }
-
-        if (cumulativeDistribution.timestamp < cumulativeDistributions[network].timestamp) {
-            revert InvalidTimestamp();
-        }
-
-        for (uint256 i; i < topUps.length; ++i) {
-            if (i > 0 && topUps[i].token <= topUps[i - 1].token) {
-                revert DuplicatedOrUnsortedTopUp();
-            }
-            topUpBalance(network, topUps[i]);
-        }
-
-        cumulativeDistributions[network] = cumulativeDistribution;
-        isCumulativeDistributionRoot[network][cumulativeDistribution.merkleRoot] = true;
-        cumulativeDistributionDaData[network][cumulativeDistribution.merkleRoot] = cumulativeDistribution.daData;
-
-        emit UpdateCumulativeDistribution(network, cumulativeDistribution);
     }
 }

@@ -50,11 +50,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
             if (currentCurator != msg.sender) {
                 revert NotAuthorized();
             }
-        } else if (vaultOwner != address(0)) {
-            if (vaultOwner != msg.sender) {
-                revert NotAuthorized();
-            }
-        } else {
+        } else if (vaultOwner != msg.sender) {
             revert NotAuthorized();
         }
 
