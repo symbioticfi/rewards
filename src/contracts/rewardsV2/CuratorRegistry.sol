@@ -43,14 +43,13 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
      * @inheritdoc ICuratorRegistry
      */
     function setCurator(address vault, address curator) public {
-        address currentCurator = getCurator(vault);
-        address vaultOwner = Ownable(vault).owner();
+        (bool exists,, uint208 value) = _curators[vault].latestCheckpoint();
 
-        if (currentCurator != address(0)) {
-            if (currentCurator != msg.sender) {
+        if (exists) {
+            if (address(uint160(value)) != msg.sender) {
                 revert NotAuthorized();
             }
-        } else if (vaultOwner != msg.sender) {
+        } else if (Ownable(vault).owner() != msg.sender) {
             revert NotAuthorized();
         }
 

@@ -74,12 +74,12 @@ contract CuratorRegistryTest is Test {
         curatorRegistry.setCurator(address(mockVault), vaultOwner);
         vm.stopPrank();
 
-        // Current curator can only set themselves (not change to someone else)
+        // Current curator can set any curator
         vm.startPrank(vaultOwner);
-        curatorRegistry.setCurator(address(mockVault), vaultOwner); // Same curator
+        curatorRegistry.setCurator(address(mockVault), curator1);
 
         address retrievedCurator = curatorRegistry.getCurator(address(mockVault));
-        assertEq(retrievedCurator, vaultOwner);
+        assertEq(retrievedCurator, curator1);
 
         vm.stopPrank();
     }
@@ -163,6 +163,20 @@ contract CuratorRegistryTest is Test {
 
         vm.expectRevert(ICuratorRegistry.NotAuthorized.selector);
         curatorRegistry.setCurator(address(mockVault), curator1); // unauthorizedUser != curator1
+
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenVaultOwnerTriesToChangeExistingCurator() public {
+        // First set curator as vault owner
+        vm.startPrank(vaultOwner);
+        curatorRegistry.setCurator(address(mockVault), address(0));
+        vm.stopPrank();
+
+        // Now vault owner cannot change the curator - only current curator can
+        vm.startPrank(vaultOwner);
+        vm.expectRevert(ICuratorRegistry.NotAuthorized.selector);
+        curatorRegistry.setCurator(address(mockVault), curator2);
 
         vm.stopPrank();
     }
