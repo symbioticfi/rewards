@@ -2,320 +2,207 @@
 pragma solidity 0.8.25;
 
 import {IFeeRegistry} from "../../interfaces/rewardsV2/IFeeRegistry.sol";
-
+import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol";
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
-import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
 
-/**
- * @title FeeRegistry
- * @notice Manages fee settings for operators and curators with historical tracking
- * @dev This contract handles fee management at global, vault, network, and vault-network levels
- */
-contract FeeRegistry is IFeeRegistry, StaticDelegateCallable {
+contract FeeRegistry is IFeeRegistry {
     using Checkpoints for Checkpoints.Trace208;
 
     /* CONSTANTS */
 
-    uint256 constant MAX_FEE = 10_000;
-    uint256 constant DEFAULT_OPERATOR_FEE = 500;
-    uint256 constant DEFAULT_CURATOR_FEE = 525;
+    uint256 public constant MAX_FEE = 1_000_000;
 
     /* STATE VARIABLES */
 
-    mapping(address operator => Checkpoints.Trace208 value) internal _operatorGlobalFee;
-    mapping(address operator => mapping(address vault => Checkpoints.Trace208 value)) internal _operatorVaultFee;
-    mapping(address operator => mapping(address network => Checkpoints.Trace208 value)) internal _operatorNetworkFee;
-    mapping(address operator => mapping(address vault => mapping(address network => Checkpoints.Trace208 value)))
-        internal _operatorVaultNetworkFee;
-    mapping(address curator => Checkpoints.Trace208 value) internal _curatorGlobalFee;
-    mapping(address curator => mapping(address vault => Checkpoints.Trace208 value)) internal _curatorVaultFee;
+    mapping(address vault => Checkpoints.Trace208 value) internal _operatorFee;
+    // value is concat(isEnabled, fee)
+    mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _operatorNetworkFee;
+    mapping(address vault => Checkpoints.Trace208 value) internal _curatorFee;
+    mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _curatorNetworkFee;
 
-    /* PUBLIC FUNCTIONS */
+    ICuratorRegistry public immutable curatorRegistry;
 
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorFeeAt(
-        address operator,
-        address vault,
-        address network,
-        uint48 timestamp,
-        bytes memory hints
-    ) public view returns (uint256) {
-        OperatorFeeHints memory operatorFeeHints;
-        if (hints.length > 0) {
-            operatorFeeHints = abi.decode(hints, (OperatorFeeHints));
+    /* MODIFIERS */
+
+    modifier onlyCurator(
+        address vault
+    ) {
+        if (curatorRegistry.getCurator(vault) != msg.sender) {
+            revert NotCurator();
         }
-        (bool isEnabled, uint256 feeValue) = getOperatorVaultNetworkFeeAt(
-            operator, vault, network, timestamp, operatorFeeHints.operatorVaultNetworkFeeHint
-        );
-        if (isEnabled) return feeValue;
+        _;
+    }
 
-        (isEnabled, feeValue) =
-            getOperatorNetworkFeeAt(operator, network, timestamp, operatorFeeHints.operatorNetworkFeeHint);
-        if (isEnabled) return feeValue;
+    /* CONSTRUCTOR */
 
-        (isEnabled, feeValue) = getOperatorVaultFeeAt(operator, vault, timestamp, operatorFeeHints.operatorVaultFeeHint);
-        if (isEnabled) return feeValue;
+    constructor(
+        address curatorRegistry_
+    ) {
+        if (curatorRegistry_ == address(0)) {
+            revert CuratorRegistryIsZero();
+        }
+        curatorRegistry = ICuratorRegistry(curatorRegistry_);
+    }
 
-        (isEnabled, feeValue) = getOperatorGlobalFeeAt(operator, timestamp, operatorFeeHints.operatorGlobalFeeHint);
-        if (isEnabled) return feeValue;
+    /* FUNCTIONS */
 
-        return DEFAULT_OPERATOR_FEE;
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function getOperatorFeeAt(address vault, address network, uint48 timestamp) public view returns (uint256 fee) {
+        // Check if network-specific fee exists and is enabled
+        (bool isEnabled, uint256 networkFee) = getOperatorNetworkFeeAt(vault, network, timestamp);
+        if (isEnabled) {
+            return networkFee;
+        }
+
+        // Fall back to global vault fee
+        return getOperatorFee(vault, network);
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getOperatorFee(address operator, address vault, address network) public view returns (uint256) {
-        (bool isEnabled, uint256 feeValue) = getOperatorVaultNetworkFee(operator, vault, network);
-        if (isEnabled) return feeValue;
+    function getOperatorFee(address vault, address network) public view returns (uint256 fee) {
+        // Check if network-specific fee exists and is enabled
+        (bool isEnabled, uint256 networkFee) = getOperatorNetworkFee(vault, network);
+        if (isEnabled) {
+            return networkFee;
+        }
 
-        (isEnabled, feeValue) = getOperatorNetworkFee(operator, network);
-        if (isEnabled) return feeValue;
-
-        (isEnabled, feeValue) = getOperatorVaultFee(operator, vault);
-        if (isEnabled) return feeValue;
-
-        (isEnabled, feeValue) = getOperatorGlobalFee(operator);
-        if (isEnabled) return feeValue;
-
-        return DEFAULT_OPERATOR_FEE;
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorGlobalFeeAt(
-        address operator,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorGlobalFee[operator].upperLookupRecent(timestamp, hint));
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorGlobalFee(
-        address operator
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorGlobalFee[operator].latest());
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorVaultFeeAt(
-        address operator,
-        address vault,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorVaultFee[operator][vault].upperLookupRecent(timestamp, hint));
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorVaultFee(address operator, address vault) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorVaultFee[operator][vault].latest());
+        // Fall back to global vault fee
+        return _operatorFee[vault].latest();
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
     function getOperatorNetworkFeeAt(
-        address operator,
-        address network,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorNetworkFee[operator][network].upperLookupRecent(timestamp, hint));
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorNetworkFee(address operator, address network) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorNetworkFee[operator][network].latest());
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getOperatorVaultNetworkFeeAt(
-        address operator,
         address vault,
         address network,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return
-            _deserializeFeeData(_operatorVaultNetworkFee[operator][vault][network].upperLookupRecent(timestamp, hint));
+        uint48 timestamp
+    ) public view returns (bool isEnabled, uint256 fee) {
+        return _deserializeFeeData(_operatorNetworkFee[vault][network].upperLookupRecent(timestamp));
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getOperatorVaultNetworkFee(
-        address operator,
-        address vault,
-        address network
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_operatorVaultNetworkFee[operator][vault][network].latest());
+    function getOperatorNetworkFee(address vault, address network) public view returns (bool isEnabled, uint256 fee) {
+        return _deserializeFeeData(_operatorNetworkFee[vault][network].latest());
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getCuratorFeeAt(
-        address curator,
+    function getCuratorNetworkFeeAt(
         address vault,
-        uint48 timestamp,
-        bytes memory hints
-    ) public view returns (uint256) {
-        CuratorFeeHints memory curatorFeeHints;
-        if (hints.length > 0) {
-            curatorFeeHints = abi.decode(hints, (CuratorFeeHints));
+        address network,
+        uint48 timestamp
+    ) public view returns (bool isEnabled, uint256 fee) {
+        return _deserializeFeeData(_curatorNetworkFee[vault][network].upperLookupRecent(timestamp));
+    }
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function getCuratorNetworkFee(address vault, address network) public view returns (bool isEnabled, uint256 fee) {
+        return _deserializeFeeData(_curatorNetworkFee[vault][network].latest());
+    }
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function getCuratorFeeAt(address vault, uint48 timestamp) public view returns (uint256 fee) {
+        return _curatorFee[vault].upperLookupRecent(timestamp);
+    }
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function getCuratorFee(
+        address vault
+    ) public view returns (uint256 fee) {
+        return _curatorFee[vault].latest();
+    }
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function setOperatorFee(address vault, uint256 fee) public onlyCurator(vault) {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh();
         }
-        (bool isEnabled, uint256 feeValue) =
-            getCuratorVaultFeeAt(curator, vault, timestamp, curatorFeeHints.curatorVaultFeeHint);
-        if (isEnabled) return feeValue;
 
-        (isEnabled, feeValue) = getCuratorGlobalFeeAt(curator, timestamp, curatorFeeHints.curatorGlobalFeeHint);
-        if (isEnabled) return feeValue;
-
-        return DEFAULT_CURATOR_FEE;
+        _operatorFee[vault].push(uint48(block.timestamp), uint208(fee));
+        emit SetOperatorFee(vault, fee);
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function getCuratorFee(address curator, address vault) public view returns (uint256) {
-        (bool isEnabled, uint256 feeValue) = getCuratorVaultFee(curator, vault);
-        if (isEnabled) return feeValue;
-
-        (isEnabled, feeValue) = getCuratorGlobalFee(curator);
-        if (isEnabled) return feeValue;
-
-        return DEFAULT_CURATOR_FEE;
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getCuratorGlobalFeeAt(
-        address curator,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_curatorGlobalFee[curator].upperLookupRecent(timestamp, hint));
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getCuratorGlobalFee(
-        address curator
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_curatorGlobalFee[curator].latest());
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function getCuratorVaultFeeAt(
-        address curator,
+    function setOperatorNetworkFee(
         address vault,
-        uint48 timestamp,
-        bytes memory hint
-    ) public view returns (bool, uint256) {
-        return _deserializeFeeData(_curatorVaultFee[curator][vault].upperLookupRecent(timestamp, hint));
-    }
-    /**
-     * @inheritdoc IFeeRegistry
-     */
+        address network,
+        bool enable,
+        uint256 fee
+    ) public onlyCurator(vault) {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh();
+        }
 
-    function getCuratorVaultFee(address curator, address vault) public view returns (bool, uint256) {
-        return _deserializeFeeData(_curatorVaultFee[curator][vault].latest());
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function setOperatorGlobalFee(bool enable, uint256 fee) public {
-        _operatorGlobalFee[msg.sender].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
-        emit SetOperatorGlobalFee(msg.sender, enable, fee);
+        uint208 feeData = _serializeFeeData(enable, fee);
+        _operatorNetworkFee[vault][network].push(uint48(block.timestamp), feeData);
+        emit SetOperatorNetworkFee(vault, network, enable, fee);
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function setOperatorVaultFee(address vault, bool enable, uint256 fee) public {
-        _operatorVaultFee[msg.sender][vault].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
-        emit SetOperatorVaultFee(msg.sender, vault, enable, fee);
+    function setCuratorFee(address vault, uint256 fee) public onlyCurator(vault) {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh();
+        }
+
+        _curatorFee[vault].push(uint48(block.timestamp), uint208(fee));
+        emit SetCuratorFee(vault, fee);
     }
 
     /**
      * @inheritdoc IFeeRegistry
      */
-    function setOperatorNetworkFee(address network, bool enable, uint256 fee) public {
-        _operatorNetworkFee[msg.sender][network].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
-        emit SetOperatorNetworkFee(msg.sender, network, enable, fee);
-    }
+    function setCuratorNetworkFee(address vault, address network, bool enable, uint256 fee) public onlyCurator(vault) {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh();
+        }
 
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function setOperatorVaultNetworkFee(address vault, address network, bool enable, uint256 fee) public {
-        _operatorVaultNetworkFee[msg.sender][vault][network].push(
-            uint48(block.timestamp), _serializeFeeData(enable, fee)
-        );
-        emit SetOperatorVaultNetworkFee(msg.sender, vault, network, enable, fee);
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function setCuratorGlobalFee(bool enable, uint256 fee) public {
-        _curatorGlobalFee[msg.sender].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
-        emit SetCuratorGlobalFee(msg.sender, enable, fee);
-    }
-
-    /**
-     * @inheritdoc IFeeRegistry
-     */
-    function setCuratorVaultFee(address vault, bool enable, uint256 fee) public {
-        _curatorVaultFee[msg.sender][vault].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
-        emit SetCuratorVaultFee(msg.sender, vault, enable, fee);
+        uint208 feeData = _serializeFeeData(enable, fee);
+        _curatorNetworkFee[vault][network].push(uint48(block.timestamp), feeData);
+        emit SetCuratorNetworkFee(vault, network, enable, fee);
     }
 
     /* INTERNAL FUNCTIONS */
 
     /**
-     * @dev Helper function for packing boolean and fee into uint208
+     * @notice Serialize fee data (enable + fee)
      * @param isEnabled Whether the fee is enabled
      * @param fee The fee amount
-     * @return Packed fee data
+     * @return The serialized data
      */
     function _serializeFeeData(bool isEnabled, uint256 fee) internal pure returns (uint208) {
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh();
-        }
-        // Use first bit for boolean, rest for fee
-        return uint208(fee << 1) | uint208(uint256(isEnabled ? 1 : 0));
+        return uint208((fee << 1) | (isEnabled ? 1 : 0));
     }
 
     /**
-     * @dev Helper function for unpacking boolean and fee from uint208
-     * @param packedData The packed fee data
+     * @notice Deserialize fee data
+     * @param data The serialized data
      * @return isEnabled Whether the fee is enabled
      * @return fee The fee amount
      */
     function _deserializeFeeData(
-        uint208 packedData
-    ) internal pure returns (bool, uint256) {
-        return (packedData & 1 > 0, uint256(packedData >> 1));
+        uint208 data
+    ) internal pure returns (bool isEnabled, uint256 fee) {
+        isEnabled = (data & 1) > 0;
+        fee = uint256(data >> 1);
     }
 }

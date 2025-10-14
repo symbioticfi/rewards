@@ -1,289 +1,51 @@
-    // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.25;
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {ICumulativeMerkleRewards} from "./ICumulativeMerkleRewards.sol";
+import {IVaultSnapshotRewards} from "./IVaultSnapshotRewards.sol";
 
 /**
  * @title IRewards
- * @notice Interface for the Symbiotic Rewards V2 system
- * @dev This interface defines the core functionality for distributing and claiming rewards
- * across networks using Merkle trees and cumulative distributions.
- *
- * The system supports:
- * - Merkle tree-based reward distribution
- * - Cumulative distribution updates
- * - Top-up functionality for reward balances
- * - Claim verification using Merkle proofs
- * - Network-specific reward management
- *
- * @custom:security This interface is part of a rewards system that handles value transfers.
- * Implementations should include proper access controls and validation mechanisms.
+ * @notice Main rewards interface combining all reward types (VaultSnapshot and CumulativeMerkle)
+ * @dev Deployed by Symbiotic on each chain where rewards are distributed. It combines
+ * VaultSnapshotRewards and CumulativeMerkleRewards functionality under a unified API.
  */
 interface IRewards {
     /* ERRORS */
 
-    /// @notice Error thrown when there are insufficient funds to process a claim
-    error InsufficientBalance();
-
-    /// @notice Error thrown when the claimable amount is less than requested
-    error InsufficientClaimableAmount();
-
-    /// @notice Error thrown when the provided Merkle proof is invalid
-    error InvalidProof();
-
-    /// @notice Error thrown when the caller is not authorized as a network rewarder
-    error NotNetworkRewarder();
-
-    /// @notice Error thrown when attempting to use a zero Merkle root
-    error InvalidMerkleRoot();
-
-    /// @notice Error thrown when attempting to use a Merkle root that hasn't been set
-    error RootNotSet();
-
-    /// @notice Error thrown when the provided timestamp is invalid
-    error InvalidTimestamp();
-
-    /// @notice Error thrown when the chain ID in the leaf doesn't match the current chain ID
-    error InvalidChainId();
-
-    /// @notice Error thrown when the provided top-up is duplicated or unsorted
-    error DuplicatedOrUnsortedTopUp();
-
-    /// @notice Error thrown when the provided claim parameters are invalid
-    error InvalidClaimParams();
-
-    /* EVENTS */
-
-    /**
-     * @notice Emitted when rewards are successfully claimed
-     * @param network The address of the network for which rewards were claimed
-     * @param token The address of the token being claimed
-     * @param rewardee The address of the rewardee
-     * @param recipient The address of the account receiving the rewards
-     * @param amount The amount of rewards claimed
-     */
-    event ClaimRewards(
-        address indexed network, address indexed token, address indexed rewardee, address recipient, uint256 amount
-    );
-
-    /**
-     * @notice Emitted when the balance for a network-token pair is topped up
-     * @param network The address of the network receiving the top-up
-     * @param token The address of the token being topped up
-     * @param amount The amount added to the balance
-     */
-    event TopUpBalance(address indexed network, address indexed token, uint256 amount);
-
-    /**
-     * @notice Emitted when distribution data is added for a specific token
-     * @param network The address of the network
-     * @param token The address of the token
-     * @param data The distribution data
-     */
-    event AddDistributionData(address indexed network, address indexed token, bytes32 data);
-
-    /**
-     * @notice Emitted when distribution data is removed for a specific token
-     * @param network The address of the network
-     * @param token The address of the token
-     */
-    event RemoveDistributionData(address indexed network, address indexed token);
-
-    /**
-     * @notice Emitted when the rewarder address is set
-     * @param network The address of the network
-     * @param rewarder The address of the rewarder
-     */
-    event SetRewarder(address indexed network, address indexed rewarder);
-
-    /**
-     * @notice Emitted when the cumulative distribution is updated
-     * @param network The address of the network
-     * @param cumulativeDistribution The cumulative distribution data
-     */
-    event UpdateCumulativeDistribution(address indexed network, CumulativeDistribution cumulativeDistribution);
+    error InvalidDataLength();
+    error InvalidRewardType();
 
     /* STRUCTS */
 
-    /**
-     * @notice Represents a cumulative distribution update for a network
-     * @param timestamp The timestamp when this distribution was created
-     * @param merkleRoot The Merkle root of the reward distribution tree
-     * @param daData Additional data associated with the distribution
-     */
-    struct CumulativeDistribution {
-        uint48 timestamp;
-        bytes32 merkleRoot;
-        bytes daData;
+    enum RewardsType {
+        VAULT_SNAPSHOT,
+        CUMULATIVE_MERKLE
     }
 
-    /**
-     * @notice Represents a leaf in the reward distribution Merkle tree
-     * @param token The address of the token being distributed
-     * @param amount The amount of rewards allocated to this account
-     * @param rewardeeType The type of rewardee
-     * @param rewardeeDataHash The hash of the rewardee data
-     * @param chainId The chain ID of the network
-     */
-    struct CumulativeDistributionLeaf {
-        uint64 chainId;
-        address token;
-        uint256 rewardeeType;
-        uint256 amount;
-        bytes32 rewardeeDataHash;
-    }
-
-    /**
-     * @notice Represents a top-up operation for a specific token
-     * @param token The address of the token being topped up
-     * @param amount The amount to add to the balance
-     */
-    struct TopUp {
-        address token;
-        uint256 amount;
-    }
-
-    /**
-     * @notice Represents distribution data for a specific token
-     * @param token The address of the token
-     * @param data Additional data associated with the token's distribution
-     */
-    struct DistributionData {
-        address token;
-        bytes32 data;
+    struct RewardsInitParams {
+        ICumulativeMerkleRewards.CumulativeMerkleRewardsInitParams cumulativeMerkleRewardsInitParams;
+        IVaultSnapshotRewards.VaultSnapshotRewardsInitParams vaultSnapshotRewardsInitParams;
+        address owner;
     }
 
     /* FUNCTIONS */
 
     /**
-     * @notice Get the cumulative distribution data for a specific network
-     * @param network The address of the network
-     * @return timestamp The timestamp of the cumulative distribution
-     * @return merkleRoot The Merkle root of the cumulative distribution
-     * @return daData The DA data of the cumulative distribution
+     * @notice Initialize the main Rewards contract
+     * @param initParams Initialization parameters containing all sub-contract parameters
      */
-    function cumulativeDistributions(
-        address network
-    ) external view returns (uint48 timestamp, bytes32 merkleRoot, bytes memory daData);
-
-    /**
-     * @notice Check if a specific Merkle root has been set for a network's cumulative distribution
-     * @param network The address of the network
-     * @param root The Merkle root to check
-     * @return True if the root is set, false otherwise
-     */
-    function isCumulativeDistributionRoot(address network, bytes32 root) external view returns (bool);
-
-    /**
-     * @notice Get the DA (Data Availability) data for a specific network and Merkle root combination
-     * @param network The address of the network
-     * @param root The Merkle root associated with the DA data
-     * @return The DA data as bytes
-     */
-    function cumulativeDistributionDaData(address network, bytes32 root) external view returns (bytes memory);
-
-    /**
-     * @notice Get the token balance for a specific network-token pair
-     * @param network The address of the network
-     * @param token The address of the token
-     * @return The current balance amount for the network-token pair
-     */
-    function balances(address network, address token) external view returns (uint256);
-
-    /**
-     * @notice Get the claimed amount for a specific network, token, and rewardee combination
-     * @param network The address of the network
-     * @param token The address of the token
-     * @param rewardee The address of the account that claimed rewards
-     * @param rewardeeType The type of rewardee
-     * @return The total amount claimed by this rewardee for this network-token pair
-     */
-    function claimed(
-        address network,
-        address token,
-        address rewardee,
-        uint256 rewardeeType
-    ) external view returns (uint256);
-
-    /**
-     * @notice Get the authorized rewarder address for a specific network
-     * @param network The address of the network
-     * @return The address of the authorized rewarder for this network
-     */
-    function rewarder(
-        address network
-    ) external view returns (address);
-
-    /**
-     * @notice Get the distribution data for a specific network
-     * @param network The address of the network
-     * @return Array of distribution data for all tokens in the network
-     */
-    function getDistributionData(
-        address network
-    ) external view returns (DistributionData[] memory);
-
-    /**
-     * @notice Update the cumulative distribution for a network
-     * @param network The address of the network to update
-     * @param cumulativeDistribution The new cumulative distribution data
-     * @param topUps Array of top-up operations to perform. Must be sorted by token address.
-     * @dev This function should only be callable by authorized network rewarders
-     */
-    function updateCumulativeDistribution(
-        address network,
-        CumulativeDistribution memory cumulativeDistribution,
-        TopUp[] memory topUps
+    function initialize(
+        RewardsInitParams calldata initParams
     ) external;
 
     /**
-     * @notice Top up the balance for a network-token pair
-     * @param network The address of the network
-     * @param topUp The top-up operation details
-     * @dev This function should only be callable by authorized network rewarders
+     * @notice Claim rewards via a unified entrypoint
+     * @param recipient The recipient address
+     * @param token The token address
+     * @param data The encoded claim data containing reward type and specific data
+     * @dev The function routes to the appropriate reward type based on the first 8 bytes (uint64)
+     * of the payload that identify the rewards type. Remaining bytes are reward-specific data.
      */
-    function topUpBalance(address network, TopUp memory topUp) external;
-
-    /**
-     * @notice Claim rewards using a specific Merkle root and proof
-     * @param recipient The address of the recipient of the rewards
-     * @param network The address of the network to claim from
-     * @param leaf The leaf data containing the reward information
-     * @param proof The Merkle proof to verify the leaf
-     * @param merkleRoot The Merkle root to verify against
-     * @dev This function allows claiming against a specific root, useful for historical claims
-     */
-    function claim(
-        address recipient,
-        address network,
-        CumulativeDistributionLeaf calldata leaf,
-        bytes32[] calldata proof,
-        bytes32 merkleRoot
-    ) external;
-
-    /**
-     * @notice Add distribution data for a specific token
-     * @param token The address of the token
-     * @param data The distribution data to associate with the token
-     * @dev This function should only be callable by authorized administrators
-     */
-    function addDistributionData(address token, bytes32 data) external;
-
-    /**
-     * @notice Remove distribution data for a specific token
-     * @param token The address of the token to remove data for
-     * @dev This function should only be callable by authorized administrators
-     */
-    function removeDistributionData(
-        address token
-    ) external;
-
-    /**
-     * @notice Set the address of the authorized rewarder
-     * @param rewarder_ The new rewarder address
-     * @dev This function should only be callable by authorized administrators
-     */
-    function setRewarder(
-        address rewarder_
-    ) external;
+    function claimRewards(address recipient, address token, bytes calldata data) external;
 }

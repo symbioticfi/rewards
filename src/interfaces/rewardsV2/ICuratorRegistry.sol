@@ -3,7 +3,8 @@ pragma solidity 0.8.25;
 
 /**
  * @title ICuratorRegistry
- * @notice Interface for the CuratorRegistry contract that manages curator assignments for vaults
+ * @notice Manages curator assignments for vaults with historical tracking
+ * @dev Allows the network to match curators to vaults and exposes historical lookups.
  */
 interface ICuratorRegistry {
     /* ERRORS */
@@ -25,10 +26,9 @@ interface ICuratorRegistry {
      * @notice Get the curator for a vault at a specific timestamp
      * @param vault The vault address
      * @param timestamp The timestamp to query
-     * @param hint Optional hint for checkpoint lookup optimization
      * @return curator The curator address at the specified timestamp
      */
-    function getCuratorAt(address vault, uint48 timestamp, bytes memory hint) external view returns (address curator);
+    function getCuratorAt(address vault, uint48 timestamp) external view returns (address curator);
 
     /**
      * @notice Get the current curator for a vault
@@ -43,6 +43,9 @@ interface ICuratorRegistry {
      * @notice Set a curator for a vault
      * @param vault The vault address
      * @param curator The curator address to set
+     * @dev Access control:
+     * - If a curator is already set, only the current curator can change it
+     * - If the vault has an owner, only the owner can set the curator
      */
     function setCurator(address vault, address curator) external;
 }
