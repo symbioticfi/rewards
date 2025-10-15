@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import {FeeRegistry} from "./FeeRegistry.sol";
 import {ProtocolFees} from "./ProtocolFees.sol";
-import {IVaultSnapshotRewards} from "../../interfaces/rewardsV2/IVaultSnapshotRewards.sol";
+
 import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol";
 import {IFeeRegistry} from "../../interfaces/rewardsV2/IFeeRegistry.sol";
-import {FeeRegistry} from "./FeeRegistry.sol";
+import {IVaultSnapshotRewards} from "../../interfaces/rewardsV2/IVaultSnapshotRewards.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
+
+import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
+import {
+    IOperatorNetworkSpecificDelegator
+} from "@symbioticfi/core/src/interfaces/delegator/IOperatorNetworkSpecificDelegator.sol";
+import {IOperatorSpecificDelegator} from "@symbioticfi/core/src/interfaces/delegator/IOperatorSpecificDelegator.sol";
 import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
-import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
-import {IOperatorSpecificDelegator} from "@symbioticfi/core/src/interfaces/delegator/IOperatorSpecificDelegator.sol";
-import {IOperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/interfaces/delegator/IOperatorNetworkSpecificDelegator.sol";
-import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
+
 
 abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     using SafeERC20 for IERC20;
@@ -28,14 +33,15 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
 
     uint64 constant REWARDS_TYPE_VAULT_SNAPSHOT = 1;
 
-    /* EVENTS, ERRORS, STRUCTS are declared in the interface */
+    /* STRUCTS */
 
     /**
      * @notice Storage structure for vault snapshot rewards
      */
     struct VaultSnapshotRewardsStorage {
-        mapping(address vault => mapping(address network => mapping(address token => RewardDistribution[] rewards_)))
-            _rewards;
+        mapping(
+            address vault => mapping(address network => mapping(address token => RewardDistribution[] rewards_))
+        ) _rewards;
         mapping(
             address account
                 => mapping(address vault => mapping(address network => mapping(address token => uint256 rewardIndex)))
@@ -48,21 +54,11 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         mapping(address vault => mapping(address token => uint256 fee)) _curatorFees;
     }
 
-    /**
-     * @notice Initialization parameters for vault snapshot rewards
-     */
-    // Types are referenced from IVaultSnapshotRewards
-
-    /**
-     * @notice Represents a reward distribution
-     */
-    // Types are referenced from IVaultSnapshotRewards
-
     /* STORAGE */
 
-    // Storage position for vault snapshot rewards
+    // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.VaultSnapshotRewards")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant VAULT_SNAPSHOT_REWARDS_STORAGE_POSITION =
-        0x0000000000000000000000000000000000000000000000000000000000000002;
+        0xea7ec811d4da20f680ecf87dbad2b956cc74e833cd99b5f63865df6b3d6b6800;
 
     address public immutable VAULT_FACTORY;
     address public immutable NETWORK_REGISTRY;
@@ -95,7 +91,11 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     /**
      * @inheritdoc IVaultSnapshotRewards
      */
-    function rewardsLength(address vault, address network, address token) public view returns (uint256) {
+    function rewardsLength(
+        address vault,
+        address network,
+        address token
+    ) public view returns (uint256) {
         return _vaultSnapshotRewardsStorage()._rewards[vault][network][token].length;
     }
 
@@ -177,11 +177,11 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
 
         uint256 maxFee = FeeRegistry(FEE_REGISTRY).MAX_FEE();
         // Get curator fee from FeeRegistry
-        uint256 curatorFee = IFeeRegistry(FEE_REGISTRY).getCuratorFee(vault);
+        uint256 curatorFee = IFeeRegistry(FEE_REGISTRY).getCuratorFee(vault, network);
         uint256 curatorFeeAmount = amount.mulDiv(curatorFee, maxFee); // Assuming 10000 as base
 
         // Get operators fee from FeeRegistry
-        uint256 operatorsFee = IFeeRegistry(FEE_REGISTRY).getOperatorFee(vault, network);
+        uint256 operatorsFee = IFeeRegistry(FEE_REGISTRY).getOperatorsFee(vault, network);
         uint256 operatorsFeeAmount = amount.mulDiv(operatorsFee, maxFee);
 
         // Deduct protocol fees from the remaining amount
@@ -194,7 +194,8 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         _vaultSnapshotRewardsStorage()._curatorFees[vault][token] += curatorFeeAmount;
 
         // Store reward distribution
-        _vaultSnapshotRewardsStorage()._rewards[vault][network][token].push(
+        _vaultSnapshotRewardsStorage()._rewards[vault][network][token]
+        .push(
             RewardDistribution({
                 subnetworkId: uint96(uint256(subnetwork)),
                 timestamp: timestamp,
@@ -264,9 +265,8 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         for (uint256 i; i < rewardsToClaim; ++i) {
             RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
-            amount += IVault(vault).activeSharesOfAt(msg.sender, reward.timestamp, hints[i]).mulDiv(
-                reward.amount, _vaultSnapshotRewardsStorage()._activeSharesCache[vault][reward.timestamp]
-            );
+            amount += IVault(vault).activeSharesOfAt(msg.sender, reward.timestamp, hints[i])
+                .mulDiv(reward.amount, _vaultSnapshotRewardsStorage()._activeSharesCache[vault][reward.timestamp]);
 
             ++rewardIndex;
         }
@@ -283,7 +283,11 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     /**
      * @inheritdoc IVaultSnapshotRewards
      */
-    function claimCuratorFee(address recipient, address vault, address token) public {
+    function claimCuratorFee(
+        address recipient,
+        address vault,
+        address token
+    ) public {
         address curator = ICuratorRegistry(CURATOR_REGISTRY).getCurator(vault);
         if (curator != msg.sender) {
             revert NotCurator();
@@ -384,7 +388,11 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     /**
      * @inheritdoc IVaultSnapshotRewards
      */
-    function claimRewards(address recipient, address token, bytes calldata data) public virtual {
+    function claimRewards(
+        address recipient,
+        address token,
+        bytes calldata data
+    ) public virtual {
         // Decode data: network (32 bytes) + vault (32 bytes) + other parameters
         (
             address network,

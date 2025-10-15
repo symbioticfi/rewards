@@ -10,12 +10,12 @@ import {FeeRegistryScript} from "./FeeRegistry.s.sol";
 contract RewardsV2Script is Script {
     function run() external {
         CuratorRegistryScript curatorRegistryScript = new CuratorRegistryScript();
-        curatorRegistryScript.run();
-
-        RewardsScript rewardsScript = new RewardsScript();
-        rewardsScript.run();
+        address curatorRegistry = curatorRegistryScript.run();
 
         FeeRegistryScript feeRegistryScript = new FeeRegistryScript();
-        feeRegistryScript.run();
+        address feeRegistry = feeRegistryScript.run(curatorRegistry);
+
+        RewardsScript rewardsScript = new RewardsScript();
+        rewardsScript.run(feeRegistry, curatorRegistry);
     }
 }

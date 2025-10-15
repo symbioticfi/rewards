@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol";
-
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
+import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol";
 
-contract CuratorRegistry is ICuratorRegistry, Multicall {
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CuratorRegistry is ICuratorRegistry, MulticallUpgradeable {
     using Checkpoints for Checkpoints.Trace208;
 
     /* STATE VARIABLES */
@@ -20,7 +20,10 @@ contract CuratorRegistry is ICuratorRegistry, Multicall {
     /**
      * @inheritdoc ICuratorRegistry
      */
-    function getCuratorAt(address vault, uint48 timestamp) public view returns (address curator) {
+    function getCuratorAt(
+        address vault,
+        uint48 timestamp
+    ) public view returns (address curator) {
         return address(uint160(_curators[vault].upperLookupRecent(timestamp)));
     }
 
@@ -36,7 +39,10 @@ contract CuratorRegistry is ICuratorRegistry, Multicall {
     /**
      * @inheritdoc ICuratorRegistry
      */
-    function setCurator(address vault, address curator) public {
+    function setCurator(
+        address vault,
+        address curator
+    ) public {
         (bool exists,, uint208 value) = _curators[vault].latestCheckpoint();
 
         if (exists) {

@@ -8,6 +8,13 @@ pragma solidity 0.8.25;
  * and network levels. Fees are checkpointed with timestamps to support historical queries.
  */
 interface IFeeRegistry {
+    
+    /* ERRORS */
+
+    error FeeTooHigh();
+    error NotCurator();
+    error CuratorRegistryIsZero();
+
     /* EVENTS */
 
     /**
@@ -15,7 +22,7 @@ interface IFeeRegistry {
      * @param vault The vault address
      * @param fee The fee amount
      */
-    event SetOperatorFee(address indexed vault, uint256 fee);
+    event SetOperatorsFee(address indexed vault, uint256 fee);
 
     /**
      * @notice Emitted when operator network fee is set for a vault
@@ -24,7 +31,7 @@ interface IFeeRegistry {
      * @param enable Whether the fee is enabled
      * @param fee The fee amount
      */
-    event SetOperatorNetworkFee(address indexed vault, address indexed network, bool enable, uint256 fee);
+    event SetOperatorsNetworkFee(address indexed vault, address indexed network, bool enable, uint256 fee);
 
     /**
      * @notice Emitted when curator fee is set for a vault
@@ -42,13 +49,13 @@ interface IFeeRegistry {
      */
     event SetCuratorNetworkFee(address indexed vault, address indexed network, bool enable, uint256 fee);
 
-    /* ERRORS */
-
-    error FeeTooHigh();
-    error NotCurator();
-    error CuratorRegistryIsZero();
-
     /* FUNCTIONS */
+
+    /**
+     * @notice Get the maximum fee value
+     * @return The maximum fee value
+     */
+    function MAX_FEE() external view returns (uint256);
 
     /**
      * @notice Get operator fee for a vault and network at a specific timestamp
@@ -57,7 +64,11 @@ interface IFeeRegistry {
      * @param timestamp The timestamp to query
      * @return fee The fee amount
      */
-    function getOperatorFeeAt(address vault, address network, uint48 timestamp) external view returns (uint256 fee);
+    function getOperatorsFeeAt(
+        address vault,
+        address network,
+        uint48 timestamp
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Get operator fee for a vault and network
@@ -65,7 +76,10 @@ interface IFeeRegistry {
      * @param network The network address
      * @return fee The fee amount
      */
-    function getOperatorFee(address vault, address network) external view returns (uint256 fee);
+    function getOperatorsFee(
+        address vault,
+        address network
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Get operator network fee at a specific timestamp
@@ -75,7 +89,7 @@ interface IFeeRegistry {
      * @return isEnabled Whether the fee is enabled
      * @return fee The fee amount
      */
-    function getOperatorNetworkFeeAt(
+    function getOperatorsNetworkFeeAt(
         address vault,
         address network,
         uint48 timestamp
@@ -88,10 +102,30 @@ interface IFeeRegistry {
      * @return isEnabled Whether the fee is enabled
      * @return fee The fee amount
      */
-    function getOperatorNetworkFee(
+    function getOperatorsNetworkFee(
         address vault,
         address network
     ) external view returns (bool isEnabled, uint256 fee);
+
+    /**
+     * @notice Get operator default fee at a specific timestamp
+     * @param vault The vault address
+     * @param timestamp The timestamp to query
+     * @return fee The fee amount
+     */
+    function getOperatorsDefaultFeeAt(
+        address vault,
+        uint48 timestamp
+    ) external view returns (uint256 fee);
+
+    /**
+     * @notice Get operator default fee
+     * @param vault The vault address
+     * @return fee The fee amount
+     */
+    function getOperatorsDefaultFee(
+        address vault
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Get curator fee at a specific timestamp
@@ -99,7 +133,11 @@ interface IFeeRegistry {
      * @param timestamp The timestamp to query
      * @return fee The fee amount
      */
-    function getCuratorFeeAt(address vault, uint48 timestamp) external view returns (uint256 fee);
+    function getCuratorFeeAt(
+        address vault,
+        address network,
+        uint48 timestamp
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Get curator fee
@@ -107,7 +145,8 @@ interface IFeeRegistry {
      * @return fee The fee amount
      */
     function getCuratorFee(
-        address vault
+        address vault,
+        address network
     ) external view returns (uint256 fee);
 
     /**
@@ -131,14 +170,40 @@ interface IFeeRegistry {
      * @return isEnabled Whether the fee is enabled
      * @return fee The fee amount
      */
-    function getCuratorNetworkFee(address vault, address network) external view returns (bool isEnabled, uint256 fee);
+    function getCuratorNetworkFee(
+        address vault,
+        address network
+    ) external view returns (bool isEnabled, uint256 fee);
+
+    /**
+     * @notice Get curator default fee at a specific timestamp
+     * @param vault The vault address
+     * @param timestamp The timestamp to query
+     * @return fee The fee amount
+     */
+    function getCuratorDefaultFeeAt(
+        address vault,
+        uint48 timestamp
+    ) external view returns (uint256 fee);
+
+    /**
+     * @notice Get curator default fee
+     * @param vault The vault address
+     * @return fee The fee amount
+     */
+    function getCuratorDefaultFee(
+        address vault
+    ) external view returns (uint256 fee);
 
     /**
      * @notice Set operator fee for a vault (only curator)
      * @param vault The vault address
      * @param fee The fee amount
      */
-    function setOperatorFee(address vault, uint256 fee) external;
+    function setOperatorsFee(
+        address vault,
+        uint256 fee
+    ) external;
 
     /**
      * @notice Set operator network fee for a vault (only curator)
@@ -147,14 +212,22 @@ interface IFeeRegistry {
      * @param enable Whether the fee is enabled
      * @param fee The fee amount
      */
-    function setOperatorNetworkFee(address vault, address network, bool enable, uint256 fee) external;
+    function setOperatorsNetworkFee(
+        address vault,
+        address network,
+        bool enable,
+        uint256 fee
+    ) external;
 
     /**
      * @notice Set curator fee for a vault (only curator)
      * @param vault The vault address
      * @param fee The fee amount
      */
-    function setCuratorFee(address vault, uint256 fee) external;
+    function setCuratorFee(
+        address vault,
+        uint256 fee
+    ) external;
 
     /**
      * @notice Set curator network fee for a vault (only curator)
@@ -163,5 +236,10 @@ interface IFeeRegistry {
      * @param enable Whether the fee is enabled
      * @param fee The fee amount
      */
-    function setCuratorNetworkFee(address vault, address network, bool enable, uint256 fee) external;
+    function setCuratorNetworkFee(
+        address vault,
+        address network,
+        bool enable,
+        uint256 fee
+    ) external;
 }

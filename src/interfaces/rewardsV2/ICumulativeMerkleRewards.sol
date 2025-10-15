@@ -76,7 +76,10 @@ interface ICumulativeMerkleRewards {
      * @param root The merkle root to check
      * @return True if the root exists
      */
-    function isCumulativeDistributionRoot(address network, bytes32 root) external view returns (bool);
+    function isCumulativeDistributionRoot(
+        address network,
+        bytes32 root
+    ) external view returns (bool);
 
     /**
      * @notice Get the withdrawable amount for a network and token
@@ -84,7 +87,10 @@ interface ICumulativeMerkleRewards {
      * @param token The token address
      * @return amount The withdrawable amount
      */
-    function withdrawable(address network, address token) external view returns (uint256 amount);
+    function withdrawable(
+        address network,
+        address token
+    ) external view returns (uint256 amount);
 
     /**
      * @notice Get the claimed amount for a rewardee
@@ -132,7 +138,11 @@ interface ICumulativeMerkleRewards {
      * @param token The token address
      * @param amount The amount to deposit
      */
-    function depositCumulativeMerkleRewards(address network, address token, uint256 amount) external;
+    function depositCumulativeMerkleRewards(
+        address network,
+        address token,
+        uint256 amount
+    ) external;
 
     /**
      * @notice Withdraw cumulative merkle rewards (only rewarder)
@@ -178,5 +188,9 @@ interface ICumulativeMerkleRewards {
      * @param token The token address
      * @param data The encoded claim data
      */
-    function claimRewards(address recipient, address token, bytes calldata data) external;
+    function claimRewards(
+        address recipient,
+        address token,
+        bytes calldata data
+    ) external;
 }

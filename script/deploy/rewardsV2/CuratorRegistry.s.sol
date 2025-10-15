@@ -6,7 +6,7 @@ import {console2, Script} from "forge-std/Script.sol";
 import {CuratorRegistry} from "../../../src/contracts/rewardsV2/CuratorRegistry.sol";
 
 contract CuratorRegistryScript is Script {
-    function run() external {
+    function run() external returns (address) {
         vm.startBroadcast();
 
         CuratorRegistry curatorRegistry = new CuratorRegistry();
@@ -14,5 +14,7 @@ contract CuratorRegistryScript is Script {
         console2.log("CuratorRegistry deployed at: ", address(curatorRegistry));
 
         vm.stopBroadcast();
+
+        return address(curatorRegistry);
     }
 }

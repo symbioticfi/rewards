@@ -47,5 +47,9 @@ interface IRewards {
      * @dev The function routes to the appropriate reward type based on the first 8 bytes (uint64)
      * of the payload that identify the rewards type. Remaining bytes are reward-specific data.
      */
-    function claimRewards(address recipient, address token, bytes calldata data) external;
+    function claimRewards(
+        address recipient,
+        address token,
+        bytes calldata data
+    ) external;
 }

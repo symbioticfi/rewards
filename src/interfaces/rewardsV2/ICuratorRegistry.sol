@@ -28,7 +28,10 @@ interface ICuratorRegistry {
      * @param timestamp The timestamp to query
      * @return curator The curator address at the specified timestamp
      */
-    function getCuratorAt(address vault, uint48 timestamp) external view returns (address curator);
+    function getCuratorAt(
+        address vault,
+        uint48 timestamp
+    ) external view returns (address curator);
 
     /**
      * @notice Get the current curator for a vault
@@ -47,5 +50,8 @@ interface ICuratorRegistry {
      * - If a curator is already set, only the current curator can change it
      * - If the vault has an owner, only the owner can set the curator
      */
-    function setCurator(address vault, address curator) external;
+    function setCurator(
+        address vault,
+        address curator
+    ) external;
 }

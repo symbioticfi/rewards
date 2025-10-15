@@ -1,29 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IProtocolFees} from "../../interfaces/rewardsV2/IProtocolFees.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-/**
- * @title ProtocolFees
- * @notice Abstract contract that manages protocol fees for different reward types
- * @dev This contract provides a base implementation for protocol fee management
- * with support for different reward types and networks
- */
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
     /* CONSTANTS */
 
-    uint256 internal constant MAX_FEE = 1_000_000;
+    /**
+     * @inheritdoc IProtocolFees
+     */
+    uint256 public constant MAX_FEE = 1_000_000;
 
-    // keccak256(abi.encode(uint256(keccak256("protocol.fees.storage")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.ProtocolFees")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant PROTOCOL_FEES_STORAGE_POSITION =
-        0x6089e4218b2a24d7083b5793f90f138cd4eb34fc509b0fca031795f497243e00;
+        0xaca04fd08ff691cdb4ae78510a180bcc9e13b5c0befede355a0801aecf227800;
+
+    /* STRUCTS */
 
     /**
      * @notice Storage structure for protocol fees
@@ -55,9 +56,7 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     }
 
     /**
-     * @notice Get the claimable protocol fees for a token
-     * @param token The token address
-     * @return The claimable fee amount
+     * @inheritdoc IProtocolFees
      */
     function claimableProtocolFees(
         address token
@@ -66,12 +65,12 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     }
 
     /**
-     * @notice Get the protocol fee for a reward type and network
-     * @param rewardsType The reward type identifier
-     * @param network The network address
-     * @return The protocol fee amount
+     * @inheritdoc IProtocolFees
      */
-    function protocolFee(uint64 rewardsType, address network) public view returns (uint256) {
+    function protocolFee(
+        uint64 rewardsType,
+        address network
+    ) public view returns (uint256) {
         bytes32 networkFeeData = _protocolFeesStorage()._networkFee[rewardsType][network];
 
         // Check if network fee is enabled
@@ -87,11 +86,12 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     }
 
     /**
-     * @notice Set the protocol fee for a reward type (only owner)
-     * @param rewardsType The reward type identifier
-     * @param fee The fee amount in basis points
+     * @inheritdoc IProtocolFees
      */
-    function setProtocolFee(uint64 rewardsType, uint256 fee) public onlyOwner {
+    function setProtocolFee(
+        uint64 rewardsType,
+        uint256 fee
+    ) public onlyOwner {
         if (fee > MAX_FEE) {
             revert FeeTooHigh();
         }
@@ -100,13 +100,14 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     }
 
     /**
-     * @notice Set the protocol network fee for a reward type (only owner)
-     * @param rewardsType The reward type identifier
-     * @param network The network address
-     * @param enable Whether the fee is enabled
-     * @param fee The fee amount in basis points
+     * @inheritdoc IProtocolFees
      */
-    function setProtocolNetworkFee(uint64 rewardsType, address network, bool enable, uint256 fee) public onlyOwner {
+    function setProtocolNetworkFee(
+        uint64 rewardsType,
+        address network,
+        bool enable,
+        uint256 fee
+    ) public onlyOwner {
         if (fee > MAX_FEE) {
             revert FeeTooHigh();
         }
@@ -116,12 +117,12 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     }
 
     /**
-     * @notice Claim protocol fees for a token (only owner)
-     * @param recipient The recipient address
-     * @param token The token address
-     * @return fees The amount of fees claimed
+     * @inheritdoc IProtocolFees
      */
-    function claimProtocolFees(address recipient, address token) public onlyOwner returns (uint256 fees) {
+    function claimProtocolFees(
+        address recipient,
+        address token
+    ) public onlyOwner returns (uint256 fees) {
         fees = _protocolFeesStorage()._claimableFee[token];
         if (fees == 0) {
             revert InsufficientClaimableFees();
@@ -172,7 +173,10 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
      * @param fee The fee amount
      * @return The serialized data
      */
-    function _serializeNetworkFeeData(bool isEnabled, uint256 fee) private pure returns (bytes32) {
+    function _serializeNetworkFeeData(
+        bool isEnabled,
+        uint256 fee
+    ) private pure returns (bytes32) {
         return bytes32((fee << 1) | (isEnabled ? 1 : 0));
     }
 
@@ -184,8 +188,7 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
      */
     function _deserializeNetworkFeeData(
         bytes32 data
-    ) private pure returns (bool isEnabled, uint256 fee) {
-        isEnabled = (uint256(data) & 1) > 0;
-        fee = uint256(data) >> 1;
+    ) private pure returns (bool, uint256) {
+        return ((uint256(data) & 1) > 0, uint256(data) >> 1);
     }
 }

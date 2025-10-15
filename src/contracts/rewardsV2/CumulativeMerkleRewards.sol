@@ -2,14 +2,17 @@
 pragma solidity 0.8.25;
 
 import {ProtocolFees} from "./ProtocolFees.sol";
+
 import {ICumulativeMerkleRewards} from "../../interfaces/rewardsV2/ICumulativeMerkleRewards.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, ICumulativeMerkleRewards {
     using SafeERC20 for IERC20;
@@ -29,6 +32,8 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
 
     uint64 constant REWARDS_TYPE_CUMULATIVE_MERKLE = 0;
 
+    /* STRUCTS */
+
     /**
      * @notice Storage structure for cumulative merkle rewards
      */
@@ -40,17 +45,17 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         mapping(
             address network
                 => mapping(
-                    address token => mapping(address rewardee => mapping(uint256 rewardeeType => uint256 amount))
-                )
+                address token => mapping(address rewardee => mapping(uint256 rewardeeType => uint256 amount))
+            )
         ) _claimed;
         mapping(address network => address value) _rewarder;
     }
 
     /* STORAGE */
 
-    // keccak256(abi.encode(uint256(keccak256("cumulative.merkle.rewards.storage")) - 1)) & ~bytes32(uint256(0xff))
+    // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.CumulativeMerkleRewards")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant CUMULATIVE_MERKLE_REWARDS_STORAGE_POSITION =
-        0xe2b5451d896510c794b5f0b35ade2d4a663033545e0e358dd0ee29143f654400;
+        0xb35d10d93f469d2505237bd5d8067e02fbabfe765e611799bdbd03de345d3300;
 
     /* FUNCTIONS */
 
@@ -73,14 +78,20 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     /**
      * @inheritdoc ICumulativeMerkleRewards
      */
-    function isCumulativeDistributionRoot(address network, bytes32 root) public view returns (bool) {
+    function isCumulativeDistributionRoot(
+        address network,
+        bytes32 root
+    ) public view returns (bool) {
         return _cumulativeMerkleRewardsStorage()._isCumulativeDistributionRoot[network][root];
     }
 
     /**
      * @inheritdoc ICumulativeMerkleRewards
      */
-    function withdrawable(address network, address token) public view returns (uint256 amount) {
+    function withdrawable(
+        address network,
+        address token
+    ) public view returns (uint256 amount) {
         uint256 lastTotalAmount = _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][token];
         uint256 deposited = _cumulativeMerkleRewardsStorage()._deposited[network][token];
         return deposited > lastTotalAmount ? deposited - lastTotalAmount : 0;
@@ -204,7 +215,11 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     /**
      * @inheritdoc ICumulativeMerkleRewards
      */
-    function depositCumulativeMerkleRewards(address network, address token, uint256 amount) public {
+    function depositCumulativeMerkleRewards(
+        address network,
+        address token,
+        uint256 amount
+    ) public {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         _cumulativeMerkleRewardsStorage()._deposited[network][token] += amount;
         emit DepositCumulativeMerkleRewards(network, token, amount);
@@ -283,7 +298,11 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     /**
      * @inheritdoc ICumulativeMerkleRewards
      */
-    function claimRewards(address recipient, address token, bytes calldata data) public virtual {
+    function claimRewards(
+        address recipient,
+        address token,
+        bytes calldata data
+    ) public virtual {
         // Decode data: network (32 bytes) + merkleRoot (32 bytes) + leaf (rest)
         address network;
         bytes32 merkleRoot;

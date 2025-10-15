@@ -84,7 +84,11 @@ interface IVaultSnapshotRewards {
      * @param token The token address
      * @return The number of reward distributions
      */
-    function rewardsLength(address vault, address network, address token) external view returns (uint256);
+    function rewardsLength(
+        address vault,
+        address network,
+        address token
+    ) external view returns (uint256);
 
     /**
      * @notice Get a reward distribution by index
@@ -164,7 +168,11 @@ interface IVaultSnapshotRewards {
      * @param vault The vault address
      * @param token The token address
      */
-    function claimCuratorFee(address recipient, address vault, address token) external;
+    function claimCuratorFee(
+        address recipient,
+        address vault,
+        address token
+    ) external;
 
     /**
      * @notice Claim operator fee
@@ -194,5 +202,9 @@ interface IVaultSnapshotRewards {
      * @param token The token address
      * @param data The encoded claim data
      */
-    function claimRewards(address recipient, address token, bytes calldata data) external;
+    function claimRewards(
+        address recipient,
+        address token,
+        bytes calldata data
+    ) external;
 }
