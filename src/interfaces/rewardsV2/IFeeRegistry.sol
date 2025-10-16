@@ -8,7 +8,6 @@ pragma solidity 0.8.25;
  * and network levels. Fees are checkpointed with timestamps to support historical queries.
  */
 interface IFeeRegistry {
-    
     /* ERRORS */
 
     error FeeTooHigh();

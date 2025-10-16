@@ -7,8 +7,9 @@ import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.s
 import {NetworkMiddlewareService} from "@symbioticfi/core/src/contracts/service/NetworkMiddlewareService.sol";
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
 
-import {DefaultOperatorRewardsFactory} from
-    "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+import {
+    DefaultOperatorRewardsFactory
+} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {IDefaultOperatorRewards} from "../../src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
@@ -139,7 +140,10 @@ contract DefaultOperatorRewardsTest is Test {
         _distributeRewards(bob, network, address(token), amount, root);
     }
 
-    function test_ClaimRewards(uint256 amount1, uint256 amount2) public {
+    function test_ClaimRewards(
+        uint256 amount1,
+        uint256 amount2
+    ) public {
         amount1 = bound(amount1, 1, 1000);
         amount2 = bound(amount2, 1, 1000);
 
@@ -318,14 +322,23 @@ contract DefaultOperatorRewardsTest is Test {
         return IDefaultOperatorRewards(defaultOperatorRewardsFactory.create());
     }
 
-    function _registerNetwork(address user, address middleware) internal {
+    function _registerNetwork(
+        address user,
+        address middleware
+    ) internal {
         vm.startPrank(user);
         networkRegistry.registerNetwork();
         networkMiddlewareService.setMiddleware(middleware);
         vm.stopPrank();
     }
 
-    function _distributeRewards(address user, address network, address token, uint256 amount, bytes32 root) internal {
+    function _distributeRewards(
+        address user,
+        address network,
+        address token,
+        uint256 amount,
+        bytes32 root
+    ) internal {
         vm.startPrank(user);
         defaultOperatorRewards.distributeRewards(network, token, amount, root);
         vm.stopPrank();

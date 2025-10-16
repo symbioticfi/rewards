@@ -22,7 +22,10 @@ contract MockNetworkMiddlewareService is INetworkMiddlewareService {
         middleware[msg.sender] = middlewareAddress;
     }
 
-    function setMiddlewareForNetwork(address network, address middlewareAddress) external {
+    function setMiddlewareForNetwork(
+        address network,
+        address middlewareAddress
+    ) external {
         middleware[network] = middlewareAddress;
     }
 }

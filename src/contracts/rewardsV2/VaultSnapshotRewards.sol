@@ -23,7 +23,6 @@ import {IOperatorSpecificDelegator} from "@symbioticfi/core/src/interfaces/deleg
 import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 
-
 abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     using SafeERC20 for IERC20;
     using Math for uint256;

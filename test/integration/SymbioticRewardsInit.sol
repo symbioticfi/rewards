@@ -127,8 +127,7 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
 
     function _getDefaultOperatorRewards_SymbioticRewards() internal virtual returns (address) {
         return _createDefaultOperatorRewards_SymbioticRewards({
-            symbioticDefaultOperatorRewardsFactory: symbioticDefaultOperatorRewardsFactory,
-            who: address(this)
+            symbioticDefaultOperatorRewardsFactory: symbioticDefaultOperatorRewardsFactory, who: address(this)
         });
     }
 
@@ -136,7 +135,10 @@ contract SymbioticRewardsInit is SymbioticCoreInit, SymbioticRewardsBindings {
         return _getDefaultOperatorRewards_SymbioticRewards();
     }
 
-    function _fundMiddleware_SymbioticRewards(address token, address middleware) internal virtual {
+    function _fundMiddleware_SymbioticRewards(
+        address token,
+        address middleware
+    ) internal virtual {
         deal(token, middleware, _normalizeForToken_Symbiotic(SYMBIOTIC_REWARDS_TOKENS_TO_SET_TIMES_1e18, token), true); // should cover most cases
     }
 

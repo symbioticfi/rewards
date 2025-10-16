@@ -52,17 +52,18 @@ contract SymbioticRewardsBindings is Test {
     ) internal virtual {
         vm.startPrank(who);
         IERC20(token).forceApprove(defaultStakerRewards, amount);
-        ISymbioticDefaultStakerRewards(defaultStakerRewards).distributeRewards(
-            network,
-            token,
-            amount,
-            abi.encode(
-                captureTimestamp,
-                ISymbioticDefaultStakerRewards(defaultStakerRewards).ADMIN_FEE_BASE(),
-                new bytes(0),
-                new bytes(0)
-            )
-        );
+        ISymbioticDefaultStakerRewards(defaultStakerRewards)
+            .distributeRewards(
+                network,
+                token,
+                amount,
+                abi.encode(
+                    captureTimestamp,
+                    ISymbioticDefaultStakerRewards(defaultStakerRewards).ADMIN_FEE_BASE(),
+                    new bytes(0),
+                    new bytes(0)
+                )
+            );
         vm.stopPrank();
     }
 
@@ -75,9 +76,8 @@ contract SymbioticRewardsBindings is Test {
     ) internal virtual {
         vm.startPrank(who);
         uint256 maxRewards = 1000;
-        ISymbioticDefaultStakerRewards(defaultStakerRewards).claimRewards(
-            recipient, token, abi.encode(network, maxRewards, new bytes[](0))
-        );
+        ISymbioticDefaultStakerRewards(defaultStakerRewards)
+            .claimRewards(recipient, token, abi.encode(network, maxRewards, new bytes[](0)));
         vm.stopPrank();
     }
 
@@ -143,9 +143,8 @@ contract SymbioticRewardsBindings is Test {
         bytes32[] memory proof
     ) internal virtual {
         vm.startPrank(who);
-        ISymbioticDefaultOperatorRewards(defaultOperatorRewards).claimRewards(
-            recipient, network, token, totalClaimable, proof
-        );
+        ISymbioticDefaultOperatorRewards(defaultOperatorRewards)
+            .claimRewards(recipient, network, token, totalClaimable, proof);
         vm.stopPrank();
     }
 
@@ -160,21 +159,38 @@ contract SymbioticRewardsBindings is Test {
         _claimRewards_SymbioticRewards(who, defaultOperatorRewards, who, network, token, totalClaimable, proof);
     }
 
-    function _grantRole_SymbioticRewards(address who, address where, bytes32 role, address account) internal virtual {
+    function _grantRole_SymbioticRewards(
+        address who,
+        address where,
+        bytes32 role,
+        address account
+    ) internal virtual {
         vm.startPrank(who);
         AccessControl(where).grantRole(role, account);
         vm.stopPrank();
     }
 
-    function _grantRoleDefaultAdmin_SymbioticRewards(address who, address where, address account) internal virtual {
+    function _grantRoleDefaultAdmin_SymbioticRewards(
+        address who,
+        address where,
+        address account
+    ) internal virtual {
         _grantRole_SymbioticRewards(who, where, AccessControl(where).DEFAULT_ADMIN_ROLE(), account);
     }
 
-    function _grantRoleAdminFeeClaim_SymbioticRewards(address who, address where, address account) internal virtual {
+    function _grantRoleAdminFeeClaim_SymbioticRewards(
+        address who,
+        address where,
+        address account
+    ) internal virtual {
         _grantRole_SymbioticRewards(who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_CLAIM_ROLE(), account);
     }
 
-    function _grantRoleAdminFeeSet_SymbioticRewards(address who, address where, address account) internal virtual {
+    function _grantRoleAdminFeeSet_SymbioticRewards(
+        address who,
+        address where,
+        address account
+    ) internal virtual {
         _grantRole_SymbioticRewards(who, where, ISymbioticDefaultStakerRewards(where).ADMIN_FEE_SET_ROLE(), account);
     }
 }

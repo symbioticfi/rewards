@@ -12,11 +12,18 @@ contract FeeOnTransferToken is ERC20 {
     uint256 public constant FEE_RATE = 100; // 1% fee (100 basis points)
     uint256 public constant FEE_DENOMINATOR = 10_000;
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+    constructor(
+        string memory name,
+        string memory symbol
+    ) ERC20(name, symbol) {
         _mint(msg.sender, 1_000_000 * 10 ** 18); // Mint 1M tokens to deployer
     }
 
-    function _update(address from, address to, uint256 value) internal override {
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override {
         if (from != address(0) && to != address(0)) {
             // Calculate fee
             uint256 fee = (value * FEE_RATE) / FEE_DENOMINATOR;

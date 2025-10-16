@@ -54,9 +54,7 @@ contract RewardsTest is Test {
         // Setup test distribution
         testMerkleRoot = keccak256("test merkle root");
         testDistribution = IRewards.CumulativeDistribution({
-            timestamp: TEST_TIMESTAMP,
-            merkleRoot: testMerkleRoot,
-            daData: "test da data"
+            timestamp: TEST_TIMESTAMP, merkleRoot: testMerkleRoot, daData: "test da data"
         });
 
         // Setup test leaf
@@ -190,9 +188,7 @@ contract RewardsTest is Test {
 
         // Try to update with older timestamp
         IRewards.CumulativeDistribution memory oldDistribution = IRewards.CumulativeDistribution({
-            timestamp: TEST_TIMESTAMP - 1,
-            merkleRoot: keccak256("old root"),
-            daData: "old data"
+            timestamp: TEST_TIMESTAMP - 1, merkleRoot: keccak256("old root"), daData: "old data"
         });
 
         vm.startPrank(rewarder);
@@ -244,9 +240,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -294,9 +288,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -320,9 +312,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -348,9 +338,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -405,9 +393,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -441,9 +427,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(wrongChainLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -475,9 +459,7 @@ contract RewardsTest is Test {
 
         // Setup distribution
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: zeroRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: zeroRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -582,9 +564,7 @@ contract RewardsTest is Test {
         console.log("proof length", proof.length);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -611,9 +591,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
@@ -666,9 +644,7 @@ contract RewardsTest is Test {
         (bytes32 merkleRoot, bytes32[] memory proof) = _createMerkleTreeAndProof(testLeaf);
 
         IRewards.CumulativeDistribution memory distribution = IRewards.CumulativeDistribution({
-            timestamp: uint48(vm.getBlockTimestamp()),
-            merkleRoot: merkleRoot,
-            daData: "valid da data"
+            timestamp: uint48(vm.getBlockTimestamp()), merkleRoot: merkleRoot, daData: "valid da data"
         });
 
         vm.warp(vm.getBlockTimestamp() + 1);
