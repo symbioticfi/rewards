@@ -17,18 +17,16 @@ interface ICumulativeMerkleRewards {
     error InvalidTimestamp();
     error InvalidMerkleRoot();
     error InsufficientDeposited();
+    error InsufficientTransfer();
     error NotRewarder();
     error RootAlreadySet();
     error UnsortedChainIds();
     error DuplicateOrUnsortedTokens();
     error NotRewardee();
     error InvalidTotalAmount();
+    error NoCumulativeRewardsToClaim();
 
     /* STRUCTS */
-
-    struct CumulativeMerkleRewardsInitParams {
-        IProtocolFees.ProtocolFeesInitParams protocolFeesInitParams;
-    }
 
     struct CumulativeDistribution {
         uint48 timestamp;
@@ -69,6 +67,17 @@ interface ICumulativeMerkleRewards {
     function lastCumulativeDistribution(
         address network
     ) external view returns (CumulativeDistribution memory);
+
+    /**
+     * @notice Get the last total amount for a network and token
+     * @param network The network address
+     * @param token The token address
+     * @return The last total amount
+     */
+    function lastTotalAmount(
+        address network,
+        address token
+    ) external view returns (uint256);
 
     /**
      * @notice Check if a cumulative distribution root exists for a network

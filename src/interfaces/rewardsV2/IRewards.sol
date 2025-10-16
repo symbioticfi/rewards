@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {ICumulativeMerkleRewards} from "./ICumulativeMerkleRewards.sol";
+import {IProtocolFees} from "./IProtocolFees.sol";
 import {IVaultSnapshotRewards} from "./IVaultSnapshotRewards.sol";
 
 /**
@@ -24,7 +25,6 @@ interface IRewards {
     }
 
     struct RewardsInitParams {
-        ICumulativeMerkleRewards.CumulativeMerkleRewardsInitParams cumulativeMerkleRewardsInitParams;
         IVaultSnapshotRewards.VaultSnapshotRewardsInitParams vaultSnapshotRewardsInitParams;
         address owner;
     }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IProtocolFees} from "../../interfaces/rewardsV2/IProtocolFees.sol";
+import {IFeeRegistry} from "../../interfaces/rewardsV2/IFeeRegistry.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -19,40 +20,39 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
      * @inheritdoc IProtocolFees
      */
     uint256 public constant MAX_FEE = 1_000_000;
+    address public immutable FEE_REGISTRY;
+    string public constant REWARDS_FEE_ID = "rewards";
+    /* STORAGE */
+
+    struct ProtocolFeesStorage {
+        mapping(address token => uint256 fee) _claimableFee;
+    }
 
     // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.ProtocolFees")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant PROTOCOL_FEES_STORAGE_POSITION =
         0xaca04fd08ff691cdb4ae78510a180bcc9e13b5c0befede355a0801aecf227800;
 
-    /* STRUCTS */
+    function _protocolFeesStorage() private pure returns (ProtocolFeesStorage storage $) {
+        assembly {
+            $.slot := PROTOCOL_FEES_STORAGE_POSITION
+        }
+    }
 
-    /**
-     * @notice Storage structure for protocol fees
-     */
-    struct ProtocolFeesStorage {
-        mapping(uint64 rewardsType => uint256 value) _fee;
-        // value is enable | fee (packed as bytes32)
-        mapping(uint64 rewardsType => mapping(address network => bytes32 value)) _networkFee;
-        mapping(address token => uint256 fee) _claimableFee;
+    constructor(
+        address feeRegistry
+    ) {
+        FEE_REGISTRY = feeRegistry;
     }
 
     /* FUNCTIONS */
 
     /**
      * @notice Initialize the protocol fees contract
-     * @param initParams Initialization parameters containing fee configurations
      */
     function __ProtocolFees_init(
-        ProtocolFeesInitParams calldata initParams
+        address owner
     ) internal onlyInitializing {
-        __Ownable_init(msg.sender);
-
-        for (uint256 i = 0; i < initParams.fees.length; ++i) {
-            if (initParams.fees[i].fee > MAX_FEE) {
-                revert FeeTooHigh();
-            }
-            _protocolFeesStorage()._fee[initParams.fees[i].rewardsType] = initParams.fees[i].fee;
-        }
+        __Ownable_init(owner);
     }
 
     /**
@@ -70,50 +70,14 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     function protocolFee(
         uint64 rewardsType,
         address network
-    ) public view returns (uint256) {
-        bytes32 networkFeeData = _protocolFeesStorage()._networkFee[rewardsType][network];
-
-        // Check if network fee is enabled
-        if (networkFeeData != bytes32(0)) {
-            (bool isEnabled, uint256 fee) = _deserializeNetworkFeeData(networkFeeData);
-            if (isEnabled) {
-                return fee;
-            }
+    ) public view returns (uint256 fee) {
+        (bool isEnabled, uint256 networkFee) =
+            IFeeRegistry(FEE_REGISTRY).getProtocolFee(keccak256(abi.encode(REWARDS_FEE_ID, rewardsType, network)));
+        if (isEnabled) {
+            return networkFee;
         }
 
-        // Fall back to global fee for reward type
-        return _protocolFeesStorage()._fee[rewardsType];
-    }
-
-    /**
-     * @inheritdoc IProtocolFees
-     */
-    function setProtocolFee(
-        uint64 rewardsType,
-        uint256 fee
-    ) public onlyOwner {
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh();
-        }
-        _protocolFeesStorage()._fee[rewardsType] = fee;
-        emit SetProtocolFee(rewardsType, fee);
-    }
-
-    /**
-     * @inheritdoc IProtocolFees
-     */
-    function setProtocolNetworkFee(
-        uint64 rewardsType,
-        address network,
-        bool enable,
-        uint256 fee
-    ) public onlyOwner {
-        if (fee > MAX_FEE) {
-            revert FeeTooHigh();
-        }
-        bytes32 feeData = _serializeNetworkFeeData(enable, fee);
-        _protocolFeesStorage()._networkFee[rewardsType][network] = feeData;
-        emit SetProtocolNetworkFee(rewardsType, network, enable, fee);
+        (, fee) = IFeeRegistry(FEE_REGISTRY).getProtocolFee(keccak256(abi.encode(REWARDS_FEE_ID, rewardsType)));
     }
 
     /**
@@ -153,42 +117,5 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
             _protocolFeesStorage()._claimableFee[token] += fees;
             emit DeductProtocolFee(rewardsType, network, token, fees);
         }
-    }
-
-    /* INTERNAL FUNCTIONS */
-
-    /**
-     * @notice Get the protocol fees storage
-     * @return $ The storage struct
-     */
-    function _protocolFeesStorage() private pure returns (ProtocolFeesStorage storage $) {
-        assembly {
-            $.slot := PROTOCOL_FEES_STORAGE_POSITION
-        }
-    }
-
-    /**
-     * @notice Serialize network fee data
-     * @param isEnabled Whether the fee is enabled
-     * @param fee The fee amount
-     * @return The serialized data
-     */
-    function _serializeNetworkFeeData(
-        bool isEnabled,
-        uint256 fee
-    ) private pure returns (bytes32) {
-        return bytes32((fee << 1) | (isEnabled ? 1 : 0));
-    }
-
-    /**
-     * @notice Deserialize network fee data
-     * @param data The serialized data
-     * @return isEnabled Whether the fee is enabled
-     * @return fee The fee amount
-     */
-    function _deserializeNetworkFeeData(
-        bytes32 data
-    ) private pure returns (bool, uint256) {
-        return ((uint256(data) & 1) > 0, uint256(data) >> 1);
     }
 }

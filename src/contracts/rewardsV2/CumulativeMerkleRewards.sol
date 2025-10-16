@@ -4,6 +4,7 @@ pragma solidity 0.8.25;
 import {ProtocolFees} from "./ProtocolFees.sol";
 
 import {ICumulativeMerkleRewards} from "../../interfaces/rewardsV2/ICumulativeMerkleRewards.sol";
+import {IRewards} from "../../interfaces/rewardsV2/IRewards.sol";
 
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -30,13 +31,8 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         "CumulativeDistributionPayload(CumulativeDistribution cumulativeDistribution,TokenAmount[] totalAmounts)CumulativeDistribution(uint48 timestamp,bytes32 merkleRoot)TokenAmount(uint64 chainId,address token,uint256 amount)"
     );
 
-    uint64 constant REWARDS_TYPE_CUMULATIVE_MERKLE = 0;
+    /* STORAGE */
 
-    /* STRUCTS */
-
-    /**
-     * @notice Storage structure for cumulative merkle rewards
-     */
     struct CumulativeMerkleRewardsStorage {
         mapping(address network => CumulativeDistribution) _lastCumulativeDistribution;
         mapping(address network => mapping(address token => uint256 amount)) _lastTotalAmounts;
@@ -51,19 +47,20 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         mapping(address network => address value) _rewarder;
     }
 
-    /* STORAGE */
-
     // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.CumulativeMerkleRewards")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant CUMULATIVE_MERKLE_REWARDS_STORAGE_POSITION =
         0xb35d10d93f469d2505237bd5d8067e02fbabfe765e611799bdbd03de345d3300;
 
+    function _cumulativeMerkleRewardsStorage() private pure returns (CumulativeMerkleRewardsStorage storage $) {
+        assembly {
+            $.slot := CUMULATIVE_MERKLE_REWARDS_STORAGE_POSITION
+        }
+    }
+
     /* FUNCTIONS */
 
-    function __CumulativeMerkleRewards_init(
-        CumulativeMerkleRewardsInitParams calldata initParams
-    ) internal onlyInitializing {
+    function __CumulativeMerkleRewards_init() internal onlyInitializing {
         __EIP712_init("CumulativeMerkleRewards", "1");
-        __ProtocolFees_init(initParams.protocolFeesInitParams);
     }
 
     /**
@@ -73,6 +70,16 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         address network
     ) public view returns (CumulativeDistribution memory) {
         return _cumulativeMerkleRewardsStorage()._lastCumulativeDistribution[network];
+    }
+
+    /**
+     * @inheritdoc ICumulativeMerkleRewards
+     */
+    function lastTotalAmount(
+        address network,
+        address token
+    ) public view returns (uint256) {
+        return _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][token];
     }
 
     /**
@@ -92,9 +99,8 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         address network,
         address token
     ) public view returns (uint256 amount) {
-        uint256 lastTotalAmount = _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][token];
-        uint256 deposited = _cumulativeMerkleRewardsStorage()._deposited[network][token];
-        return deposited > lastTotalAmount ? deposited - lastTotalAmount : 0;
+        return _cumulativeMerkleRewardsStorage()._deposited[network][token]
+        .saturatingSub(_cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][token]);
     }
 
     /**
@@ -128,27 +134,27 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         bytes calldata ownerSignature,
         bytes calldata rewarderSignature
     ) public {
-        // Check chainIds are sorted ascending
+        // Check entries are sorted by chainId ascending; within the same chainId, tokens strictly ascending
+        uint64 prevChainId = totalAmounts.length > 0 ? totalAmounts[0].chainId : 0;
         for (uint256 i = 1; i < totalAmounts.length; ++i) {
-            if (totalAmounts[i].chainId <= totalAmounts[i - 1].chainId) {
+            uint64 currChainId = totalAmounts[i].chainId;
+            if (currChainId < prevChainId) {
                 revert UnsortedChainIds();
             }
-        }
 
-        // Check tokens are unique and sorted ascending
-        for (uint256 i = 1; i < totalAmounts.length; ++i) {
-            if (totalAmounts[i].token <= totalAmounts[i - 1].token) {
+            // When within the same chain, token addresses must be strictly increasing (unique and sorted)
+            if (currChainId == prevChainId && totalAmounts[i].token <= totalAmounts[i - 1].token) {
                 revert DuplicateOrUnsortedTokens();
             }
+            prevChainId = currChainId;
         }
 
-        // Check root is not already set
         if (_cumulativeMerkleRewardsStorage()._isCumulativeDistributionRoot[network][cumulativeDistribution.merkleRoot])
         {
             revert RootAlreadySet();
         }
 
-        // Create EIP712 hash for cross-chain compatibility
+        // Create EIP712 hash
         bytes32 hash = _hashCumulativeDistributionPayload(cumulativeDistribution, totalAmounts);
 
         // Verify owner signature
@@ -157,8 +163,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         }
 
         // Verify rewarder signature
-        address networkRewarder = _cumulativeMerkleRewardsStorage()._rewarder[network];
-        if (!SignatureChecker.isValidSignatureNow(networkRewarder, hash, rewarderSignature)) {
+        if (!SignatureChecker.isValidSignatureNow(rewarder(network), hash, rewarderSignature)) {
             revert InvalidSignature();
         }
 
@@ -170,31 +175,23 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         }
 
         // Calculate distribution amounts and deduct protocol fees (only for current chain)
-        uint64 currentChainId = uint64(block.chainid);
-        for (uint256 i = 0; i < totalAmounts.length; ++i) {
+        for (uint256 i; i < totalAmounts.length; ++i) {
             TokenAmount calldata totalAmount = totalAmounts[i];
-            if (totalAmount.chainId != currentChainId) {
+            if (totalAmount.chainId != uint64(block.chainid)) {
                 continue; // Ignore amounts for other chains
             }
 
-            uint256 lastTotalAmount = _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][totalAmount.token];
-
-            if (totalAmount.amount == lastTotalAmount) {
-                continue; // No new distribution for this token
-            }
-
-            if (totalAmount.amount < lastTotalAmount) {
-                revert InvalidTotalAmount();
-            }
-
-            uint256 distributionAmount = totalAmount.amount - lastTotalAmount;
-
-            // Deduct protocol fees
-            uint256 fees =
-                _deductProtocolFees(REWARDS_TYPE_CUMULATIVE_MERKLE, network, totalAmount.token, distributionAmount);
+            uint256 distributionAmount = totalAmount.amount - lastTotalAmount(network, totalAmount.token);
 
             // Update deposited amount (subtract fees)
-            _cumulativeMerkleRewardsStorage()._deposited[network][totalAmount.token] -= fees;
+            _cumulativeMerkleRewardsStorage()
+            ._deposited[
+                network
+            ][
+                totalAmount.token
+            ] -= _deductProtocolFees(
+                uint64(IRewards.RewardsType.CUMULATIVE_MERKLE), network, totalAmount.token, distributionAmount
+            );
 
             // Check sufficient deposited amount
             if (_cumulativeMerkleRewardsStorage()._deposited[network][totalAmount.token] < totalAmount.amount) {
@@ -220,9 +217,16 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         address token,
         uint256 amount
     ) public {
+        uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        _cumulativeMerkleRewardsStorage()._deposited[network][token] += amount;
-        emit DepositCumulativeMerkleRewards(network, token, amount);
+        uint256 actualAmount = IERC20(token).balanceOf(address(this)) - balanceBefore;
+
+        if (actualAmount == 0) {
+            revert InsufficientTransfer();
+        }
+
+        _cumulativeMerkleRewardsStorage()._deposited[network][token] += actualAmount;
+        emit DepositCumulativeMerkleRewards(network, token, actualAmount);
     }
 
     /**
@@ -244,8 +248,12 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         }
 
         _cumulativeMerkleRewardsStorage()._deposited[network][token] -= amount;
+
+        uint256 balanceBefore = IERC20(token).balanceOf(recipient);
         IERC20(token).safeTransfer(recipient, amount);
-        emit WithdrawCumulativeMerkleRewards(network, token, amount);
+        uint256 actualAmount = IERC20(token).balanceOf(recipient) - balanceBefore;
+
+        emit WithdrawCumulativeMerkleRewards(network, token, actualAmount);
     }
 
     /**
@@ -258,29 +266,25 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         bytes32[] calldata proof,
         bytes32 merkleRoot
     ) public {
-        // Check root is set
-        if (!_cumulativeMerkleRewardsStorage()._isCumulativeDistributionRoot[network][merkleRoot]) {
+        if (!isCumulativeDistributionRoot(network, merkleRoot)) {
             revert InvalidMerkleRoot();
         }
 
-        // Verify merkle proof
-        if (!MerkleProof.verify(proof, merkleRoot, keccak256(abi.encode(msg.sender, leaf)))) {
+        if (!MerkleProof.verifyCalldata(proof, merkleRoot, keccak256(abi.encode(msg.sender, leaf)))) {
             revert InvalidMerkleRoot();
         }
 
-        // Calculate claimable amount
-        uint256 claimedAmount =
-            _cumulativeMerkleRewardsStorage()._claimed[network][leaf.token][msg.sender][leaf.rewardeeType];
-        uint256 claimableAmount = leaf.amount > claimedAmount ? leaf.amount - claimedAmount : 0;
+        uint256 claimableAmount = leaf.amount
+            .saturatingSub(
+                _cumulativeMerkleRewardsStorage()._claimed[network][leaf.token][msg.sender][leaf.rewardeeType]
+            );
 
         if (claimableAmount == 0) {
-            return;
+            revert NoCumulativeRewardsToClaim();
         }
 
-        // Update claimed amount
         _cumulativeMerkleRewardsStorage()._claimed[network][leaf.token][msg.sender][leaf.rewardeeType] = leaf.amount;
 
-        // Transfer tokens
         IERC20(leaf.token).safeTransfer(recipient, claimableAmount);
         emit ClaimCumulativeMerkleRewards(msg.sender, network, leaf);
     }
@@ -289,10 +293,10 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
      * @inheritdoc ICumulativeMerkleRewards
      */
     function setRewarder(
-        address rewarder
+        address rewarder_
     ) public {
-        _cumulativeMerkleRewardsStorage()._rewarder[msg.sender] = rewarder;
-        emit SetRewarder(msg.sender, rewarder);
+        _cumulativeMerkleRewardsStorage()._rewarder[msg.sender] = rewarder_;
+        emit SetRewarder(msg.sender, rewarder_);
     }
 
     /**
@@ -303,7 +307,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         address token,
         bytes calldata data
     ) public virtual {
-        // Decode data: network (32 bytes) + merkleRoot (32 bytes) + leaf (rest)
+        // Decode data: network (32 bytes) + merkleRoot (32 bytes) + leaf (160 bytes) + proof (dynamic)
         address network;
         bytes32 merkleRoot;
         ICumulativeMerkleRewards.CumulativeDistributionLeaf calldata leaf;
@@ -313,28 +317,18 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             network := calldataload(data.offset)
             merkleRoot := calldataload(add(data.offset, 0x20))
             leaf := add(data.offset, 0x40)
-            proof.length := calldataload(add(data.offset, 0x100))
-            proof.offset := add(data.offset, 0x120)
+            proof.length := calldataload(add(data.offset, 0xE0))
+            proof.offset := add(data.offset, 0x100)
         }
 
         if (token != leaf.token) {
-            revert InvalidChainId(); // Reusing error for invalid token
+            revert InvalidChainId();
         }
 
         claimCumulativeMerkleRewards(recipient, network, leaf, proof, merkleRoot);
     }
 
     /* INTERNAL FUNCTIONS */
-
-    /**
-     * @notice Get the cumulative merkle rewards storage
-     * @return $ The storage struct
-     */
-    function _cumulativeMerkleRewardsStorage() private pure returns (CumulativeMerkleRewardsStorage storage $) {
-        assembly {
-            $.slot := CUMULATIVE_MERKLE_REWARDS_STORAGE_POSITION
-        }
-    }
 
     /**
      * @notice Hash cumulative distribution payload for EIP712
@@ -352,22 +346,16 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             )
         );
 
-        bytes32 totalAmountsHash = keccak256(abi.encode(totalAmounts));
-        for (uint256 i = 0; i < totalAmounts.length; ++i) {
-            totalAmountsHash = keccak256(
+        bytes32[] memory tokenAmountHashes = new bytes32[](totalAmounts.length);
+        for (uint256 i = 0; i < totalAmounts.length; i++) {
+            tokenAmountHashes[i] = keccak256(
                 abi.encode(
-                    totalAmountsHash,
-                    keccak256(
-                        abi.encode(
-                            TOKEN_AMOUNT_TYPEHASH,
-                            totalAmounts[i].chainId,
-                            totalAmounts[i].token,
-                            totalAmounts[i].amount
-                        )
-                    )
+                    TOKEN_AMOUNT_TYPEHASH, totalAmounts[i].chainId, totalAmounts[i].token, totalAmounts[i].amount
                 )
             );
         }
+
+        bytes32 totalAmountsHash = keccak256(abi.encodePacked(tokenAmountHashes));
 
         return _hashTypedDataV4(keccak256(abi.encode(PAYLOAD_TYPEHASH, cumulativeDistributionHash, totalAmountsHash)));
     }

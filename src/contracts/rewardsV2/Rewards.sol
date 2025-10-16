@@ -29,9 +29,9 @@ contract Rewards is VaultSnapshotRewards, CumulativeMerkleRewards, MulticallUpgr
     function initialize(
         IRewards.RewardsInitParams calldata initParams
     ) external override initializer {
+        __ProtocolFees_init(initParams.owner);
         __VaultSnapshotRewards_init(initParams.vaultSnapshotRewardsInitParams);
-        __CumulativeMerkleRewards_init(initParams.cumulativeMerkleRewardsInitParams);
-        _transferOwnership(initParams.owner);
+        __CumulativeMerkleRewards_init();
     }
 
     /**

@@ -27,7 +27,6 @@ interface IVaultSnapshotRewards {
     /* STRUCTS */
 
     struct VaultSnapshotRewardsInitParams {
-        IProtocolFees.ProtocolFeesInitParams protocolFeesInitParams;
         address vaultFactory;
         address networkRegistry;
         address networkMiddlewareService;
@@ -37,6 +36,8 @@ interface IVaultSnapshotRewards {
 
     struct RewardDistribution {
         uint96 subnetworkId;
+        address delegator;
+        uint64 delegatorType;
         uint48 timestamp;
         uint256 amount;
         uint256 operatorsFee;
@@ -128,7 +129,6 @@ interface IVaultSnapshotRewards {
      * @param amount The amount to distribute
      * @param timestamp The distribution timestamp
      * @param activeSharesHint Hint for active shares calculation
-     * @param activeStakeHint Hint for active stake calculation
      */
     function distributeVaultSnapshotRewards(
         bytes32 subnetwork,
@@ -136,8 +136,7 @@ interface IVaultSnapshotRewards {
         address vault,
         uint256 amount,
         uint48 timestamp,
-        bytes calldata activeSharesHint,
-        bytes calldata activeStakeHint
+        bytes calldata activeSharesHint
     ) external;
 
     /**

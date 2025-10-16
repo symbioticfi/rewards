@@ -12,17 +12,6 @@ interface IProtocolFees {
     error FeeTooHigh();
     error InsufficientClaimableFees();
 
-    /* STRUCTS */
-
-    struct ProtocolFeesInitParams {
-        RewardsTypeFee[] fees;
-    }
-
-    struct RewardsTypeFee {
-        uint64 rewardsType;
-        uint256 fee;
-    }
-
     /* EVENTS */
 
     event SetProtocolFee(uint64 indexed rewardsType, uint256 fee);
@@ -57,30 +46,6 @@ interface IProtocolFees {
         uint64 rewardsType,
         address network
     ) external view returns (uint256);
-
-    /**
-     * @notice Set the protocol fee for a reward type (only owner)
-     * @param rewardsType The reward type identifier
-     * @param fee The fee amount in basis points
-     */
-    function setProtocolFee(
-        uint64 rewardsType,
-        uint256 fee
-    ) external;
-
-    /**
-     * @notice Set the protocol network fee for a reward type (only owner)
-     * @param rewardsType The reward type identifier
-     * @param network The network address
-     * @param enable Whether the fee is enabled
-     * @param fee The fee amount in basis points
-     */
-    function setProtocolNetworkFee(
-        uint64 rewardsType,
-        address network,
-        bool enable,
-        uint256 fee
-    ) external;
 
     /**
      * @notice Claim protocol fees for a token (only owner)

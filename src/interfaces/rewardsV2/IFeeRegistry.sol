@@ -8,12 +8,24 @@ pragma solidity 0.8.25;
  * and network levels. Fees are checkpointed with timestamps to support historical queries.
  */
 interface IFeeRegistry {
-    
     /* ERRORS */
 
     error FeeTooHigh();
     error NotCurator();
     error CuratorRegistryIsZero();
+
+
+    /* STRUCTS */
+
+    struct ProtocolFeesInitParams {
+        address owner;
+        RewardsTypeFee[] fees;
+    }
+
+    struct RewardsTypeFee {
+        bytes32 id;
+        uint256 fee;
+    }
 
     /* EVENTS */
 
@@ -48,6 +60,14 @@ interface IFeeRegistry {
      * @param fee The fee amount
      */
     event SetCuratorNetworkFee(address indexed vault, address indexed network, bool enable, uint256 fee);
+
+    /**
+     * @notice Emitted when protocol fee is set
+     * @param id The id of the protocol
+     * @param enable Whether the fee is enabled
+     * @param fee The fee amount
+     */
+    event SetProtocolFee(bytes32 indexed id, bool enable, uint256 fee);
 
     /* FUNCTIONS */
 
@@ -196,6 +216,16 @@ interface IFeeRegistry {
     ) external view returns (uint256 fee);
 
     /**
+     * @notice Get protocol fee
+     * @param id The id of the protocol
+     * @return isEnabled Whether the fee is enabled
+     * @return fee The fee amount
+     */
+    function getProtocolFee(
+        bytes32 id
+    ) external view returns (bool isEnabled, uint256 fee);
+
+    /**
      * @notice Set operator fee for a vault (only curator)
      * @param vault The vault address
      * @param fee The fee amount
@@ -239,6 +269,18 @@ interface IFeeRegistry {
     function setCuratorNetworkFee(
         address vault,
         address network,
+        bool enable,
+        uint256 fee
+    ) external;
+
+    /**
+     * @notice Set protocol fee
+     * @param id The id of the protocol
+     * @param enable Whether the fee is enabled
+     * @param fee The fee amount
+     */
+    function setProtocolFee(
+        bytes32 id,
         bool enable,
         uint256 fee
     ) external;

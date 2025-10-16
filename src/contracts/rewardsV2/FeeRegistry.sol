@@ -6,7 +6,9 @@ import {IFeeRegistry} from "../../interfaces/rewardsV2/IFeeRegistry.sol";
 
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
 
-contract FeeRegistry is IFeeRegistry {
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     using Checkpoints for Checkpoints.Trace208;
 
     /* CONSTANTS */
@@ -24,6 +26,7 @@ contract FeeRegistry is IFeeRegistry {
     mapping(address vault => Checkpoints.Trace208 value) internal _curatorFee;
     // value is concat(isEnabled, fee)
     mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _curatorNetworkFee;
+    mapping(bytes32 id => uint208 fee) internal _protocolFee;
 
     address public immutable curatorRegistry;
 
@@ -47,6 +50,15 @@ contract FeeRegistry is IFeeRegistry {
     }
 
     /* FUNCTIONS */
+
+    function initialize(
+        ProtocolFeesInitParams calldata initParams
+    ) public initializer {
+        __Ownable_init(initParams.owner);
+        for (uint256 i; i < initParams.fees.length; ++i) {
+            _setProtocolFee(initParams.fees[i].id, true, initParams.fees[i].fee);
+        }
+    }
 
     /**
      * @inheritdoc IFeeRegistry
@@ -193,6 +205,15 @@ contract FeeRegistry is IFeeRegistry {
     /**
      * @inheritdoc IFeeRegistry
      */
+    function getProtocolFee(
+        bytes32 id
+    ) public view returns (bool isEnabled, uint256 fee) {
+        return _deserializeFeeData(_protocolFee[id]);
+    }
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
     function setOperatorsFee(
         address vault,
         uint256 fee
@@ -255,7 +276,31 @@ contract FeeRegistry is IFeeRegistry {
         emit SetCuratorNetworkFee(vault, network, enable, fee);
     }
 
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    function setProtocolFee(
+        bytes32 id,
+        bool enable,
+        uint256 fee
+    ) public onlyOwner {
+        _setProtocolFee(id, enable, fee);
+    }
+
     /* INTERNAL FUNCTIONS */
+
+    function _setProtocolFee(
+        bytes32 id,
+        bool enable,
+        uint256 fee
+    ) internal {
+        if (fee > MAX_FEE) {
+            revert FeeTooHigh();
+        }
+
+        _protocolFee[id] = _serializeFeeData(enable, fee);
+        emit SetProtocolFee(id, enable, fee);
+    }
 
     /**
      * @notice Serialize fee data (enable + fee)
