@@ -9,8 +9,9 @@ import {DefaultStakerRewards} from "../../../src/contracts/defaultStakerRewards/
 import {DefaultStakerRewardsFactory} from "../../../src/contracts/defaultStakerRewards/DefaultStakerRewardsFactory.sol";
 
 import {DefaultOperatorRewards} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
-import {DefaultOperatorRewardsFactory} from
-    "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+import {
+    DefaultOperatorRewardsFactory
+} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultRewardsFactoriesScript is Script {
     function run() external {

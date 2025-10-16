@@ -16,8 +16,9 @@ import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
 import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
-import {OperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
+import {
+    OperatorNetworkSpecificDelegator
+} from "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
@@ -195,9 +196,7 @@ contract DefaultStakerRewardsTest is Test {
                 delegatorParams: abi.encode(
                     INetworkRestakeDelegator.InitParams({
                         baseParams: IBaseDelegator.BaseParams({
-                            defaultAdminRoleHolder: alice,
-                            hook: address(0),
-                            hookSetRoleHolder: alice
+                            defaultAdminRoleHolder: alice, hook: address(0), hookSetRoleHolder: alice
                         }),
                         networkLimitSetRoleHolders: networkLimitSetRoleHolders,
                         operatorNetworkSharesSetRoleHolders: operatorNetworkSharesSetRoleHolders
@@ -205,7 +204,9 @@ contract DefaultStakerRewardsTest is Test {
                 ),
                 withSlasher: false,
                 slasherIndex: 0,
-                slasherParams: abi.encode(ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})}))
+                slasherParams: abi.encode(
+                    ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})})
+                )
             })
         );
 
@@ -221,7 +222,10 @@ contract DefaultStakerRewardsTest is Test {
         defaultStakerRewards = _getStakerDefaultRewards();
     }
 
-    function test_CreateRevertMissingRoles1(uint256 adminFee, address adminFeeSetRoleHolder) public {
+    function test_CreateRevertMissingRoles1(
+        uint256 adminFee,
+        address adminFeeSetRoleHolder
+    ) public {
         adminFee = bound(adminFee, 1, 10_000);
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -291,15 +295,16 @@ contract DefaultStakerRewardsTest is Test {
         defaultStakerRewards = _getStakerDefaultRewards();
 
         vm.expectRevert();
-        DefaultStakerRewards(address(defaultStakerRewards)).initialize(
-            IDefaultStakerRewards.InitParams({
-                vault: address(vault),
-                adminFee: 0,
-                defaultAdminRoleHolder: alice,
-                adminFeeClaimRoleHolder: alice,
-                adminFeeSetRoleHolder: alice
-            })
-        );
+        DefaultStakerRewards(address(defaultStakerRewards))
+            .initialize(
+                IDefaultStakerRewards.InitParams({
+                    vault: address(vault),
+                    adminFee: 0,
+                    defaultAdminRoleHolder: alice,
+                    adminFeeClaimRoleHolder: alice,
+                    adminFeeSetRoleHolder: alice
+                })
+            );
     }
 
     function test_DistributeRewards(
@@ -451,7 +456,10 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.claimable(address(feeOnTransferToken), alice, abi.encode(network, 0)), 0);
     }
 
-    function test_DistributeRewardsRevertNotNetworkMiddleware(uint256 amount, uint256 ditributeAmount) public {
+    function test_DistributeRewardsRevertNotNetworkMiddleware(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
 
@@ -484,7 +492,10 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_DistributeRewardsRevertInvalidRewardTimestamp1(uint256 amount, uint256 ditributeAmount) public {
+    function test_DistributeRewardsRevertInvalidRewardTimestamp1(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
 
@@ -523,7 +534,10 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_DistributeRewardsRevertInvalidRewardTimestamp2(uint256 amount, uint256 ditributeAmount) public {
+    function test_DistributeRewardsRevertInvalidRewardTimestamp2(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
 
@@ -635,7 +649,11 @@ contract DefaultStakerRewardsTest is Test {
         _distributeRewards(bob, network, address(feeOnTransferToken), 1, timestamp, type(uint256).max, "", "");
     }
 
-    function test_ClaimRewards(uint256 amount, uint256 ditributeAmount1, uint256 ditributeAmount2) public {
+    function test_ClaimRewards(
+        uint256 amount,
+        uint256 ditributeAmount1,
+        uint256 ditributeAmount2
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount1 = bound(ditributeAmount1, 1, 100 * 10 ** 18);
         ditributeAmount2 = bound(ditributeAmount2, 1, 100 * 10 ** 18);
@@ -677,7 +695,11 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.lastUnclaimedReward(alice, address(token), network), 2);
     }
 
-    function test_ClaimRewardsBoth(uint256 amount, uint256 ditributeAmount1, uint256 ditributeAmount2) public {
+    function test_ClaimRewardsBoth(
+        uint256 amount,
+        uint256 ditributeAmount1,
+        uint256 ditributeAmount2
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount1 = bound(ditributeAmount1, 1, 100 * 10 ** 18);
         ditributeAmount2 = bound(ditributeAmount2, 1, 100 * 10 ** 18);
@@ -752,7 +774,10 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.lastUnclaimedReward(alice, address(token), network), 2);
     }
 
-    function test_ClaimRewardsManyWithoutHints(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsManyWithoutHints(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -793,7 +818,10 @@ contract DefaultStakerRewardsTest is Test {
         console2.log("Gas1", gasLeft - gasLeft2 - 100);
     }
 
-    function test_ClaimRewardsManyWithHints(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsManyWithHints(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -839,7 +867,10 @@ contract DefaultStakerRewardsTest is Test {
         console2.log("Gas2", gasLeft - gasLeft2 - 100);
     }
 
-    function test_ClaimRewardsRevertInvalidRecipient(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsRevertInvalidRecipient(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -869,7 +900,10 @@ contract DefaultStakerRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function test_ClaimRewardsRevertNoRewardsToClaim1(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsRevertNoRewardsToClaim1(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -895,7 +929,10 @@ contract DefaultStakerRewardsTest is Test {
         _claimRewards(alice, address(token), network, type(uint256).max, activeSharesOfHints);
     }
 
-    function test_ClaimRewardsRevertNoRewardsToClaim2(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsRevertNoRewardsToClaim2(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -921,7 +958,10 @@ contract DefaultStakerRewardsTest is Test {
         _claimRewards(alice, address(token), network, 0, activeSharesOfHints);
     }
 
-    function test_ClaimRewardsRevertInvalidHintsLength(uint256 amount, uint256 ditributeAmount) public {
+    function test_ClaimRewardsRevertInvalidHintsLength(
+        uint256 amount,
+        uint256 ditributeAmount
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -955,7 +995,11 @@ contract DefaultStakerRewardsTest is Test {
         _claimRewards(alice, address(token), network, type(uint256).max, activeSharesOfHints);
     }
 
-    function test_ClaimAdminFee(uint256 amount, uint256 ditributeAmount, uint256 adminFee) public {
+    function test_ClaimAdminFee(
+        uint256 amount,
+        uint256 ditributeAmount,
+        uint256 adminFee
+    ) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -1098,14 +1142,20 @@ contract DefaultStakerRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function _registerNetwork(address user, address middleware) internal {
+    function _registerNetwork(
+        address user,
+        address middleware
+    ) internal {
         vm.startPrank(user);
         networkRegistry.registerNetwork();
         networkMiddlewareService.setMiddleware(middleware);
         vm.stopPrank();
     }
 
-    function _deposit(address user, uint256 amount) internal returns (uint256 depositedAmount, uint256 mintedShares) {
+    function _deposit(
+        address user,
+        uint256 amount
+    ) internal returns (uint256 depositedAmount, uint256 mintedShares) {
         collateral.transfer(user, amount);
         vm.startPrank(user);
         collateral.approve(address(vault), amount);
@@ -1113,13 +1163,19 @@ contract DefaultStakerRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function _withdraw(address user, uint256 amount) internal returns (uint256 burnedShares, uint256 mintedShares) {
+    function _withdraw(
+        address user,
+        uint256 amount
+    ) internal returns (uint256 burnedShares, uint256 mintedShares) {
         vm.startPrank(user);
         (burnedShares, mintedShares) = vault.withdraw(user, amount);
         vm.stopPrank();
     }
 
-    function _grantAdminFeeSetRole(address user, address account) internal {
+    function _grantAdminFeeSetRole(
+        address user,
+        address account
+    ) internal {
         vm.startPrank(user);
         Vault(address(vault)).grantRole(defaultStakerRewards.ADMIN_FEE_SET_ROLE(), account);
         vm.stopPrank();
@@ -1154,13 +1210,19 @@ contract DefaultStakerRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function _setAdminFee(address user, uint256 adminFee) internal {
+    function _setAdminFee(
+        address user,
+        uint256 adminFee
+    ) internal {
         vm.startPrank(user);
         defaultStakerRewards.setAdminFee(adminFee);
         vm.stopPrank();
     }
 
-    function _claimAdminFee(address user, address token) internal {
+    function _claimAdminFee(
+        address user,
+        address token
+    ) internal {
         vm.startPrank(user);
         defaultStakerRewards.claimAdminFee(user, token);
         vm.stopPrank();

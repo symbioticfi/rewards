@@ -6,8 +6,9 @@ import {console2, Script} from "forge-std/Script.sol";
 import {SymbioticCoreConstants} from "@symbioticfi/core/test/integration/SymbioticCoreConstants.sol";
 
 import {DefaultOperatorRewards} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
-import {DefaultOperatorRewardsFactory} from
-    "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+import {
+    DefaultOperatorRewardsFactory
+} from "../../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 
 contract DefaultOperatorRewardsFactoryScript is Script {
     function run() external {

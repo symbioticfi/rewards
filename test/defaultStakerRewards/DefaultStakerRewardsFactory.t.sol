@@ -16,8 +16,9 @@ import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
 import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
-import {OperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
+import {
+    OperatorNetworkSpecificDelegator
+} from "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
@@ -187,9 +188,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 delegatorParams: abi.encode(
                     INetworkRestakeDelegator.InitParams({
                         baseParams: IBaseDelegator.BaseParams({
-                            defaultAdminRoleHolder: alice,
-                            hook: address(0),
-                            hookSetRoleHolder: alice
+                            defaultAdminRoleHolder: alice, hook: address(0), hookSetRoleHolder: alice
                         }),
                         networkLimitSetRoleHolders: networkLimitSetRoleHolders,
                         operatorNetworkSharesSetRoleHolders: operatorNetworkSharesSetRoleHolders
@@ -197,7 +196,9 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 ),
                 withSlasher: false,
                 slasherIndex: 0,
-                slasherParams: abi.encode(ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})}))
+                slasherParams: abi.encode(
+                    ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})})
+                )
             })
         );
 
@@ -269,14 +270,20 @@ contract DefaultStakerRewardsFactoryTest is Test {
         vm.stopPrank();
     }
 
-    function _registerNetwork(address user, address middleware) internal {
+    function _registerNetwork(
+        address user,
+        address middleware
+    ) internal {
         vm.startPrank(user);
         networkRegistry.registerNetwork();
         networkMiddlewareService.setMiddleware(middleware);
         vm.stopPrank();
     }
 
-    function _deposit(address user, uint256 amount) internal returns (uint256 depositedAmount, uint256 mintedShares) {
+    function _deposit(
+        address user,
+        uint256 amount
+    ) internal returns (uint256 depositedAmount, uint256 mintedShares) {
         collateral.transfer(user, amount);
         vm.startPrank(user);
         collateral.approve(address(vault), amount);
@@ -284,7 +291,10 @@ contract DefaultStakerRewardsFactoryTest is Test {
         vm.stopPrank();
     }
 
-    function _withdraw(address user, uint256 amount) internal returns (uint256 burnedShares, uint256 mintedShares) {
+    function _withdraw(
+        address user,
+        uint256 amount
+    ) internal returns (uint256 burnedShares, uint256 mintedShares) {
         vm.startPrank(user);
         (burnedShares, mintedShares) = vault.withdraw(user, amount);
         vm.stopPrank();
