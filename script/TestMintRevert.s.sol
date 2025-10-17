@@ -31,8 +31,8 @@ contract TestMintRevert is Script, Test {
     function run() public {
         console2.log("\n=== Starting Mint Test ===\n");
 
-        uint256 lastRewardTimestamp = hypMinter.lastRewardTimestamp();
-        console2.log("Initial lastRewardTimestamp:", lastRewardTimestamp);
+        uint256 initialLastRewardTimestamp = hypMinter.lastRewardTimestamp();
+        console2.log("Initial lastRewardTimestamp:", initialLastRewardTimestamp);
 
         // First mint
         console2.log("\n--- Mint #1 ---");
@@ -61,6 +61,8 @@ contract TestMintRevert is Script, Test {
         vm.expectRevert("HypMinter: Epoch not ready");
         hypMinter.mint();
         console2.log("SUCCESS: Fourth mint correctly reverted with 'HypMinter: Epoch not ready'");
+
+        assertEq(hypMinter.lastRewardTimestamp(), initialLastRewardTimestamp + 90 days);
 
         console2.log("\n=== Test Completed Successfully ===\n");
     }
