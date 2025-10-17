@@ -34,6 +34,7 @@ contract TestMintRevert is Script, Test {
         uint256 initialLastRewardTimestamp = hypMinter.lastRewardTimestamp();
         console2.log("Initial lastRewardTimestamp:", initialLastRewardTimestamp);
 
+        vm.startBroadcast();
         // First mint
         console2.log("\n--- Mint #1 ---");
         hypMinter.mint();
@@ -54,6 +55,8 @@ contract TestMintRevert is Script, Test {
         console2.log("SUCCESS: Third mint completed");
         console2.log("New lastRewardTimestamp:", hypMinter.lastRewardTimestamp());
         console2.log("HYPER balance of HypMinter:", HYPER.balanceOf(address(hypMinter)));
+
+        vm.stopBroadcast();
 
         // Fourth mint should revert
         console2.log("\n--- Mint #4 (Expected to Revert) ---");
