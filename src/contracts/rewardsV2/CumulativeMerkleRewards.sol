@@ -37,7 +37,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         mapping(address network => CumulativeDistribution) _lastCumulativeDistribution;
         mapping(address network => mapping(address token => uint256 amount)) _lastTotalAmounts;
         mapping(address network => mapping(bytes32 root => bool value)) _isCumulativeDistributionRoot;
-        mapping(address network => mapping(address token => uint256 amount)) _deposited;
+        mapping(address network => mapping(address token => uint256 amount)) _balances;
         mapping(
             address network
                 => mapping(
@@ -99,8 +99,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         address network,
         address token
     ) public view returns (uint256 amount) {
-        return _cumulativeMerkleRewardsStorage()._deposited[network][token]
-        .saturatingSub(_cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][token]);
+        return _cumulativeMerkleRewardsStorage()._balances[network][token];
     }
 
     /**
@@ -184,21 +183,16 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             uint256 distributionAmount = totalAmount.amount - lastTotalAmount(network, totalAmount.token);
 
             // Update deposited amount (subtract fees)
-            _cumulativeMerkleRewardsStorage()
-            ._deposited[
-                network
-            ][
-                totalAmount.token
-            ] -= _deductProtocolFees(
-                uint64(IRewards.RewardsType.CUMULATIVE_MERKLE), network, totalAmount.token, distributionAmount
+            uint256 fees = _deductProtocolFees(
+                uint64(IRewards.RewardsType.CUMULATIVE_MERKLE), network, totalAmount.token, totalAmount.amount
             );
 
             // Check sufficient deposited amount
-            if (_cumulativeMerkleRewardsStorage()._deposited[network][totalAmount.token] < totalAmount.amount) {
-                revert InsufficientDeposited();
+            if (_cumulativeMerkleRewardsStorage()._balances[network][totalAmount.token] < totalAmount.amount + fees) {
+                revert InsufficientDeposited(network, totalAmount.token);
             }
 
-            _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][totalAmounts[i].token] = totalAmounts[i].amount;
+            _cumulativeMerkleRewardsStorage()._balances[network][totalAmount.token] -= totalAmount.amount + fees;
         }
 
         // Update storage
@@ -225,7 +219,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             revert InsufficientTransfer();
         }
 
-        _cumulativeMerkleRewardsStorage()._deposited[network][token] += actualAmount;
+        _cumulativeMerkleRewardsStorage()._balances[network][token] += actualAmount;
         emit DepositCumulativeMerkleRewards(network, token, actualAmount);
     }
 
@@ -244,10 +238,10 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
 
         uint256 withdrawableAmount = withdrawable(network, token);
         if (amount > withdrawableAmount) {
-            revert InsufficientDeposited();
+            revert InsufficientDeposited(network, token);
         }
 
-        _cumulativeMerkleRewardsStorage()._deposited[network][token] -= amount;
+        _cumulativeMerkleRewardsStorage()._balances[network][token] -= amount;
 
         uint256 balanceBefore = IERC20(token).balanceOf(recipient);
         IERC20(token).safeTransfer(recipient, amount);
@@ -322,7 +316,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         }
 
         if (token != leaf.token) {
-            revert InvalidChainId();
+            revert InvalidToken();
         }
 
         claimCumulativeMerkleRewards(recipient, network, leaf, proof, merkleRoot);

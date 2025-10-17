@@ -14,7 +14,6 @@ interface IFeeRegistry {
     error NotCurator();
     error CuratorRegistryIsZero();
 
-
     /* STRUCTS */
 
     struct ProtocolFeesInitParams {
