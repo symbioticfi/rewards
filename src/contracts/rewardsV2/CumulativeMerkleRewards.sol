@@ -95,7 +95,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     /**
      * @inheritdoc ICumulativeMerkleRewards
      */
-    function withdrawable(
+    function balance(
         address network,
         address token
     ) public view returns (uint256 amount) {
@@ -133,8 +133,12 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         bytes calldata ownerSignature,
         bytes calldata rewarderSignature
     ) public {
+        if(totalAmounts.length == 0) {
+            revert NoTotalAmounts();
+        }
+
         // Check entries are sorted by chainId ascending; within the same chainId, tokens strictly ascending
-        uint64 prevChainId = totalAmounts.length > 0 ? totalAmounts[0].chainId : 0;
+        uint64 prevChainId = totalAmounts[0].chainId;
         for (uint256 i = 1; i < totalAmounts.length; ++i) {
             uint64 currChainId = totalAmounts[i].chainId;
             if (currChainId < prevChainId) {
@@ -184,15 +188,11 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
 
             // Update deposited amount (subtract fees)
             uint256 fees = _deductProtocolFees(
-                uint64(IRewards.RewardsType.CUMULATIVE_MERKLE), network, totalAmount.token, totalAmount.amount
+                uint64(IRewards.RewardsType.CUMULATIVE_MERKLE), network, totalAmount.token, distributionAmount
             );
 
-            // Check sufficient deposited amount
-            if (_cumulativeMerkleRewardsStorage()._balances[network][totalAmount.token] < totalAmount.amount + fees) {
-                revert InsufficientDeposited(network, totalAmount.token);
-            }
-
-            _cumulativeMerkleRewardsStorage()._balances[network][totalAmount.token] -= totalAmount.amount + fees;
+            _cumulativeMerkleRewardsStorage()._balances[network][totalAmount.token] -= distributionAmount + fees;
+            _cumulativeMerkleRewardsStorage()._lastTotalAmounts[network][totalAmount.token] = totalAmount.amount;
         }
 
         // Update storage
@@ -213,14 +213,14 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     ) public {
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        uint256 actualAmount = IERC20(token).balanceOf(address(this)) - balanceBefore;
+        amount = IERC20(token).balanceOf(address(this)) - balanceBefore;
 
-        if (actualAmount == 0) {
+        if (amount == 0) {
             revert InsufficientTransfer();
         }
 
-        _cumulativeMerkleRewardsStorage()._balances[network][token] += actualAmount;
-        emit DepositCumulativeMerkleRewards(network, token, actualAmount);
+        _cumulativeMerkleRewardsStorage()._balances[network][token] += amount;
+        emit DepositCumulativeMerkleRewards(network, token, amount);
     }
 
     /**
@@ -236,18 +236,10 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             revert NotRewarder();
         }
 
-        uint256 withdrawableAmount = withdrawable(network, token);
-        if (amount > withdrawableAmount) {
-            revert InsufficientDeposited(network, token);
-        }
-
         _cumulativeMerkleRewardsStorage()._balances[network][token] -= amount;
-
-        uint256 balanceBefore = IERC20(token).balanceOf(recipient);
         IERC20(token).safeTransfer(recipient, amount);
-        uint256 actualAmount = IERC20(token).balanceOf(recipient) - balanceBefore;
 
-        emit WithdrawCumulativeMerkleRewards(network, token, actualAmount);
+        emit WithdrawCumulativeMerkleRewards(network, token, amount);
     }
 
     /**
@@ -333,7 +325,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     function _hashCumulativeDistributionPayload(
         CumulativeDistribution calldata cumulativeDistribution,
         TokenAmount[] calldata totalAmounts
-    ) private view returns (bytes32) {
+    ) internal view returns (bytes32) {
         bytes32 cumulativeDistributionHash = keccak256(
             abi.encode(
                 CUMULATIVE_DISTRIBUTION_TYPEHASH, cumulativeDistribution.timestamp, cumulativeDistribution.merkleRoot
@@ -341,7 +333,7 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
         );
 
         bytes32[] memory tokenAmountHashes = new bytes32[](totalAmounts.length);
-        for (uint256 i = 0; i < totalAmounts.length; i++) {
+        for (uint256 i; i < totalAmounts.length; ++i) {
             tokenAmountHashes[i] = keccak256(
                 abi.encode(
                     TOKEN_AMOUNT_TYPEHASH, totalAmounts[i].chainId, totalAmounts[i].token, totalAmounts[i].amount

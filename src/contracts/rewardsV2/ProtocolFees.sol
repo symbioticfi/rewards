@@ -20,8 +20,8 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
      * @inheritdoc IProtocolFees
      */
     uint256 public constant MAX_FEE = 1_000_000;
+    string internal constant REWARDS_FEE_ID = "rewards";
     address public immutable FEE_REGISTRY;
-    string public constant REWARDS_FEE_ID = "rewards";
     /* STORAGE */
 
     struct ProtocolFeesStorage {
@@ -70,14 +70,15 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
     function protocolFee(
         uint64 rewardsType,
         address network
-    ) public view returns (uint256 fee) {
-        (bool isEnabled, uint256 networkFee) =
+    ) public view returns (uint256) {
+        (bool isEnabled, uint256 fee) =
             IFeeRegistry(FEE_REGISTRY).getProtocolFee(keccak256(abi.encode(REWARDS_FEE_ID, rewardsType, network)));
         if (isEnabled) {
-            return networkFee;
+            return fee;
         }
 
         (, fee) = IFeeRegistry(FEE_REGISTRY).getProtocolFee(keccak256(abi.encode(REWARDS_FEE_ID, rewardsType)));
+        return fee;
     }
 
     /**
@@ -112,10 +113,8 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
         uint256 amount
     ) internal returns (uint256 fees) {
         uint256 feeRate = protocolFee(rewardsType, network);
-        if (feeRate > 0) {
-            fees = amount.mulDiv(feeRate, MAX_FEE);
-            _protocolFeesStorage()._claimableFee[token] += fees;
-            emit DeductProtocolFee(rewardsType, network, token, fees);
-        }
+        fees = amount.mulDiv(feeRate, MAX_FEE);
+        _protocolFeesStorage()._claimableFee[token] += fees;
+        emit DeductProtocolFee(rewardsType, network, token, fees);
     }
 }

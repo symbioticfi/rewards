@@ -122,6 +122,21 @@ interface IVaultSnapshotRewards {
     ) external view returns (uint256);
 
     /**
+     * @notice Get the last unclaimed operator reward index for an account
+     * @param account The account address
+     * @param vault The vault address
+     * @param network The network address
+     * @param token The token address
+     * @return The last unclaimed operator reward index
+     */
+    function lastUnclaimedOperatorReward(
+        address account,
+        address vault,
+        address network,
+        address token
+    ) external view returns (uint256);
+
+    /**
      * @notice Distribute vault snapshot rewards (only network or middleware)
      * @param subnetwork The subnetwork identifier
      * @param token The token address

@@ -5,10 +5,12 @@ import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol"
 import {IFeeRegistry} from "../../interfaces/rewardsV2/IFeeRegistry.sol";
 
 import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
+import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
-contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
+contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegateCallable, IFeeRegistry {
     using Checkpoints for Checkpoints.Trace208;
 
     /* CONSTANTS */
@@ -66,14 +68,15 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     function getOperatorsFeeAt(
         address vault,
         address network,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (uint256) {
-        (bool isEnabled, uint256 networkFee) = getOperatorsNetworkFeeAt(vault, network, timestamp);
+        (bool isEnabled, uint256 networkFee) = getOperatorsNetworkFeeAt(vault, network, timestamp, hint);
         if (isEnabled) {
             return networkFee;
         }
 
-        return getOperatorsDefaultFeeAt(vault, timestamp);
+        return getOperatorsDefaultFeeAt(vault, timestamp, hint);
     }
 
     /**
@@ -97,9 +100,10 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     function getOperatorsNetworkFeeAt(
         address vault,
         address network,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_operatorsNetworkFee[vault][network].upperLookupRecent(timestamp));
+        return _deserializeFeeData(_operatorsNetworkFee[vault][network].upperLookupRecent(timestamp, hint));
     }
 
     /**
@@ -117,9 +121,10 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
      */
     function getOperatorsDefaultFeeAt(
         address vault,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (uint256) {
-        return _operatorsFee[vault].upperLookupRecent(timestamp);
+        return _operatorsFee[vault].upperLookupRecent(timestamp, hint);
     }
 
     /**
@@ -137,14 +142,15 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     function getCuratorFeeAt(
         address vault,
         address network,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (uint256) {
-        (bool isEnabled, uint256 networkFee) = getCuratorNetworkFeeAt(vault, network, timestamp);
+        (bool isEnabled, uint256 networkFee) = getCuratorNetworkFeeAt(vault, network, timestamp, hint);
         if (isEnabled) {
             return networkFee;
         }
 
-        return getCuratorDefaultFeeAt(vault, timestamp);
+        return getCuratorDefaultFeeAt(vault, timestamp, hint);
     }
 
     /**
@@ -168,9 +174,10 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     function getCuratorNetworkFeeAt(
         address vault,
         address network,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_curatorNetworkFee[vault][network].upperLookupRecent(timestamp));
+        return _deserializeFeeData(_curatorNetworkFee[vault][network].upperLookupRecent(timestamp, hint));
     }
 
     /**
@@ -188,9 +195,10 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
      */
     function getCuratorDefaultFeeAt(
         address vault,
-        uint48 timestamp
+        uint48 timestamp,
+        bytes memory hint
     ) public view returns (uint256) {
-        return _curatorFee[vault].upperLookupRecent(timestamp);
+        return _curatorFee[vault].upperLookupRecent(timestamp, hint);
     }
 
     /**
@@ -324,6 +332,6 @@ contract FeeRegistry is OwnableUpgradeable, IFeeRegistry {
     function _deserializeFeeData(
         uint208 data
     ) internal pure returns (bool, uint256) {
-        return ((data & 1) > 0, uint256(data >> 1));
+        return (data & 1 > 0, data >> 1);
     }
 }

@@ -26,6 +26,7 @@ interface ICumulativeMerkleRewards {
     error NotRewardee();
     error InvalidTotalAmount();
     error NoCumulativeRewardsToClaim();
+    error NoTotalAmounts();
 
     /* STRUCTS */
 
@@ -92,12 +93,12 @@ interface ICumulativeMerkleRewards {
     ) external view returns (bool);
 
     /**
-     * @notice Get the withdrawable amount for a network and token
+     * @notice Get the balance for a network and token
      * @param network The network address
      * @param token The token address
-     * @return amount The withdrawable amount
+     * @return amount The balance amount
      */
-    function withdrawable(
+    function balance(
         address network,
         address token
     ) external view returns (uint256 amount);
