@@ -19,12 +19,7 @@ contract FeeRegistryScript is Script {
         FeeRegistry implementation = new FeeRegistry(curatorRegistry);
 
         // Prepare initialization data
-        IFeeRegistry.ProtocolFeesInitParams memory initParams = IFeeRegistry.ProtocolFeesInitParams({
-            owner: owner,
-            fees: new IFeeRegistry.RewardsTypeFee[](0) // Empty array for now
-        });
-
-        bytes memory initData = abi.encodeWithSelector(FeeRegistry.initialize.selector, initParams);
+        bytes memory initData = abi.encodeWithSelector(FeeRegistry.initialize.selector, owner);
 
         // Deploy the transparent upgradeable proxy with initialization data
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementation), admin, initData);

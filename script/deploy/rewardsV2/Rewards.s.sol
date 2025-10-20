@@ -25,20 +25,7 @@ contract RewardsScript is Script {
         Rewards implementation =
             new Rewards(VAULT_FACTORY, NETWORK_REGISTRY, NETWORK_MIDDLEWARE_SERVICE, curatorRegistry, feeRegistry);
 
-        // Prepare initialization data
-        IVaultSnapshotRewards.VaultSnapshotRewardsInitParams memory vaultSnapshotParams =
-            IVaultSnapshotRewards.VaultSnapshotRewardsInitParams({
-                vaultFactory: VAULT_FACTORY,
-                networkRegistry: NETWORK_REGISTRY,
-                networkMiddlewareService: NETWORK_MIDDLEWARE_SERVICE,
-                curatorRegistry: curatorRegistry,
-                feeRegistry: feeRegistry
-            });
-
-        IRewards.RewardsInitParams memory initParams =
-            IRewards.RewardsInitParams({vaultSnapshotRewardsInitParams: vaultSnapshotParams, owner: owner});
-
-        bytes memory initData = abi.encodeWithSelector(Rewards.initialize.selector, initParams);
+        bytes memory initData = abi.encodeWithSelector(Rewards.initialize.selector, owner);
 
         // Deploy the transparent upgradeable proxy with initialization data
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementation), admin, initData);

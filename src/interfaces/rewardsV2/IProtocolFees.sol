@@ -28,6 +28,12 @@ interface IProtocolFees {
     function MAX_FEE() external view returns (uint256);
 
     /**
+     * @notice Get the FeeRegistry contract address
+     * @return The FeeRegistry address
+     */
+    function FEE_REGISTRY() external view returns (address);
+
+    /**
      * @notice Get the claimable protocol fees for a token
      * @param token The token address
      * @return The claimable fee amount

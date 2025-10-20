@@ -26,14 +26,6 @@ interface IVaultSnapshotRewards {
 
     /* STRUCTS */
 
-    struct VaultSnapshotRewardsInitParams {
-        address vaultFactory;
-        address networkRegistry;
-        address networkMiddlewareService;
-        address curatorRegistry;
-        address feeRegistry;
-    }
-
     struct RewardDistribution {
         uint96 subnetworkId;
         address delegator;
@@ -77,6 +69,30 @@ interface IVaultSnapshotRewards {
     );
 
     /* FUNCTIONS */
+
+    /**
+     * @notice Get the vault factory address
+     * @return The vault factory address
+     */
+    function VAULT_FACTORY() external view returns (address);
+
+    /**
+     * @notice Get the network registry address
+     * @return The network registry address
+     */
+    function NETWORK_REGISTRY() external view returns (address);
+
+    /**
+     * @notice Get the network middleware service address
+     * @return The network middleware service address
+     */
+    function NETWORK_MIDDLEWARE_SERVICE() external view returns (address);
+
+    /**
+     * @notice Get the curator registry address
+     * @return The curator registry address
+     */
+    function CURATOR_REGISTRY() external view returns (address);
 
     /**
      * @notice Get the length of rewards for a network and token

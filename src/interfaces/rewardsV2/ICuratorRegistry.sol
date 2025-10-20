@@ -26,21 +26,23 @@ interface ICuratorRegistry {
      * @notice Get the curator for a vault at a specific timestamp
      * @param vault The vault address
      * @param timestamp The timestamp to query
-     * @return curator The curator address at the specified timestamp
+     * @param hint Optional hint for optimization
+     * @return The curator address at the specified timestamp
      */
     function getCuratorAt(
         address vault,
-        uint48 timestamp
-    ) external view returns (address curator);
+        uint48 timestamp,
+        bytes memory hint
+    ) external view returns (address);
 
     /**
      * @notice Get the current curator for a vault
      * @param vault The vault address
-     * @return curator The current curator address
+     * @return The current curator address
      */
     function getCurator(
         address vault
-    ) external view returns (address curator);
+    ) external view returns (address);
 
     /**
      * @notice Set a curator for a vault

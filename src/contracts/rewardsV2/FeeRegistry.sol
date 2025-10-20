@@ -20,6 +20,18 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
      */
     uint256 public constant MAX_FEE = 1_000_000;
 
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    uint256 public constant MAX_PARTICIPANT_FEE = 500_000;
+
+    /* IMMUTABLES */
+
+    /**
+     * @inheritdoc IFeeRegistry
+     */
+    address public immutable CURATOR_REGISTRY;
+
     /* STATE VARIABLES */
 
     mapping(address vault => Checkpoints.Trace208 value) internal _operatorsFee;
@@ -30,15 +42,23 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _curatorNetworkFee;
     mapping(bytes32 id => uint208 fee) internal _protocolFee;
 
-    address public immutable curatorRegistry;
-
     /* MODIFIERS */
 
     modifier onlyCurator(
         address vault
     ) {
-        if (ICuratorRegistry(curatorRegistry).getCurator(vault) != msg.sender) {
+        if (ICuratorRegistry(CURATOR_REGISTRY).getCurator(vault) != msg.sender) {
             revert NotCurator();
+        }
+        _;
+    }
+
+    modifier checkMaxFee(
+        uint256 operatorFee,
+        uint256 curatorFee
+    ) {
+        if (operatorFee + curatorFee > MAX_FEE) {
+            revert FeeTooHigh();
         }
         _;
     }
@@ -48,18 +68,15 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     constructor(
         address curatorRegistry_
     ) {
-        curatorRegistry = curatorRegistry_;
+        CURATOR_REGISTRY = curatorRegistry_;
     }
 
-    /* FUNCTIONS */
+    /* PUBLIC FUNCTIONS */
 
     function initialize(
-        ProtocolFeesInitParams calldata initParams
+        address owner
     ) public initializer {
-        __Ownable_init(initParams.owner);
-        for (uint256 i; i < initParams.fees.length; ++i) {
-            _setProtocolFee(initParams.fees[i].id, true, initParams.fees[i].fee);
-        }
+        __Ownable_init(owner);
     }
 
     /**
@@ -226,7 +243,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         address vault,
         uint256 fee
     ) public onlyCurator(vault) {
-        if (fee > MAX_FEE) {
+        if (fee > MAX_PARTICIPANT_FEE) {
             revert FeeTooHigh();
         }
 
@@ -243,7 +260,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         bool enable,
         uint256 fee
     ) public onlyCurator(vault) {
-        if (fee > MAX_FEE) {
+        if (fee > MAX_PARTICIPANT_FEE) {
             revert FeeTooHigh();
         }
 
@@ -258,7 +275,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         address vault,
         uint256 fee
     ) public onlyCurator(vault) {
-        if (fee > MAX_FEE) {
+        if (fee > MAX_PARTICIPANT_FEE) {
             revert FeeTooHigh();
         }
 
@@ -275,12 +292,11 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         bool enable,
         uint256 fee
     ) public onlyCurator(vault) {
-        if (fee > MAX_FEE) {
+        if (fee > MAX_PARTICIPANT_FEE) {
             revert FeeTooHigh();
         }
 
-        uint208 feeData = _serializeFeeData(enable, fee);
-        _curatorNetworkFee[vault][network].push(uint48(block.timestamp), feeData);
+        _curatorNetworkFee[vault][network].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
         emit SetCuratorNetworkFee(vault, network, enable, fee);
     }
 
@@ -292,16 +308,6 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         bool enable,
         uint256 fee
     ) public onlyOwner {
-        _setProtocolFee(id, enable, fee);
-    }
-
-    /* INTERNAL FUNCTIONS */
-
-    function _setProtocolFee(
-        bytes32 id,
-        bool enable,
-        uint256 fee
-    ) internal {
         if (fee > MAX_FEE) {
             revert FeeTooHigh();
         }
@@ -309,6 +315,8 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         _protocolFee[id] = _serializeFeeData(enable, fee);
         emit SetProtocolFee(id, enable, fee);
     }
+
+    /* INTERNAL FUNCTIONS */
 
     /**
      * @notice Serialize fee data (enable + fee)

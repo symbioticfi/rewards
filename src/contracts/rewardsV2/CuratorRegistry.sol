@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
-
 import {ICuratorRegistry} from "../../interfaces/rewardsV2/ICuratorRegistry.sol";
 
-import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints.sol";
+import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
 
-contract CuratorRegistry is ICuratorRegistry, MulticallUpgradeable {
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
+
+/**
+ * @title CuratorRegistry
+ * @notice Manages curator assignments for networks and vaults with historical tracking
+ * @dev This contract handles curator management and access control through network middleware and network itself
+ */
+contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall {
     using Checkpoints for Checkpoints.Trace208;
 
     /* STATE VARIABLES */
@@ -22,9 +28,10 @@ contract CuratorRegistry is ICuratorRegistry, MulticallUpgradeable {
      */
     function getCuratorAt(
         address vault,
-        uint48 timestamp
-    ) public view returns (address curator) {
-        return address(uint160(_curators[vault].upperLookupRecent(timestamp)));
+        uint48 timestamp,
+        bytes memory hint
+    ) public view returns (address) {
+        return address(uint160(_curators[vault].upperLookupRecent(timestamp, hint)));
     }
 
     /**
@@ -32,7 +39,7 @@ contract CuratorRegistry is ICuratorRegistry, MulticallUpgradeable {
      */
     function getCurator(
         address vault
-    ) public view returns (address curator) {
+    ) public view returns (address) {
         return address(uint160(_curators[vault].latest()));
     }
 
@@ -46,16 +53,11 @@ contract CuratorRegistry is ICuratorRegistry, MulticallUpgradeable {
         (bool exists,, uint208 value) = _curators[vault].latestCheckpoint();
 
         if (exists) {
-            // If curator already exists, only current curator can change it
             if (address(uint160(value)) != msg.sender) {
                 revert NotAuthorized();
             }
-        } else {
-            // If no curator exists, check if caller is vault owner
-            address vaultOwner = Ownable(vault).owner();
-            if (vaultOwner == address(0) || vaultOwner != msg.sender) {
-                revert NotAuthorized();
-            }
+        } else if (Ownable(vault).owner() != msg.sender) {
+            revert NotAuthorized();
         }
 
         _curators[vault].push(uint48(block.timestamp), uint208(uint160(curator)));

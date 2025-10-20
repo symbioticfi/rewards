@@ -58,6 +58,7 @@ interface ICumulativeMerkleRewards {
         address indexed rewardee, address indexed network, CumulativeDistributionLeaf leaf
     );
     event SetRewarder(address indexed network, address rewarder);
+    event SetProtocol(address indexed protocol);
 
     /* FUNCTIONS */
 
@@ -126,6 +127,12 @@ interface ICumulativeMerkleRewards {
     function rewarder(
         address network
     ) external view returns (address);
+
+    /**
+     * @notice Get the protocol address
+     * @return The protocol address
+     */
+    function protocol() external view returns (address);
 
     /**
      * @notice Distribute cumulative merkle rewards
@@ -203,5 +210,13 @@ interface ICumulativeMerkleRewards {
         address recipient,
         address token,
         bytes calldata data
+    ) external;
+
+    /**
+     * @notice Set the protocol address
+     * @param protocol The protocol address
+     */
+    function setProtocol(
+        address protocol
     ) external;
 }

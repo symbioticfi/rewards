@@ -14,18 +14,6 @@ interface IFeeRegistry {
     error NotCurator();
     error CuratorRegistryIsZero();
 
-    /* STRUCTS */
-
-    struct ProtocolFeesInitParams {
-        address owner;
-        RewardsTypeFee[] fees;
-    }
-
-    struct RewardsTypeFee {
-        bytes32 id;
-        uint256 fee;
-    }
-
     /* EVENTS */
 
     /**
@@ -71,10 +59,23 @@ interface IFeeRegistry {
     /* FUNCTIONS */
 
     /**
-     * @notice Get the maximum fee value
+     * @notice Get the maximum fee value (100%)
      * @return The maximum fee value
      */
     function MAX_FEE() external view returns (uint256);
+
+    /**
+     * @notice Get the maximum fee value for operator and curator
+     * @dev Set to 50% so operatorsFee + curatorFee can't exceed 100%
+     * @return The maximum fee value
+     */
+    function MAX_PARTICIPANT_FEE() external view returns (uint256);
+
+    /**
+     * @notice Get the curator registry address
+     * @return The curator registry address
+     */
+    function CURATOR_REGISTRY() external view returns (address);
 
     /**
      * @notice Get operator fee for a vault and network at a specific timestamp

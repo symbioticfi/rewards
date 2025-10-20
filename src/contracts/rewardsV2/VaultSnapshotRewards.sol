@@ -30,11 +30,23 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     using Math for uint256;
     using Subnetwork for bytes32;
 
-    /* CONSTANTS */
+    /* IMMUTABLES */
 
+    /**
+     * @inheritdoc IVaultSnapshotRewards
+     */
     address public immutable VAULT_FACTORY;
+    /**
+     * @inheritdoc IVaultSnapshotRewards
+     */
     address public immutable NETWORK_REGISTRY;
+    /**
+     * @inheritdoc IVaultSnapshotRewards
+     */
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
+    /**
+     * @inheritdoc IVaultSnapshotRewards
+     */
     address public immutable CURATOR_REGISTRY;
 
     /* STORAGE */
@@ -65,7 +77,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         }
     }
 
-    /* FUNCTIONS */
+    /* CONSTRUCTOR */
 
     constructor(
         address vaultFactory,
@@ -78,12 +90,9 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         NETWORK_REGISTRY = networkRegistry;
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
         CURATOR_REGISTRY = curatorRegistry;
-        FEE_REGISTRY = feeRegistry;
     }
 
-    function __VaultSnapshotRewards_init(
-        VaultSnapshotRewardsInitParams calldata initParams
-    ) internal onlyInitializing {}
+    /* PUBLIC FUNCTIONS */
 
     /**
      * @inheritdoc IVaultSnapshotRewards
@@ -184,19 +193,19 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         }
 
         // Deduct protocol fees from the remaining amount
-        uint256 remainingAmount =
+        uint256 distributionAmount =
             amount - _deductProtocolFees(uint64(IRewards.RewardsType.VAULT_SNAPSHOT), network, token, amount);
 
-        uint256 maxFee = FeeRegistry(FEE_REGISTRY).MAX_FEE();
         // Get curator fee from FeeRegistry
-        uint256 curatorFees = remainingAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getCuratorFee(vault, network), maxFee); // Assuming 10000 as base
+        uint256 curatorFees =
+            distributionAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getCuratorFee(vault, network), MAX_FEE);
 
         // Get operators fee from FeeRegistry
         uint256 operatorsFees =
-            remainingAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getOperatorsFee(vault, network), maxFee);
+            distributionAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getOperatorsFee(vault, network), MAX_FEE);
 
         // Calculate final distribution amount
-        uint256 distributeAmount = remainingAmount - curatorFees - operatorsFees;
+        distributionAmount -= curatorFees + operatorsFees;
 
         // Update curator fees
         _vaultSnapshotRewardsStorage()._curatorFees[vault][token] += curatorFees;
@@ -209,13 +218,13 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
                 delegator: IVault(vault).delegator(),
                 delegatorType: IBaseDelegator(IVault(vault).delegator()).TYPE(),
                 timestamp: timestamp,
-                amount: distributeAmount,
+                amount: distributionAmount,
                 operatorsFee: operatorsFees
             })
         );
 
         emit DistributeVaultSnapshotRewards(
-            network, token, vault, subnetwork.identifier(), timestamp, distributeAmount, curatorFees, operatorsFees
+            network, token, vault, subnetwork.identifier(), timestamp, distributionAmount, curatorFees, operatorsFees
         );
     }
 
@@ -236,16 +245,14 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert InvalidRecipient();
         }
 
-        uint256 lastUnclaimedReward_ =
-            _vaultSnapshotRewardsStorage()._lastUnclaimedReward[msg.sender][vault][network][token];
-        if (lastUnclaimedRewards != lastUnclaimedReward_) {
+        if (lastUnclaimedRewards != lastUnclaimedReward(msg.sender, vault, network, token)) {
             revert InvalidLastUnclaimedReward();
         }
 
         RewardDistribution[] storage rewardsByTokenNetwork =
             _vaultSnapshotRewardsStorage()._rewards[vault][network][token];
 
-        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedReward_ ? firstRewardToClaim : lastUnclaimedReward_;
+        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
 
         uint256 rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - rewardIndex);
 
@@ -254,14 +261,13 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         }
 
         uint256 amount;
-        uint256 activeSharesHintsLength = activeSharesHints.length;
+        bool useHints = activeSharesHints.length > 0;
         for (uint256 i; i < rewardsToClaim; ++i) {
             RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
             amount += IVault(vault)
-                .activeSharesOfAt(
-                    msg.sender, reward.timestamp, activeSharesHintsLength > 0 ? activeSharesHints[i] : new bytes(0)
-                ).mulDiv(reward.amount, _vaultSnapshotRewardsStorage()._activeSharesCache[vault][reward.timestamp]);
+                .activeSharesOfAt(msg.sender, reward.timestamp, useHints ? activeSharesHints[i] : new bytes(0))
+                .mulDiv(reward.amount, _vaultSnapshotRewardsStorage()._activeSharesCache[vault][reward.timestamp]);
 
             ++rewardIndex;
         }
@@ -272,7 +278,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimVaultSnapshotRewards(msg.sender, network, token, vault, amount, lastUnclaimedReward_);
+        emit ClaimVaultSnapshotRewards(msg.sender, network, token, vault, amount, rewardIndex);
     }
 
     /**
@@ -316,16 +322,14 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         }
 
         // Check lastUnclaimedRewards vs on-chain for reorgs
-        uint256 lastUnclaimedReward_ =
-            _vaultSnapshotRewardsStorage()._lastUnclaimedOperatorReward[msg.sender][vault][network][token];
-        if (lastUnclaimedRewards != lastUnclaimedReward_) {
-            revert InvalidHintsLength(); // Reusing error
+        if (lastUnclaimedRewards != lastUnclaimedOperatorReward(msg.sender, vault, network, token)) {
+            revert InvalidHintsLength();
         }
 
         RewardDistribution[] storage rewardsByTokenNetwork =
             _vaultSnapshotRewardsStorage()._rewards[vault][network][token];
 
-        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedReward_ ? firstRewardToClaim : lastUnclaimedReward_;
+        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
         if (rewardIndex > rewardsByTokenNetwork.length) {
             revert NoRewardsToClaim();
         }
@@ -338,15 +342,28 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
 
         bytes[] calldata operatorNetworkSharesHints;
         bytes[] calldata totalOperatorNetworkSharesHint;
-        assembly {
-            let dataPtr := add(extraData.offset, 0x20)
-            operatorNetworkSharesHints.length := calldataload(dataPtr)
-            operatorNetworkSharesHints.offset := add(dataPtr, 0x20)
+        bool useHints = extraData.length > 0;
 
-            dataPtr := add(dataPtr, 0x20)
-            dataPtr := add(dataPtr, mul(0x20, operatorNetworkSharesHints.length))
-            totalOperatorNetworkSharesHint.length := calldataload(dataPtr)
-            totalOperatorNetworkSharesHint.offset := add(dataPtr, 0x20)
+        if (useHints) {
+            assembly {
+                let dataPtr := add(extraData.offset, 0x20)
+
+                // Read offset to first byte array
+                let firstArrayOffset := calldataload(dataPtr)
+                dataPtr := add(dataPtr, 0x20)
+
+                // Read offset to second byte array
+                let secondArrayOffset := calldataload(dataPtr)
+                dataPtr := add(dataPtr, 0x20)
+
+                // Set up first byte array - read its length from the encoded data
+                operatorNetworkSharesHints.length := calldataload(add(extraData.offset, firstArrayOffset))
+                operatorNetworkSharesHints.offset := add(extraData.offset, add(firstArrayOffset, 0x20))
+
+                // Set up second byte array - read its length from the encoded data
+                totalOperatorNetworkSharesHint.length := calldataload(add(extraData.offset, secondArrayOffset))
+                totalOperatorNetworkSharesHint.offset := add(extraData.offset, add(secondArrayOffset, 0x20))
+            }
         }
         uint256 amount;
 
@@ -359,7 +376,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
                         Subnetwork.subnetwork(network, reward.subnetworkId),
                         msg.sender,
                         reward.timestamp,
-                        operatorNetworkSharesHints[i]
+                        useHints ? operatorNetworkSharesHints[i] : new bytes(0)
                     )
                     .mulDiv(
                         reward.operatorsFee,
@@ -367,7 +384,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
                             .totalOperatorNetworkSharesAt(
                                 Subnetwork.subnetwork(network, reward.subnetworkId),
                                 reward.timestamp,
-                                totalOperatorNetworkSharesHint[i]
+                                useHints ? totalOperatorNetworkSharesHint[i] : new bytes(0)
                             )
                     );
             } else if (reward.delegatorType == 1) {
@@ -395,7 +412,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimOperatorFee(msg.sender, network, token, vault, amount, lastUnclaimedReward_);
+        emit ClaimOperatorFee(msg.sender, network, token, vault, amount, rewardIndex);
     }
 
     /**
@@ -406,7 +423,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         address token,
         bytes calldata data
     ) public virtual {
-        // Decode data: network (32 bytes) + vault (32 bytes) + other parameters
+        // Decode data: network (32 bytes) + vault (32 bytes) + lastUnclaimedRewards(32 bytes) + firstRewardToClaim(32 bytes) + maxRewards(32 bytes) + hints(dynamic)
         address network;
         address vault;
         uint256 lastUnclaimedRewards;
@@ -419,8 +436,10 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             lastUnclaimedRewards := calldataload(add(data.offset, 0x40))
             firstRewardToClaim := calldataload(add(data.offset, 0x60))
             maxRewards := calldataload(add(data.offset, 0x80))
-            activeSharesOfHints.length := calldataload(add(data.offset, 0xA0))
-            activeSharesOfHints.offset := add(data.offset, 0xC0)
+            let hintsOffset := calldataload(add(data.offset, 0xA0))
+            let hintsHead := add(data.offset, hintsOffset)
+            activeSharesOfHints.length := calldataload(hintsHead)
+            activeSharesOfHints.offset := add(hintsHead, 0x20)
         }
         claimVaultSnapshotRewards(
             recipient, network, token, vault, lastUnclaimedRewards, firstRewardToClaim, maxRewards, activeSharesOfHints

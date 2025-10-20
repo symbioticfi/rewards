@@ -11,6 +11,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 contract Rewards is VaultSnapshotRewards, CumulativeMerkleRewards, MulticallUpgradeable, IRewards {
+
     /* CONSTRUCTOR */
 
     constructor(
@@ -21,16 +22,15 @@ contract Rewards is VaultSnapshotRewards, CumulativeMerkleRewards, MulticallUpgr
         address feeRegistry
     ) VaultSnapshotRewards(vaultFactory, networkRegistry, networkMiddlewareService, curatorRegistry, feeRegistry) {}
 
-    /* FUNCTIONS */
+    /* PUBLIC FUNCTIONS */
 
     /**
      * @inheritdoc IRewards
      */
     function initialize(
-        IRewards.RewardsInitParams calldata initParams
+        address owner
     ) external override initializer {
-        __ProtocolFees_init(initParams.owner);
-        __VaultSnapshotRewards_init(initParams.vaultSnapshotRewardsInitParams);
+        __ProtocolFees_init(owner);
         __CumulativeMerkleRewards_init();
     }
 

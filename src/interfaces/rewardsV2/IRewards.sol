@@ -24,19 +24,14 @@ interface IRewards {
         CUMULATIVE_MERKLE
     }
 
-    struct RewardsInitParams {
-        IVaultSnapshotRewards.VaultSnapshotRewardsInitParams vaultSnapshotRewardsInitParams;
-        address owner;
-    }
-
     /* FUNCTIONS */
 
     /**
      * @notice Initialize the main Rewards contract
-     * @param initParams Initialization parameters containing all sub-contract parameters
+     * @param owner The owner of the contract
      */
     function initialize(
-        RewardsInitParams calldata initParams
+        address owner
     ) external;
 
     /**

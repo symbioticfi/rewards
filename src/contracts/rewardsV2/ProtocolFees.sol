@@ -21,7 +21,14 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
      */
     uint256 public constant MAX_FEE = 1_000_000;
     string internal constant REWARDS_FEE_ID = "rewards";
+
+    /* IMMUTABLES */
+
+    /**
+     * @inheritdoc IProtocolFees
+     */
     address public immutable FEE_REGISTRY;
+
     /* STORAGE */
 
     struct ProtocolFeesStorage {
@@ -38,13 +45,15 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
         }
     }
 
+    /* CONSTRUCTOR */
+
     constructor(
         address feeRegistry
     ) {
         FEE_REGISTRY = feeRegistry;
     }
 
-    /* FUNCTIONS */
+    /* PUBLIC FUNCTIONS */
 
     /**
      * @notice Initialize the protocol fees contract
@@ -88,7 +97,7 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
         address recipient,
         address token
     ) public onlyOwner returns (uint256 fees) {
-        fees = _protocolFeesStorage()._claimableFee[token];
+        fees = claimableProtocolFees(token);
         if (fees == 0) {
             revert InsufficientClaimableFees();
         }
@@ -97,6 +106,8 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
         IERC20(token).safeTransfer(recipient, fees);
         emit ClaimProtocolFee(token, fees);
     }
+
+    /* INTERNAL FUNCTIONS */
 
     /**
      * @notice Deduct protocol fees from an amount
@@ -112,8 +123,7 @@ abstract contract ProtocolFees is OwnableUpgradeable, IProtocolFees {
         address token,
         uint256 amount
     ) internal returns (uint256 fees) {
-        uint256 feeRate = protocolFee(rewardsType, network);
-        fees = amount.mulDiv(feeRate, MAX_FEE);
+        fees = amount.mulDiv(protocolFee(rewardsType, network), MAX_FEE);
         _protocolFeesStorage()._claimableFee[token] += fees;
         emit DeductProtocolFee(rewardsType, network, token, fees);
     }
