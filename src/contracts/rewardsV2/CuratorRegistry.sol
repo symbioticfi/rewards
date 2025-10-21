@@ -7,19 +7,31 @@ import {Checkpoints} from "@symbioticfi/core/src/contracts/libraries/Checkpoints
 import {StaticDelegateCallable} from "@symbioticfi/core/src/contracts/common/StaticDelegateCallable.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 /**
  * @title CuratorRegistry
  * @notice Manages curator assignments for networks and vaults with historical tracking
  * @dev This contract handles curator management and access control through network middleware and network itself
  */
-contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall {
+contract CuratorRegistry is StaticDelegateCallable, MulticallUpgradeable, ICuratorRegistry {
     using Checkpoints for Checkpoints.Trace208;
 
-    /* STATE VARIABLES */
+    /* STORAGE */
 
-    mapping(address vault => Checkpoints.Trace208) internal _curators;
+    struct CuratorRegistryStorage {
+        mapping(address vault => Checkpoints.Trace208) _curators;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.CuratorRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant CURATOR_REGISTRY_STORAGE_POSITION =
+        0x50b0c8278802d3abbb2e677eb0a65452a0e12cbdc7ef8b06b4325691f656bc00;
+
+    function _curatorRegistryStorage() private pure returns (CuratorRegistryStorage storage $) {
+        assembly {
+            $.slot := CURATOR_REGISTRY_STORAGE_POSITION
+        }
+    }
 
     /* PUBLIC FUNCTIONS */
 
@@ -31,7 +43,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
         uint48 timestamp,
         bytes memory hint
     ) public view returns (address) {
-        return address(uint160(_curators[vault].upperLookupRecent(timestamp, hint)));
+        return address(uint160(_curatorRegistryStorage()._curators[vault].upperLookupRecent(timestamp, hint)));
     }
 
     /**
@@ -40,7 +52,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
     function getCurator(
         address vault
     ) public view returns (address) {
-        return address(uint160(_curators[vault].latest()));
+        return address(uint160(_curatorRegistryStorage()._curators[vault].latest()));
     }
 
     /**
@@ -50,7 +62,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
         address vault,
         address curator
     ) public {
-        (bool exists,, uint208 value) = _curators[vault].latestCheckpoint();
+        (bool exists,, uint208 value) = _curatorRegistryStorage()._curators[vault].latestCheckpoint();
 
         if (exists) {
             if (address(uint160(value)) != msg.sender) {
@@ -60,7 +72,7 @@ contract CuratorRegistry is ICuratorRegistry, StaticDelegateCallable, Multicall 
             revert NotAuthorized();
         }
 
-        _curators[vault].push(uint48(block.timestamp), uint208(uint160(curator)));
+        _curatorRegistryStorage()._curators[vault].push(uint48(block.timestamp), uint208(uint160(curator)));
         emit SetCurator(vault, curator);
     }
 }

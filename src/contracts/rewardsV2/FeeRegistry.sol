@@ -32,15 +32,25 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
      */
     address public immutable CURATOR_REGISTRY;
 
-    /* STATE VARIABLES */
+    /* STORAGE */
 
-    mapping(address vault => Checkpoints.Trace208 value) internal _operatorsFee;
-    // value is concat(isEnabled, fee)
-    mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _operatorsNetworkFee;
-    mapping(address vault => Checkpoints.Trace208 value) internal _curatorFee;
-    // value is concat(isEnabled, fee)
-    mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) internal _curatorNetworkFee;
-    mapping(bytes32 id => uint208 fee) internal _protocolFee;
+    struct FeeRegistryStorage {
+        mapping(address vault => Checkpoints.Trace208 value) _operatorsFee;
+        mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) _operatorsNetworkFee;
+        mapping(address vault => Checkpoints.Trace208 value) _curatorFee;
+        mapping(address vault => mapping(address network => Checkpoints.Trace208 value)) _curatorNetworkFee;
+        mapping(bytes32 id => uint208 fee) _protocolFee;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("symbiotic.rewards.FeeRegistry")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant FEE_REGISTRY_STORAGE_POSITION =
+        0x93d27e35e5186e4ea21573d1a25649cf5417be8a9fc60183b644027fed662100;
+
+    function _feeRegistryStorage() private pure returns (FeeRegistryStorage storage $) {
+        assembly {
+            $.slot := FEE_REGISTRY_STORAGE_POSITION
+        }
+    }
 
     /* MODIFIERS */
 
@@ -49,16 +59,6 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     ) {
         if (ICuratorRegistry(CURATOR_REGISTRY).getCurator(vault) != msg.sender) {
             revert NotCurator();
-        }
-        _;
-    }
-
-    modifier checkMaxFee(
-        uint256 operatorFee,
-        uint256 curatorFee
-    ) {
-        if (operatorFee + curatorFee > MAX_FEE) {
-            revert FeeTooHigh();
         }
         _;
     }
@@ -120,7 +120,9 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         uint48 timestamp,
         bytes memory hint
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_operatorsNetworkFee[vault][network].upperLookupRecent(timestamp, hint));
+        return _deserializeFeeData(
+            _feeRegistryStorage()._operatorsNetworkFee[vault][network].upperLookupRecent(timestamp, hint)
+        );
     }
 
     /**
@@ -130,7 +132,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         address vault,
         address network
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_operatorsNetworkFee[vault][network].latest());
+        return _deserializeFeeData(_feeRegistryStorage()._operatorsNetworkFee[vault][network].latest());
     }
 
     /**
@@ -141,7 +143,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         uint48 timestamp,
         bytes memory hint
     ) public view returns (uint256) {
-        return _operatorsFee[vault].upperLookupRecent(timestamp, hint);
+        return _feeRegistryStorage()._operatorsFee[vault].upperLookupRecent(timestamp, hint);
     }
 
     /**
@@ -150,7 +152,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     function getOperatorsDefaultFee(
         address vault
     ) public view returns (uint256) {
-        return _operatorsFee[vault].latest();
+        return _feeRegistryStorage()._operatorsFee[vault].latest();
     }
 
     /**
@@ -194,7 +196,9 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         uint48 timestamp,
         bytes memory hint
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_curatorNetworkFee[vault][network].upperLookupRecent(timestamp, hint));
+        return _deserializeFeeData(
+            _feeRegistryStorage()._curatorNetworkFee[vault][network].upperLookupRecent(timestamp, hint)
+        );
     }
 
     /**
@@ -204,7 +208,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         address vault,
         address network
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_curatorNetworkFee[vault][network].latest());
+        return _deserializeFeeData(_feeRegistryStorage()._curatorNetworkFee[vault][network].latest());
     }
 
     /**
@@ -215,7 +219,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
         uint48 timestamp,
         bytes memory hint
     ) public view returns (uint256) {
-        return _curatorFee[vault].upperLookupRecent(timestamp, hint);
+        return _feeRegistryStorage()._curatorFee[vault].upperLookupRecent(timestamp, hint);
     }
 
     /**
@@ -224,7 +228,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     function getCuratorDefaultFee(
         address vault
     ) public view returns (uint256) {
-        return _curatorFee[vault].latest();
+        return _feeRegistryStorage()._curatorFee[vault].latest();
     }
 
     /**
@@ -233,7 +237,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
     function getProtocolFee(
         bytes32 id
     ) public view returns (bool isEnabled, uint256 fee) {
-        return _deserializeFeeData(_protocolFee[id]);
+        return _deserializeFeeData(_feeRegistryStorage()._protocolFee[id]);
     }
 
     /**
@@ -247,7 +251,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
             revert FeeTooHigh();
         }
 
-        _operatorsFee[vault].push(uint48(block.timestamp), uint208(fee));
+        _feeRegistryStorage()._operatorsFee[vault].push(uint48(block.timestamp), uint208(fee));
         emit SetOperatorsFee(vault, fee);
     }
 
@@ -264,7 +268,8 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
             revert FeeTooHigh();
         }
 
-        _operatorsNetworkFee[vault][network].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
+        _feeRegistryStorage()._operatorsNetworkFee[vault][network]
+        .push(uint48(block.timestamp), _serializeFeeData(enable, fee));
         emit SetOperatorsNetworkFee(vault, network, enable, fee);
     }
 
@@ -279,7 +284,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
             revert FeeTooHigh();
         }
 
-        _curatorFee[vault].push(uint48(block.timestamp), uint208(fee));
+        _feeRegistryStorage()._curatorFee[vault].push(uint48(block.timestamp), uint208(fee));
         emit SetCuratorFee(vault, fee);
     }
 
@@ -296,7 +301,8 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
             revert FeeTooHigh();
         }
 
-        _curatorNetworkFee[vault][network].push(uint48(block.timestamp), _serializeFeeData(enable, fee));
+        _feeRegistryStorage()._curatorNetworkFee[vault][network]
+        .push(uint48(block.timestamp), _serializeFeeData(enable, fee));
         emit SetCuratorNetworkFee(vault, network, enable, fee);
     }
 
@@ -312,7 +318,7 @@ contract FeeRegistry is OwnableUpgradeable, MulticallUpgradeable, StaticDelegate
             revert FeeTooHigh();
         }
 
-        _protocolFee[id] = _serializeFeeData(enable, fee);
+        _feeRegistryStorage()._protocolFee[id] = _serializeFeeData(enable, fee);
         emit SetProtocolFee(id, enable, fee);
     }
 

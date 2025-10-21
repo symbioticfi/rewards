@@ -6,16 +6,16 @@ import {ProtocolFees} from "./ProtocolFees.sol";
 import {ICumulativeMerkleRewards} from "../../interfaces/rewardsV2/ICumulativeMerkleRewards.sol";
 import {IRewards} from "../../interfaces/rewardsV2/IRewards.sol";
 
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {OzEIP712} from "../base/OzEIP712.sol";
+
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, ICumulativeMerkleRewards {
+abstract contract CumulativeMerkleRewards is OzEIP712, ProtocolFees, ICumulativeMerkleRewards {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
@@ -30,7 +30,6 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
     bytes32 private constant PAYLOAD_TYPEHASH = keccak256(
         "CumulativeDistributionPayload(CumulativeDistribution cumulativeDistribution,TokenAmount[] totalAmounts)CumulativeDistribution(uint48 timestamp,bytes32 merkleRoot)TokenAmount(uint64 chainId,address token,uint256 amount)"
     );
-    bytes32 private constant CROSS_CHAIN_TYPE_HASH = keccak256("EIP712Domain(string name,string version)");
 
     /* STORAGE */
 
@@ -352,18 +351,10 @@ abstract contract CumulativeMerkleRewards is EIP712Upgradeable, ProtocolFees, IC
             );
         }
 
-        bytes32 totalAmountsHash = keccak256(abi.encodePacked(tokenAmountHashes));
-
-        return _hashTypedDataV4CrossChain(
-            keccak256(abi.encode(PAYLOAD_TYPEHASH, cumulativeDistributionHash, totalAmountsHash))
-        );
-    }
-
-    function _hashTypedDataV4CrossChain(
-        bytes32 structHash
-    ) internal view returns (bytes32) {
-        return MessageHashUtils.toTypedDataHash(
-            keccak256(abi.encode(CROSS_CHAIN_TYPE_HASH, _EIP712NameHash(), _EIP712VersionHash())), structHash
+        return hashTypedDataV4CrossChain(
+            keccak256(
+                abi.encode(PAYLOAD_TYPEHASH, cumulativeDistributionHash, keccak256(abi.encodePacked(tokenAmountHashes)))
+            )
         );
     }
 }

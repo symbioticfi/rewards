@@ -11,7 +11,6 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 contract Rewards is VaultSnapshotRewards, CumulativeMerkleRewards, MulticallUpgradeable, IRewards {
-
     /* CONSTRUCTOR */
 
     constructor(

@@ -17,7 +17,6 @@ interface ICumulativeMerkleRewards {
     error InvalidTimestamp();
     error InvalidMerkleRoot();
     error InvalidToken();
-    error InsufficientDeposited(address network, address token);
     error InsufficientTransfer();
     error NotRewarder();
     error RootAlreadySet();

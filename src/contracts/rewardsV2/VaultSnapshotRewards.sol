@@ -326,57 +326,56 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert InvalidHintsLength();
         }
 
+        ClaimOperatorFeeLocalVars memory vars;
+
         RewardDistribution[] storage rewardsByTokenNetwork =
             _vaultSnapshotRewardsStorage()._rewards[vault][network][token];
 
-        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
-        if (rewardIndex > rewardsByTokenNetwork.length) {
+        vars.rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
+        if (vars.rewardIndex > rewardsByTokenNetwork.length) {
             revert NoRewardsToClaim();
         }
 
-        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - rewardIndex);
+        vars.rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - vars.rewardIndex);
 
-        if (rewardsToClaim == 0) {
+        if (vars.rewardsToClaim == 0) {
             revert NoRewardsToClaim();
         }
 
         bytes[] calldata operatorNetworkSharesHints;
         bytes[] calldata totalOperatorNetworkSharesHint;
-        bool useHints = extraData.length > 0;
+        vars.useHints = extraData.length > 0;
 
-        if (useHints) {
+        if (vars.useHints) {
             assembly {
-                let dataPtr := add(extraData.offset, 0x20)
+                let firstArrayOffset := calldataload(extraData.offset)
+                let secondArrayOffset := calldataload(add(extraData.offset, 0x20))
 
-                // Read offset to first byte array
-                let firstArrayOffset := calldataload(dataPtr)
-                dataPtr := add(dataPtr, 0x20)
-
-                // Read offset to second byte array
-                let secondArrayOffset := calldataload(dataPtr)
-                dataPtr := add(dataPtr, 0x20)
-
-                // Set up first byte array - read its length from the encoded data
                 operatorNetworkSharesHints.length := calldataload(add(extraData.offset, firstArrayOffset))
                 operatorNetworkSharesHints.offset := add(extraData.offset, add(firstArrayOffset, 0x20))
 
-                // Set up second byte array - read its length from the encoded data
                 totalOperatorNetworkSharesHint.length := calldataload(add(extraData.offset, secondArrayOffset))
                 totalOperatorNetworkSharesHint.offset := add(extraData.offset, add(secondArrayOffset, 0x20))
             }
+        } else {
+            assembly {
+                operatorNetworkSharesHints.length := 0
+                operatorNetworkSharesHints.offset := extraData.offset
+                totalOperatorNetworkSharesHint.length := 0
+                totalOperatorNetworkSharesHint.offset := extraData.offset
+            }
         }
-        uint256 amount;
 
-        for (uint256 i; i < rewardsToClaim; ++i) {
-            RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
+        for (uint256 i; i < vars.rewardsToClaim; ++i) {
+            RewardDistribution storage reward = rewardsByTokenNetwork[vars.rewardIndex];
 
             if (reward.delegatorType == 0) {
-                amount += INetworkRestakeDelegator(reward.delegator)
+                vars.amount += INetworkRestakeDelegator(reward.delegator)
                     .operatorNetworkSharesAt(
                         Subnetwork.subnetwork(network, reward.subnetworkId),
                         msg.sender,
                         reward.timestamp,
-                        useHints ? operatorNetworkSharesHints[i] : new bytes(0)
+                        vars.useHints ? operatorNetworkSharesHints[vars.networkRestakeDelegatorCounter] : new bytes(0)
                     )
                     .mulDiv(
                         reward.operatorsFee,
@@ -384,35 +383,39 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
                             .totalOperatorNetworkSharesAt(
                                 Subnetwork.subnetwork(network, reward.subnetworkId),
                                 reward.timestamp,
-                                useHints ? totalOperatorNetworkSharesHint[i] : new bytes(0)
+                                vars.useHints
+                                    ? totalOperatorNetworkSharesHint[vars.networkRestakeDelegatorCounter]
+                                    : new bytes(0)
                             )
                     );
+                ++vars.networkRestakeDelegatorCounter;
             } else if (reward.delegatorType == 1) {
                 revert InvalidDelegatorType();
             } else if (reward.delegatorType == 2) {
                 if (IOperatorSpecificDelegator(reward.delegator).operator() != msg.sender) {
                     revert NotOperator();
                 }
-                amount += reward.operatorsFee;
+                vars.amount += reward.operatorsFee;
             } else if (reward.delegatorType == 3) {
                 if (IOperatorNetworkSpecificDelegator(reward.delegator).operator() != msg.sender) {
                     revert NotOperator();
                 }
-                amount += reward.operatorsFee;
+                vars.amount += reward.operatorsFee;
             } else {
                 revert InvalidDelegatorType();
             }
 
-            ++rewardIndex;
+            ++vars.rewardIndex;
         }
 
-        _vaultSnapshotRewardsStorage()._lastUnclaimedOperatorReward[msg.sender][vault][network][token] = rewardIndex;
+        _vaultSnapshotRewardsStorage()._lastUnclaimedOperatorReward[msg.sender][vault][network][token] =
+            vars.rewardIndex;
 
-        if (amount > 0) {
-            IERC20(token).safeTransfer(recipient, amount);
+        if (vars.amount > 0) {
+            IERC20(token).safeTransfer(recipient, vars.amount);
         }
 
-        emit ClaimOperatorFee(msg.sender, network, token, vault, amount, rewardIndex);
+        emit ClaimOperatorFee(msg.sender, network, token, vault, vars.amount, vars.rewardIndex);
     }
 
     /**

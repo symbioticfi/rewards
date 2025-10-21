@@ -35,6 +35,14 @@ interface IVaultSnapshotRewards {
         uint256 operatorsFee;
     }
 
+    struct ClaimOperatorFeeLocalVars {
+        uint256 rewardIndex;
+        uint256 rewardsToClaim;
+        bool useHints;
+        uint256 amount;
+        uint256 networkRestakeDelegatorCounter;
+    }
+
     /* EVENTS */
 
     event DistributeVaultSnapshotRewards(
