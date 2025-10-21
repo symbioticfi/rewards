@@ -163,7 +163,6 @@ abstract contract CumulativeMerkleRewards is OzEIP712, ProtocolFees, ICumulative
                 revert UnsortedChainIds();
             }
 
-            // When within the same chain, token addresses must be strictly increasing (unique and sorted)
             if (currChainId == prevChainId && totalAmounts[i].token <= totalAmounts[i - 1].token) {
                 revert DuplicateOrUnsortedTokens();
             }

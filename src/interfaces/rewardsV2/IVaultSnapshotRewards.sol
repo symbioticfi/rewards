@@ -35,14 +35,6 @@ interface IVaultSnapshotRewards {
         uint256 operatorsFee;
     }
 
-    struct ClaimOperatorFeeLocalVars {
-        uint256 rewardIndex;
-        uint256 rewardsToClaim;
-        bool useHints;
-        uint256 amount;
-        uint256 networkRestakeDelegatorCounter;
-    }
-
     /* EVENTS */
 
     event DistributeVaultSnapshotRewards(
@@ -157,6 +149,17 @@ interface IVaultSnapshotRewards {
         address account,
         address vault,
         address network,
+        address token
+    ) external view returns (uint256);
+
+    /**
+     * @notice Get the curator fee for a vault and token
+     * @param vault The vault address
+     * @param token The token address
+     * @return The curator fee
+     */
+    function curatorFee(
+        address vault,
         address token
     ) external view returns (uint256);
 

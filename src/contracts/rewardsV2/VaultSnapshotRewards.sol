@@ -144,6 +144,16 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
     /**
      * @inheritdoc IVaultSnapshotRewards
      */
+    function curatorFee(
+        address vault,
+        address token
+    ) public view returns (uint256) {
+        return _vaultSnapshotRewardsStorage()._curatorFees[vault][token];
+    }
+
+    /**
+     * @inheritdoc IVaultSnapshotRewards
+     */
     function distributeVaultSnapshotRewards(
         bytes32 subnetwork,
         address token,
@@ -152,7 +162,6 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         uint48 timestamp,
         bytes calldata activeSharesHint
     ) public {
-        // Check authorization - either network middleware or network itself
         address network = subnetwork.network();
         if (
             !IRegistry(NETWORK_REGISTRY).isEntity(network)
@@ -162,17 +171,14 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert NotNetworkOrMiddleware();
         }
 
-        // Validate vault
         if (!IRegistry(VAULT_FACTORY).isEntity(vault)) {
             revert InvalidVault();
         }
 
-        // Validate timestamp
         if (timestamp >= block.timestamp) {
             revert InvalidRewardTimestamp();
         }
 
-        // Cache active shares if not already cached
         if (_vaultSnapshotRewardsStorage()._activeSharesCache[vault][timestamp] == 0) {
             uint256 activeShares = IVault(vault).activeSharesAt(timestamp, activeSharesHint);
 
@@ -183,7 +189,6 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             _vaultSnapshotRewardsStorage()._activeSharesCache[vault][timestamp] = activeShares;
         }
 
-        // Transfer tokens
         uint256 balanceBefore = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         amount = IERC20(token).balanceOf(address(this)) - balanceBefore;
@@ -192,25 +197,19 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert InsufficientReward();
         }
 
-        // Deduct protocol fees from the remaining amount
         uint256 distributionAmount =
             amount - _deductProtocolFees(uint64(IRewards.RewardsType.VAULT_SNAPSHOT), network, token, amount);
 
-        // Get curator fee from FeeRegistry
         uint256 curatorFees =
             distributionAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getCuratorFee(vault, network), MAX_FEE);
 
-        // Get operators fee from FeeRegistry
         uint256 operatorsFees =
             distributionAmount.mulDiv(IFeeRegistry(FEE_REGISTRY).getOperatorsFee(vault, network), MAX_FEE);
 
-        // Calculate final distribution amount
         distributionAmount -= curatorFees + operatorsFees;
 
-        // Update curator fees
         _vaultSnapshotRewardsStorage()._curatorFees[vault][token] += curatorFees;
 
-        // Store reward distribution
         _vaultSnapshotRewardsStorage()._rewards[vault][network][token]
         .push(
             RewardDistribution({
@@ -293,7 +292,7 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert NotCurator();
         }
 
-        uint256 claimableFee = _vaultSnapshotRewardsStorage()._curatorFees[vault][token];
+        uint256 claimableFee = curatorFee(vault, token);
         if (claimableFee == 0) {
             revert NoRewardsToClaim();
         }
@@ -326,27 +325,25 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
             revert InvalidHintsLength();
         }
 
-        ClaimOperatorFeeLocalVars memory vars;
-
         RewardDistribution[] storage rewardsByTokenNetwork =
             _vaultSnapshotRewardsStorage()._rewards[vault][network][token];
 
-        vars.rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
-        if (vars.rewardIndex > rewardsByTokenNetwork.length) {
+        uint256 rewardIndex = firstRewardToClaim > lastUnclaimedRewards ? firstRewardToClaim : lastUnclaimedRewards;
+        if (rewardIndex > rewardsByTokenNetwork.length) {
             revert NoRewardsToClaim();
         }
 
-        vars.rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - vars.rewardIndex);
+        uint256 rewardsToClaim = Math.min(maxRewards, rewardsByTokenNetwork.length - rewardIndex);
 
-        if (vars.rewardsToClaim == 0) {
+        if (rewardsToClaim == 0) {
             revert NoRewardsToClaim();
         }
 
         bytes[] calldata operatorNetworkSharesHints;
         bytes[] calldata totalOperatorNetworkSharesHint;
-        vars.useHints = extraData.length > 0;
+        bool useHints = extraData.length > 0;
 
-        if (vars.useHints) {
+        if (useHints) {
             assembly {
                 let firstArrayOffset := calldataload(extraData.offset)
                 let secondArrayOffset := calldataload(add(extraData.offset, 0x20))
@@ -360,22 +357,23 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
         } else {
             assembly {
                 operatorNetworkSharesHints.length := 0
-                operatorNetworkSharesHints.offset := extraData.offset
+                operatorNetworkSharesHints.offset := 0
                 totalOperatorNetworkSharesHint.length := 0
-                totalOperatorNetworkSharesHint.offset := extraData.offset
+                totalOperatorNetworkSharesHint.offset := 0
             }
         }
 
-        for (uint256 i; i < vars.rewardsToClaim; ++i) {
-            RewardDistribution storage reward = rewardsByTokenNetwork[vars.rewardIndex];
-
+        uint256 amount;
+        uint256 networkRestakeDelegatorCounter;
+        for (uint256 i; i < rewardsToClaim; ++i) {
+            RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
             if (reward.delegatorType == 0) {
-                vars.amount += INetworkRestakeDelegator(reward.delegator)
+                amount += INetworkRestakeDelegator(reward.delegator)
                     .operatorNetworkSharesAt(
                         Subnetwork.subnetwork(network, reward.subnetworkId),
                         msg.sender,
                         reward.timestamp,
-                        vars.useHints ? operatorNetworkSharesHints[vars.networkRestakeDelegatorCounter] : new bytes(0)
+                        useHints ? operatorNetworkSharesHints[networkRestakeDelegatorCounter] : new bytes(0)
                     )
                     .mulDiv(
                         reward.operatorsFee,
@@ -383,39 +381,36 @@ abstract contract VaultSnapshotRewards is ProtocolFees, IVaultSnapshotRewards {
                             .totalOperatorNetworkSharesAt(
                                 Subnetwork.subnetwork(network, reward.subnetworkId),
                                 reward.timestamp,
-                                vars.useHints
-                                    ? totalOperatorNetworkSharesHint[vars.networkRestakeDelegatorCounter]
-                                    : new bytes(0)
+                                useHints ? totalOperatorNetworkSharesHint[networkRestakeDelegatorCounter] : new bytes(0)
                             )
                     );
-                ++vars.networkRestakeDelegatorCounter;
+                ++networkRestakeDelegatorCounter;
             } else if (reward.delegatorType == 1) {
                 revert InvalidDelegatorType();
             } else if (reward.delegatorType == 2) {
                 if (IOperatorSpecificDelegator(reward.delegator).operator() != msg.sender) {
                     revert NotOperator();
                 }
-                vars.amount += reward.operatorsFee;
+                amount += reward.operatorsFee;
             } else if (reward.delegatorType == 3) {
                 if (IOperatorNetworkSpecificDelegator(reward.delegator).operator() != msg.sender) {
                     revert NotOperator();
                 }
-                vars.amount += reward.operatorsFee;
+                amount += reward.operatorsFee;
             } else {
                 revert InvalidDelegatorType();
             }
 
-            ++vars.rewardIndex;
+            ++rewardIndex;
         }
 
-        _vaultSnapshotRewardsStorage()._lastUnclaimedOperatorReward[msg.sender][vault][network][token] =
-            vars.rewardIndex;
+        _vaultSnapshotRewardsStorage()._lastUnclaimedOperatorReward[msg.sender][vault][network][token] = rewardIndex;
 
-        if (vars.amount > 0) {
-            IERC20(token).safeTransfer(recipient, vars.amount);
+        if (amount > 0) {
+            IERC20(token).safeTransfer(recipient, amount);
         }
 
-        emit ClaimOperatorFee(msg.sender, network, token, vault, vars.amount, vars.rewardIndex);
+        emit ClaimOperatorFee(msg.sender, network, token, vault, amount, rewardIndex);
     }
 
     /**
