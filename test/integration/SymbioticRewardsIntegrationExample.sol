@@ -18,7 +18,6 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
     uint256 public SELECT_OPERATOR_CHANCE = 1; // lower -> higher probability
 
     function setUp() public override {
-        SYMBIOTIC_CORE_PROJECT_ROOT = "lib/core/";
         SYMBIOTIC_REWARDS_PROJECT_ROOT = "";
         // vm.selectFork(vm.createFork(vm.rpcUrl("holesky")));
         // SYMBIOTIC_INIT_BLOCK = 2_727_202;
@@ -64,16 +63,14 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
         for (uint256 i; i < confirmedNetworkVaults.length; ++i) {
             for (uint256 j; j < operators_SymbioticCore.length; ++j) {
                 if (
-                    ISymbioticOptInService(symbioticCore.operatorVaultOptInService).isOptedIn(
-                        operators_SymbioticCore[j].addr, confirmedNetworkVaults[i]
-                    ) && _randomChoice_Symbiotic(SELECT_OPERATOR_CHANCE)
+                    ISymbioticOptInService(symbioticCore.operatorVaultOptInService)
+                            .isOptedIn(operators_SymbioticCore[j].addr, confirmedNetworkVaults[i])
+                        && _randomChoice_Symbiotic(SELECT_OPERATOR_CHANCE)
                 ) {
                     _operatorOptInWeak_SymbioticCore(operators_SymbioticCore[j].addr, network.addr);
-                    if (
-                        _delegateToOperatorTry_SymbioticCore(
+                    if (_delegateToOperatorTry_SymbioticCore(
                             confirmedNetworkVaults[i], subnetwork, operators_SymbioticCore[j].addr
-                        )
-                    ) {
+                        )) {
                         confirmedNetworkOperators[confirmedNetworkVaults[i]].push(operators_SymbioticCore[j].addr);
                     }
                 }
@@ -89,9 +86,8 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
                 console2.log("Operator:", confirmedNetworkOperators[confirmedNetworkVaults[i]][j]);
                 console2.log(
                     "Stake:",
-                    ISymbioticBaseDelegator(ISymbioticVault(confirmedNetworkVaults[i]).delegator()).stake(
-                        subnetwork, confirmedNetworkOperators[confirmedNetworkVaults[i]][j]
-                    )
+                    ISymbioticBaseDelegator(ISymbioticVault(confirmedNetworkVaults[i]).delegator())
+                        .stake(subnetwork, confirmedNetworkOperators[confirmedNetworkVaults[i]][j])
                 );
             }
         }
@@ -105,8 +101,11 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
             for (uint256 j; j < confirmedNetworkOperators[confirmedNetworkVaults[i]].length; ++j) {
                 delegatedAmount += ISymbioticBaseDelegator(ISymbioticVault(confirmedNetworkVaults[i]).delegator())
                     .stakeAt(
-                    subnetwork, confirmedNetworkOperators[confirmedNetworkVaults[i]][j], captureTimestamp, new bytes(0)
-                );
+                        subnetwork,
+                        confirmedNetworkOperators[confirmedNetworkVaults[i]][j],
+                        captureTimestamp,
+                        new bytes(0)
+                    );
             }
             if (delegatedAmount == 0) {
                 continue;
@@ -131,8 +130,8 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
                 continue;
             }
             uint256 claimable = ISymbioticDefaultStakerRewards(
-                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
-            ).claimable(rewardsToken, stakers_SymbioticCore[i].addr, abi.encode(network.addr, 1000));
+                    defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
+                ).claimable(rewardsToken, stakers_SymbioticCore[i].addr, abi.encode(network.addr, 1000));
             _stakerClaimWeak_SymbioticRewards(
                 stakers_SymbioticCore[i].addr,
                 defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0],
@@ -144,8 +143,8 @@ contract SymbioticRewardsIntegrationExample is SymbioticRewardsIntegration {
 
         if (defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]].length > 0) {
             uint256 claimableAdminFee = ISymbioticDefaultStakerRewards(
-                defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
-            ).claimableAdminFee(rewardsToken);
+                    defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0]
+                ).claimableAdminFee(rewardsToken);
             _curatorClaimWeak_SymbioticRewards(
                 address(this), defaultStakerRewards_SymbioticRewards[confirmedNetworkVaults[0]][0], rewardsToken
             );

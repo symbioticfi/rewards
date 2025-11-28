@@ -137,11 +137,10 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @return amount amount of tokens to be distributed
      * @return timestamp time point stakes must taken into account at
      */
-    function rewards(
-        address token,
-        address network,
-        uint256 rewardIndex
-    ) external view returns (uint256 amount, uint48 timestamp);
+    function rewards(address token, address network, uint256 rewardIndex)
+        external
+        view
+        returns (uint256 amount, uint48 timestamp);
 
     /**
      * @notice Get the first index of the unclaimed rewards using a particular token by a given account.
@@ -157,9 +156,7 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param token address of the token
      * @return claimable admin fee
      */
-    function claimableAdminFee(
-        address token
-    ) external view returns (uint256);
+    function claimableAdminFee(address token) external view returns (uint256);
 
     /**
      * @notice Claim an admin fee.
@@ -174,7 +171,5 @@ interface IDefaultStakerRewards is IStakerRewards {
      * @param adminFee admin fee (up to ADMIN_FEE_BASE inclusively)
      * @dev Only the ADMIN_FEE_SET_ROLE holder can call this function.
      */
-    function setAdminFee(
-        uint256 adminFee
-    ) external;
+    function setAdminFee(uint256 adminFee) external;
 }

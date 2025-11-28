@@ -4,10 +4,6 @@ pragma solidity 0.8.25;
 import {IDefaultStakerRewards} from "../../interfaces/defaultStakerRewards/IDefaultStakerRewards.sol";
 import {IStakerRewards} from "../../interfaces/stakerRewards/IStakerRewards.sol";
 
-import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
-import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
-import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
-
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -15,6 +11,10 @@ import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Mu
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Time} from "@openzeppelin/contracts/utils/types/Time.sol";
+
+import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
+import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 
 contract DefaultStakerRewards is
     AccessControlUpgradeable,
@@ -100,11 +100,12 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IStakerRewards
      */
-    function claimable(
-        address token,
-        address account,
-        bytes calldata data
-    ) external view override returns (uint256 amount) {
+    function claimable(address token, address account, bytes calldata data)
+        external
+        view
+        override
+        returns (uint256 amount)
+    {
         // network - a network to claim rewards for
         // maxRewards - the maximum amount of rewards to process
         (address network, uint256 maxRewards) = abi.decode(data, (address, uint256));
@@ -117,9 +118,8 @@ contract DefaultStakerRewards is
         for (uint256 i; i < rewardsToClaim;) {
             RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
-            amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp, new bytes(0)).mulDiv(
-                reward.amount, _activeSharesCache[reward.timestamp]
-            );
+            amount += IVault(VAULT).activeSharesOfAt(account, reward.timestamp, new bytes(0))
+                .mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
 
             unchecked {
                 ++i;
@@ -128,9 +128,7 @@ contract DefaultStakerRewards is
         }
     }
 
-    function initialize(
-        InitParams calldata params
-    ) external initializer {
+    function initialize(InitParams calldata params) external initializer {
         if (!IRegistry(VAULT_FACTORY).isEntity(params.vault)) {
             revert NotVault();
         }
@@ -170,12 +168,11 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IStakerRewards
      */
-    function distributeRewards(
-        address network,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external override nonReentrant {
+    function distributeRewards(address network, address token, uint256 amount, bytes calldata data)
+        external
+        override
+        nonReentrant
+    {
         // timestamp - a time point stakes must be taken into account at
         // maxAdminFee - the maximum admin fee to allow
         // activeSharesHint - a hint index to optimize `activeSharesAt()` processing
@@ -261,9 +258,8 @@ contract DefaultStakerRewards is
         for (uint256 i; i < rewardsToClaim;) {
             RewardDistribution storage reward = rewardsByTokenNetwork[rewardIndex];
 
-            amount += IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[i]).mulDiv(
-                reward.amount, _activeSharesCache[reward.timestamp]
-            );
+            amount += IVault(VAULT).activeSharesOfAt(msg.sender, reward.timestamp, activeSharesOfHints[i])
+                .mulDiv(reward.amount, _activeSharesCache[reward.timestamp]);
 
             unchecked {
                 ++i;
@@ -300,9 +296,7 @@ contract DefaultStakerRewards is
     /**
      * @inheritdoc IDefaultStakerRewards
      */
-    function setAdminFee(
-        uint256 adminFee_
-    ) external onlyRole(ADMIN_FEE_SET_ROLE) {
+    function setAdminFee(uint256 adminFee_) external onlyRole(ADMIN_FEE_SET_ROLE) {
         if (adminFee == adminFee_) {
             revert AlreadySet();
         }
@@ -310,9 +304,7 @@ contract DefaultStakerRewards is
         _setAdminFee(adminFee_);
     }
 
-    function _setAdminFee(
-        uint256 adminFee_
-    ) private {
+    function _setAdminFee(uint256 adminFee_) private {
         if (adminFee_ > ADMIN_FEE_BASE) {
             revert InvalidAdminFee();
         }

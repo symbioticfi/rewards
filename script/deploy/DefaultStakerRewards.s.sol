@@ -17,15 +17,16 @@ contract DefaultStakerRewardsScript is Script {
     ) external {
         vm.startBroadcast();
 
-        address defaultStakerRewards = SymbioticRewardsConstants.defaultStakerRewardsFactory().create(
-            IDefaultStakerRewards.InitParams({
-                vault: vault,
-                adminFee: adminFee,
-                defaultAdminRoleHolder: defaultAdminRoleHolder,
-                adminFeeClaimRoleHolder: adminFeeClaimRoleHolder,
-                adminFeeSetRoleHolder: adminFeeSetRoleHolder
-            })
-        );
+        address defaultStakerRewards = SymbioticRewardsConstants.defaultStakerRewardsFactory()
+            .create(
+                IDefaultStakerRewards.InitParams({
+                    vault: vault,
+                    adminFee: adminFee,
+                    defaultAdminRoleHolder: defaultAdminRoleHolder,
+                    adminFeeClaimRoleHolder: adminFeeClaimRoleHolder,
+                    adminFeeSetRoleHolder: adminFeeSetRoleHolder
+                })
+            );
 
         console2.log("Default Staker Rewards: ", defaultStakerRewards);
 

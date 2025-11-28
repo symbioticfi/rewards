@@ -19,10 +19,16 @@ holesky = "${ETH_RPC_URL_HOLESKY}"
 bracket_spacing = false
 int_types = "long"
 line_length = 120
-multiline_func_header = "params_first"
+multiline_func_header = "attributes_first"
 number_underscore = "thousands"
 quote_style = "double"
 tab_width = 4
+single_line_statement_blocks = "preserve"
+sort_imports = false
+contract_new_lines = false
+override_spacing = false
+hex_underscore = "preserve"
+wrap_comments = false
 
 [fuzz]
 runs = 4096

@@ -1,33 +1,32 @@
 {
-  "name": "@symbioticfi/rewards",
-  "version": "2.0.0",
-  "description": "Symbiotic Rewards repository contains a Symbiotic Staker Rewards interface providing a standardized way for rewards implementations by different parties, and default implementations of Staker and Operator Rewards.",
-  "homepage": "https://symbiotic.fi/",
-  "bugs": "https://github.com/symbioticfi/rewards/issues",
-  "license": "MIT",
-  "author": "Symbiotic Team",
-  "files": [
-    "src/**/*",
-    "test/mocks/**/*",
-    "test/integration/**/*",
-    "out/**/*.json",
-    "cli/**/*"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/symbioticfi/rewards.git"
-  },
-  "keywords": [
-    "solidity",
-    "ethereum",
-    "smart",
-    "contracts",
-    "security"
-  ],
-  "dependencies": {
-    "@openzeppelin/contracts": "5.0.2",
-    "@openzeppelin/contracts-upgradeable": "5.0.2",
-    "@openzeppelin/merkle-tree": "1.0.7",
-    "@symbioticfi/core": "1.0.1"
-  }
+    "name": "@symbioticfi/rewards",
+    "version": "2.0.0",
+    "description": "Symbiotic Rewards repository contains a Symbiotic Staker Rewards interface providing a standardized way for rewards implementations by different parties, and default implementations of Staker and Operator Rewards.",
+    "homepage": "https://symbiotic.fi/",
+    "bugs": "https://github.com/symbioticfi/rewards/issues",
+    "license": "MIT",
+    "author": "Symbiotic Team",
+    "files": [
+        "src/**/*",
+        "test/mocks/**/*",
+        "test/integration/**/*",
+        "cli/**/*"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/symbioticfi/rewards.git"
+    },
+    "keywords": [
+        "solidity",
+        "ethereum",
+        "smart",
+        "contracts",
+        "security"
+    ],
+    "dependencies": {
+        "@openzeppelin/contracts": "5.0.2",
+        "@openzeppelin/contracts-upgradeable": "5.0.2",
+        "@openzeppelin/merkle-tree": "1.0.7",
+        "@symbioticfi/core": "1.0.1"
+    }
 }

@@ -7,8 +7,9 @@ import {NetworkRegistry} from "@symbioticfi/core/src/contracts/NetworkRegistry.s
 import {NetworkMiddlewareService} from "@symbioticfi/core/src/contracts/service/NetworkMiddlewareService.sol";
 import {Token} from "@symbioticfi/core/test/mocks/Token.sol";
 
-import {DefaultOperatorRewardsFactory} from
-    "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
+import {
+    DefaultOperatorRewardsFactory
+} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewardsFactory.sol";
 import {DefaultOperatorRewards} from "../../src/contracts/defaultOperatorRewards/DefaultOperatorRewards.sol";
 import {IDefaultOperatorRewards} from "../../src/interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
@@ -45,9 +46,7 @@ contract DefaultOperatorRewardsTest is Test {
         defaultOperatorRewards = _getOperatorDefaultRewards();
     }
 
-    function test_DitributeRewards(
-        uint256 amount
-    ) public {
+    function test_DitributeRewards(uint256 amount) public {
         amount = bound(amount, 0, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -70,9 +69,7 @@ contract DefaultOperatorRewardsTest is Test {
         assertEq(token.balanceOf(address(defaultOperatorRewards)), amount);
     }
 
-    function test_DitributeRewardsFeeOnTransfer(
-        uint256 amount
-    ) public {
+    function test_DitributeRewardsFeeOnTransfer(uint256 amount) public {
         amount = bound(amount, 2, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -116,9 +113,7 @@ contract DefaultOperatorRewardsTest is Test {
         _distributeRewards(middleware, network, address(feeOnTransferToken), amount, root);
     }
 
-    function test_DitributeRewardsRevertNotNetworkMiddleware(
-        uint256 amount
-    ) public {
+    function test_DitributeRewardsRevertNotNetworkMiddleware(uint256 amount) public {
         amount = bound(amount, 0, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -179,9 +174,7 @@ contract DefaultOperatorRewardsTest is Test {
         assertEq(defaultOperatorRewards.claimed(network, address(token), bob), amount1 + amount2);
     }
 
-    function test_ClaimRewardsRevertRootNotSet(
-        uint256 amount1
-    ) public {
+    function test_ClaimRewardsRevertRootNotSet(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -201,9 +194,7 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1, proof);
     }
 
-    function test_ClaimRewardsRevertInvalidProof(
-        uint256 amount1
-    ) public {
+    function test_ClaimRewardsRevertInvalidProof(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -235,9 +226,7 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1 + 1, proof);
     }
 
-    function test_ClaimRewardsRevertInsufficientTotalClaimable(
-        uint256 amount1
-    ) public {
+    function test_ClaimRewardsRevertInsufficientTotalClaimable(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -263,9 +252,7 @@ contract DefaultOperatorRewardsTest is Test {
         _claimRewards(bob, network, address(token), amount1, proof);
     }
 
-    function test_ClaimRewardsRevertInsufficientBalance(
-        uint256 amount1
-    ) public {
+    function test_ClaimRewardsRevertInsufficientBalance(uint256 amount1) public {
         amount1 = bound(amount1, 1, 1000);
 
         defaultOperatorRewards = _getOperatorDefaultRewards();
@@ -331,13 +318,9 @@ contract DefaultOperatorRewardsTest is Test {
         vm.stopPrank();
     }
 
-    function _claimRewards(
-        address user,
-        address network,
-        address token,
-        uint256 totalClaimable,
-        bytes32[] memory proof
-    ) internal {
+    function _claimRewards(address user, address network, address token, uint256 totalClaimable, bytes32[] memory proof)
+        internal
+    {
         vm.startPrank(user);
         defaultOperatorRewards.claimRewards(user, network, token, totalClaimable, proof);
         vm.stopPrank();

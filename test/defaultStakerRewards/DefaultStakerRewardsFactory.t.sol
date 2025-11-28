@@ -16,8 +16,9 @@ import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
 import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
-import {OperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
+import {
+    OperatorNetworkSpecificDelegator
+} from "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
@@ -187,9 +188,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 delegatorParams: abi.encode(
                     INetworkRestakeDelegator.InitParams({
                         baseParams: IBaseDelegator.BaseParams({
-                            defaultAdminRoleHolder: alice,
-                            hook: address(0),
-                            hookSetRoleHolder: alice
+                            defaultAdminRoleHolder: alice, hook: address(0), hookSetRoleHolder: alice
                         }),
                         networkLimitSetRoleHolders: networkLimitSetRoleHolders,
                         operatorNetworkSharesSetRoleHolders: operatorNetworkSharesSetRoleHolders
@@ -197,16 +196,16 @@ contract DefaultStakerRewardsFactoryTest is Test {
                 ),
                 withSlasher: false,
                 slasherIndex: 0,
-                slasherParams: abi.encode(ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})}))
+                slasherParams: abi.encode(
+                    ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})})
+                )
             })
         );
 
         vault = Vault(vault_);
     }
 
-    function test_Create(
-        uint256 adminFee
-    ) public {
+    function test_Create(uint256 adminFee) public {
         adminFee = bound(adminFee, 0, 10_000);
 
         address defaultStakerRewards_ =
@@ -261,9 +260,7 @@ contract DefaultStakerRewardsFactoryTest is Test {
         );
     }
 
-    function _registerOperator(
-        address user
-    ) internal {
+    function _registerOperator(address user) internal {
         vm.startPrank(user);
         operatorRegistry.registerOperator();
         vm.stopPrank();

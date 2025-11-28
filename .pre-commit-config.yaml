@@ -1,0 +1,175 @@
+# Prerequisites:
+# - Foundry
+# - Python 3
+# - Node.js 20
+# - .NET 8
+# - Nethereum.Generator.Console
+# - Java 21
+# - web3j
+# - Go
+# - abigen
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: "^(docs/autogen|snapshots/)"
+      - id: trailing-whitespace
+        exclude: "^(docs/autogen|snapshots/)"
+      - id: end-of-file-fixer
+        exclude: "^(docs/autogen|snapshots/)"
+      - id: check-merge-conflict
+      - id: check-json
+        exclude: "^(docs/autogen|snapshots/)"
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      - id: sort-imports
+        name: Sort imports
+        description: Normalize and sort import statements in Solidity files
+        language: system
+        entry: python3 script/utils/sort_imports.py
+        files: "^(src|examples)/.*\\.sol$"
+        pass_filenames: true
+      - id: sort-errors
+        name: Sort solidity errors
+        description: Alphabetize error declarations in Solidity files
+        language: system
+        entry: python3 script/utils/sort_errors.py
+        files: "^(src|examples)/.*\\.sol$"
+        pass_filenames: true
+      - id: format
+        name: Format solidity code
+        description: Format solidity code with `forge fmt`
+        language: system
+        entry: forge fmt
+        files: '\.sol$'
+        exclude: "^lib/"
+        pass_filenames: true
+      - id: generate-abis
+        name: Generate ABI artifacts
+        description: Compile contracts and sync their ABIs into ./abis
+        language: system
+        entry: python3 script/utils/generate_abis.py
+        pass_filenames: false
+      - id: generate-bindings-rust-alloy
+        name: Generate Rust bindings (alloy)
+        description: Produce Rust alloy bindings from ABI files
+        language: system
+        entry: >
+          bash -lc '
+            set -euo pipefail
+            ABI_FILES=()
+            while IFS= read -r file; do
+              ABI_FILES+=("$file")
+            done < <(find abis -type f -name "*.abi.json" | sort)
+            rm -rf bindings/rust-alloy
+            mkdir -p bindings
+            forge_args=(forge bind --bindings-path bindings/rust-alloy --overwrite --skip-build)
+            for abi in "${ABI_FILES[@]}"; do
+              name=$(basename "$abi" .abi.json)
+              forge_args+=(--select "$name")
+            done
+            "${forge_args[@]}"
+          '
+        pass_filenames: false
+      - id: generate-bindings-ts-viem
+        name: Generate TypeScript bindings (viem)
+        description: Produce TypeScript viem bindings from ABI files
+        language: system
+        entry: >
+          bash -lc '
+            set -euo pipefail
+            exec > /dev/null
+            ABI_FILES=()
+            while IFS= read -r file; do
+              ABI_FILES+=("$file")
+            done < <(find abis -type f -name "*.abi.json" | sort)
+            mkdir -p bindings/ts-viem
+            rm -f bindings/ts-viem/generated.ts
+            (
+              cd bindings/ts-viem
+              npx --yes @wagmi/cli@latest generate --config wagmi.config.ts
+            )
+          '
+        pass_filenames: false
+      - id: generate-bindings-go-go-ethereum
+        name: Generate Go bindings (go-ethereum)
+        description: Produce Go bindings with abigen from ABI files
+        language: system
+        entry: >
+          bash -lc '
+            set -euo pipefail
+            ABI_FILES=()
+            while IFS= read -r file; do
+              ABI_FILES+=("$file")
+            done < <(find abis -type f -name "*.abi.json" | sort)
+            rm -rf bindings/go-go-ethereum
+            mkdir -p bindings/go-go-ethereum
+            pkg=${ABIGEN_PACKAGE:-relaycontracts}
+            for abi in "${ABI_FILES[@]}"; do
+              name=$(basename "$abi" .abi.json)
+              go_file=$(python3 -c "import re, sys; name = sys.argv[1]; s1 = re.sub(r\"(.)([A-Z][a-z]+)\", r\"\\1_\\2\", name); snake = re.sub(r\"([a-z0-9])([A-Z])\", r\"\\1_\\2\", s1).lower(); snake = re.sub(r\"[^0-9a-z_]\", \"_\", snake); print(snake)" "$name")
+              abigen --abi "$abi" --pkg "$pkg" --type "$name" --out "bindings/go-go-ethereum/${go_file}.go"
+            done
+          '
+        pass_filenames: false
+      - id: generate-bindings-java-web3j
+        name: Generate Java bindings (web3j)
+        description: Produce Java bindings with web3j from ABI files
+        language: system
+        entry: >
+          bash -lc '
+            set -euo pipefail
+            ABI_FILES=()
+            while IFS= read -r file; do
+              ABI_FILES+=("$file")
+            done < <(find abis -type f -name "*.abi.json" | sort)
+            rm -rf bindings/java-web3j
+            mkdir -p bindings/java-web3j
+            package_name=${WEB3J_PACKAGE:-fi.symbiotic.relay}
+            for abi in "${ABI_FILES[@]}"; do
+              web3j generate solidity -a "$abi" -o bindings/java-web3j -p "$package_name"
+            done
+          '
+        pass_filenames: false
+      - id: generate-bindings-dotnet-nethereum
+        name: Generate .NET bindings (Nethereum)
+        description: Produce .NET bindings with Nethereum from ABI files
+        language: system
+        entry: >
+          bash -lc '
+            set -euo pipefail
+            ABI_FILES=()
+            while IFS= read -r file; do
+              ABI_FILES+=("$file")
+            done < <(find abis -type f -name "*.abi.json" | sort)
+            rm -rf bindings/dot-netnet-nethereum
+            mkdir -p bindings/dot-net-nethereum
+            namespace=${NETHEREUM_NAMESPACE:-Symbiotic.Relay}
+            for abi in "${ABI_FILES[@]}"; do
+              Nethereum.Generator.Console generate from-abi --abiPath "$abi" --outputPath "bindings/dot-net-nethereum" --namespace "$namespace"
+            done
+          '
+        pass_filenames: false
+      - id: doc
+        name: Generate documentation
+        description: Generate docs with `forge doc`
+        language: system
+        entry: bash -lc 'forge build; rm -rf docs/autogen; forge doc -b -o docs/autogen'
+        pass_filenames: false
+      - id: forge-snapshots
+        name: Update forge snapshots
+        language: system
+        entry: bash -lc 'mkdir -p snapshots; forge build; forge build --sizes | tee snapshots/sizes.txt >/dev/null; forge test --isolate --gas-report | tee snapshots/gas.txt >/dev/null'
+        pass_filenames: false
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: Format non-solidity files with prettier
+        exclude: "^(docs/autogen|snapshots/)"
+        language_version: system

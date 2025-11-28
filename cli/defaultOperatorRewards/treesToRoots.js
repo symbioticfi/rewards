@@ -1,31 +1,29 @@
-const { StandardMerkleTree } = require('@openzeppelin/merkle-tree')
-const fs = require('fs')
-const path = require('path')
+const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
+const fs = require("fs");
+const path = require("path");
 
-const Trees = require('./data/trees.json')
+const Trees = require("./data/trees.json");
 
 function parseMerkleTrees() {
-  const trees = {}
+  const trees = {};
 
   Trees.forEach((tokenData) => {
-    const values = tokenData.tree.values.map(
-      ({ value: [operator, reward] }) => [operator, reward]
-    )
+    const values = tokenData.tree.values.map(({ value: [operator, reward] }) => [operator, reward]);
     const tree = StandardMerkleTree.load(tokenData.tree);
-    trees[tokenData.token] = { tree, values }
-  })
+    trees[tokenData.token] = { tree, values };
+  });
 
-  return trees
+  return trees;
 }
 
 function main() {
-  const trees = parseMerkleTrees()
+  const trees = parseMerkleTrees();
 
   for (const [token, { tree }] of Object.entries(trees)) {
-    console.log(`-------------------------------`)
-    console.log(`Token: ${token}`)
-    console.log(`Merkle Root: ${tree.root}`)
+    console.log(`-------------------------------`);
+    console.log(`Token: ${token}`);
+    console.log(`Merkle Root: ${tree.root}`);
   }
 }
 
-main()
+main();

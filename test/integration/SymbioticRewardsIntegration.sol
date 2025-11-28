@@ -46,8 +46,8 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
             uint256 numberOfDefaultStakerRewards = symbioticDefaultStakerRewardsFactory.totalEntities();
             for (uint256 i; i < numberOfDefaultStakerRewards; ++i) {
                 address defaultStakerRewards = symbioticDefaultStakerRewardsFactory.entity(i);
-                existingDefaultStakerRewards_SymbioticRewards[ISymbioticDefaultStakerRewards(defaultStakerRewards).VAULT(
-                )].push(defaultStakerRewards);
+                existingDefaultStakerRewards_SymbioticRewards[ISymbioticDefaultStakerRewards(defaultStakerRewards)
+                        .VAULT()].push(defaultStakerRewards);
             }
         }
     }
@@ -75,12 +75,10 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
     function _addExistingDefaultStakerRewards_SymbioticRewards() internal virtual {
         for (uint256 i; i < vaults_SymbioticCore.length; ++i) {
             for (uint256 j; j < existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]].length; ++j) {
-                if (
-                    !_contains_Symbiotic(
+                if (!_contains_Symbiotic(
                         defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]],
                         existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][j]
-                    )
-                ) {
+                    )) {
                     defaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]].push(
                         existingDefaultStakerRewards_SymbioticRewards[vaults_SymbioticCore[i]][j]
                     );
@@ -91,11 +89,9 @@ contract SymbioticRewardsIntegration is SymbioticRewardsInit, SymbioticCoreInteg
 
     function _addExistingDefaultOperatorRewards_SymbioticRewards() internal virtual {
         for (uint256 i; i < existingDefaultOperatorRewards_SymbioticRewards.length; ++i) {
-            if (
-                !_contains_Symbiotic(
+            if (!_contains_Symbiotic(
                     defaultOperatorRewards_SymbioticRewards, existingDefaultOperatorRewards_SymbioticRewards[i]
-                )
-            ) {
+                )) {
                 defaultOperatorRewards_SymbioticRewards.push(existingDefaultOperatorRewards_SymbioticRewards[i]);
             }
         }

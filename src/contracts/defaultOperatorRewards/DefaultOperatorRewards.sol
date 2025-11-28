@@ -3,11 +3,11 @@ pragma solidity 0.8.25;
 
 import {IDefaultOperatorRewards} from "../../interfaces/defaultOperatorRewards/IDefaultOperatorRewards.sol";
 
-import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
-
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
 
 contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorRewards {
     using SafeERC20 for IERC20;
@@ -32,9 +32,7 @@ contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorR
      */
     mapping(address network => mapping(address token => mapping(address account => uint256 amount))) public claimed;
 
-    constructor(
-        address networkMiddlewareService
-    ) {
+    constructor(address networkMiddlewareService) {
         _disableInitializers();
 
         NETWORK_MIDDLEWARE_SERVICE = networkMiddlewareService;
@@ -84,11 +82,9 @@ contract DefaultOperatorRewards is ReentrancyGuardUpgradeable, IDefaultOperatorR
             revert RootNotSet();
         }
 
-        if (
-            !MerkleProof.verifyCalldata(
+        if (!MerkleProof.verifyCalldata(
                 proof, root_, keccak256(bytes.concat(keccak256(abi.encode(msg.sender, totalClaimable))))
-            )
-        ) {
+            )) {
             revert InvalidProof();
         }
 

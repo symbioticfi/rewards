@@ -16,8 +16,9 @@ import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
 import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
-import {OperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
+import {
+    OperatorNetworkSpecificDelegator
+} from "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 import {Slasher} from "@symbioticfi/core/src/contracts/slasher/Slasher.sol";
 import {VetoSlasher} from "@symbioticfi/core/src/contracts/slasher/VetoSlasher.sol";
 
@@ -195,9 +196,7 @@ contract DefaultStakerRewardsTest is Test {
                 delegatorParams: abi.encode(
                     INetworkRestakeDelegator.InitParams({
                         baseParams: IBaseDelegator.BaseParams({
-                            defaultAdminRoleHolder: alice,
-                            hook: address(0),
-                            hookSetRoleHolder: alice
+                            defaultAdminRoleHolder: alice, hook: address(0), hookSetRoleHolder: alice
                         }),
                         networkLimitSetRoleHolders: networkLimitSetRoleHolders,
                         operatorNetworkSharesSetRoleHolders: operatorNetworkSharesSetRoleHolders
@@ -205,7 +204,9 @@ contract DefaultStakerRewardsTest is Test {
                 ),
                 withSlasher: false,
                 slasherIndex: 0,
-                slasherParams: abi.encode(ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})}))
+                slasherParams: abi.encode(
+                    ISlasher.InitParams({baseParams: IBaseSlasher.BaseParams({isBurnerHook: true})})
+                )
             })
         );
 
@@ -236,9 +237,7 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertMissingRoles2(
-        address adminFeeSetRoleHolder
-    ) public {
+    function test_CreateRevertMissingRoles2(address adminFeeSetRoleHolder) public {
         vm.assume(adminFeeSetRoleHolder != address(0));
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -253,9 +252,7 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertMissingRoles3(
-        address adminFeeClaimRoleHolder
-    ) public {
+    function test_CreateRevertMissingRoles3(address adminFeeClaimRoleHolder) public {
         vm.assume(adminFeeClaimRoleHolder != address(0));
 
         vm.expectRevert(IDefaultStakerRewards.MissingRoles.selector);
@@ -270,9 +267,7 @@ contract DefaultStakerRewardsTest is Test {
         );
     }
 
-    function test_CreateRevertInvalidAdminFee(
-        uint256 adminFee
-    ) public {
+    function test_CreateRevertInvalidAdminFee(uint256 adminFee) public {
         adminFee = bound(adminFee, 10_001, type(uint256).max);
 
         vm.expectRevert(IDefaultStakerRewards.InvalidAdminFee.selector);
@@ -291,23 +286,21 @@ contract DefaultStakerRewardsTest is Test {
         defaultStakerRewards = _getStakerDefaultRewards();
 
         vm.expectRevert();
-        DefaultStakerRewards(address(defaultStakerRewards)).initialize(
-            IDefaultStakerRewards.InitParams({
-                vault: address(vault),
-                adminFee: 0,
-                defaultAdminRoleHolder: alice,
-                adminFeeClaimRoleHolder: alice,
-                adminFeeSetRoleHolder: alice
-            })
-        );
+        DefaultStakerRewards(address(defaultStakerRewards))
+            .initialize(
+                IDefaultStakerRewards.InitParams({
+                    vault: address(vault),
+                    adminFee: 0,
+                    defaultAdminRoleHolder: alice,
+                    adminFeeClaimRoleHolder: alice,
+                    adminFeeSetRoleHolder: alice
+                })
+            );
     }
 
-    function test_DistributeRewards(
-        uint256 amount,
-        uint256 ditributeAmount,
-        uint256 adminFee,
-        uint256 maxAdminFee
-    ) public {
+    function test_DistributeRewards(uint256 amount, uint256 ditributeAmount, uint256 adminFee, uint256 maxAdminFee)
+        public
+    {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
 
@@ -371,12 +364,9 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.claimable(address(feeOnTransferToken), alice, abi.encode(network, 0)), 0);
     }
 
-    function test_DistributeRewardsHints(
-        uint256 amount,
-        uint256 ditributeAmount,
-        uint256 adminFee,
-        uint256 maxAdminFee
-    ) public {
+    function test_DistributeRewardsHints(uint256 amount, uint256 ditributeAmount, uint256 adminFee, uint256 maxAdminFee)
+        public
+    {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 2, 100 * 10 ** 18);
 
@@ -603,9 +593,7 @@ contract DefaultStakerRewardsTest is Test {
         _distributeRewards(bob, network, address(feeOnTransferToken), ditributeAmount, timestamp, maxAdminFee, "", "");
     }
 
-    function test_DistributeRewardsRevertInsufficientReward(
-        uint256 amount
-    ) public {
+    function test_DistributeRewardsRevertInsufficientReward(uint256 amount) public {
         amount = bound(amount, 1, 100 * 10 ** 18);
 
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
@@ -999,11 +987,9 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.claimableAdminFee(address(token)), 0);
     }
 
-    function test_ClaimAdminFeeRevertInsufficientAdminFee(
-        uint256 amount,
-        uint256 ditributeAmount,
-        uint256 adminFee
-    ) public {
+    function test_ClaimAdminFeeRevertInsufficientAdminFee(uint256 amount, uint256 ditributeAmount, uint256 adminFee)
+        public
+    {
         amount = bound(amount, 1, 100 * 10 ** 18);
         ditributeAmount = bound(ditributeAmount, 1, 100 * 10 ** 18);
 
@@ -1044,9 +1030,7 @@ contract DefaultStakerRewardsTest is Test {
         _claimAdminFee(alice, address(token));
     }
 
-    function test_SetAdminFee(
-        uint256 adminFee
-    ) public {
+    function test_SetAdminFee(uint256 adminFee) public {
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
         blockTimestamp = blockTimestamp + 1_720_700_948;
         vm.warp(blockTimestamp);
@@ -1061,9 +1045,7 @@ contract DefaultStakerRewardsTest is Test {
         assertEq(defaultStakerRewards.adminFee(), adminFee);
     }
 
-    function test_SetAdminFeeRevertAlreadySet(
-        uint256 adminFee
-    ) public {
+    function test_SetAdminFeeRevertAlreadySet(uint256 adminFee) public {
         uint256 blockTimestamp = block.timestamp * block.timestamp / block.timestamp * block.timestamp / block.timestamp;
         blockTimestamp = blockTimestamp + 1_720_700_948;
         vm.warp(blockTimestamp);
@@ -1090,9 +1072,7 @@ contract DefaultStakerRewardsTest is Test {
         return DefaultStakerRewards(defaultStakerRewardsFactory.create(params));
     }
 
-    function _registerOperator(
-        address user
-    ) internal {
+    function _registerOperator(address user) internal {
         vm.startPrank(user);
         operatorRegistry.registerOperator();
         vm.stopPrank();
